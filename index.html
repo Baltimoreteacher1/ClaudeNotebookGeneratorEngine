@@ -208,109 +208,31 @@ const NB = {
 
 // ══ ACTIVITY LIBRARY (100+ types, Claude picks best per lesson) ══════════
 const ACTIVITY_LIBRARY = `
-FULL ACTIVITY LIBRARY — Claude selects the 2-3 best activities per session based on lesson content:
+ACTIVITY LIBRARY — select 2-3 best per session. Format: type_name: one-line description.
 
-SORTING & CLASSIFICATION:
-- card_sort: Students sort cards into labeled categories. Best for classification lessons.
-- drag_sort_categorization: Sort items into 2-4 groups with clear category headers.
-- true_false_sort: Sort statements into True/False/Sometimes columns.
-- proportional_sort: Sort relationships as proportional vs non-proportional.
-- equation_expression_sort: Sort as equation vs expression.
-- always_sometimes_never: Classify mathematical statements into 3 columns.
-- increasing_decreasing_sort: Classify graphs/tables as increasing, decreasing, or constant.
-- term_classification_sort: Sort vocabulary terms into categories.
-- problem_type_sort: Sort word problems by type or strategy needed.
-- math_vocab_categorization: Sort terms into concept groups.
-- strategy_sort: Sort solution strategies by efficiency or type.
-- representation_sort: Match table/graph/equation representations of same relationship.
+SORT: card_sort|always_sometimes_never|true_false_sort|proportional_sort|equation_expression_sort|increasing_decreasing_sort|representation_sort|term_classification_sort|strategy_sort
 
-MATCHING:
-- matching_pairs: Match terms to definitions, graphs to equations, inputs to outputs.
-- graph_scenario_match: Match graphs to real-world scenarios they represent.
-- table_equation_match: Match data tables to their equations.
-- model_equation_match: Match visual models to their algebraic representations.
-- word_problem_equation_match: Match word problems to their equations.
-- visual_vocab_match: Match vocabulary words to visual representations.
-- definition_match: Match terms to student-friendly definitions.
-- rate_situation_match: Match rates to their real-world situations.
-- context_variable_match: Match real-world contexts to their independent/dependent variables.
-- scenario_equation_match: Match scenarios to equations y=mx or y=mx+b.
-- fraction_decimal_match: Match fractions to decimal equivalents.
-- representation_matching: Match all three representations (table, graph, equation) of the same relationship.
+MATCH: matching_pairs|table_equation_match|graph_scenario_match|scenario_equation_match|definition_match|representation_matching|word_problem_equation_match|context_variable_match|rate_situation_match
 
-GRAPHIC ORGANIZERS:
-- frayer_model: 4-box organizer: Definition, Characteristics, Examples, Non-Examples.
-- t_chart: Two-column comparison of two concepts, methods, or sessions.
-- venn_diagram: Two overlapping circles for comparing similarities and differences.
-- concept_map: Central concept with radiating connections.
-- flow_chart: Step-by-step process with decision boxes.
-- cause_effect: Cause → Effect chains for mathematical relationships.
-- kwl_chart: Know / Want to Know / Learned.
-- four_corners: Four-quadrant organizer for exploring a concept from multiple angles.
-- reasoning_ladder: Claim → Evidence → Reasoning scaffold in steps.
-- hierarchical_organizer: Main concept branching to subcategories.
+ORGANIZER: frayer_model(def/char/ex/non-ex)|t_chart(2-col compare)|reasoning_ladder(claim→evidence→reasoning)|venn_diagram|flow_chart|four_corners|concept_map
 
-ANALYSIS & REASONING:
-- error_analysis: Students identify and explain a mathematical mistake in worked solution.
-- error_detective: Spot the error in 3 worked examples — circle and explain.
-- missing_step_detective: Identify which step is missing from a solution.
-- would_you_rather: Two scenarios — pick one and justify with math.
-- which_doesnt_belong: Four items — identify the outlier and explain.
-- spot_the_difference: Compare two solutions — find what differs.
-- build_the_argument: Claim-Evidence-Reasoning scaffold for mathematical justification.
-- mathematical_debate: Two competing claims — students pick a side with evidence.
-- peer_answer_check: Evaluate a fictional student's answer — correct or fix it.
-- annotate_analyze: Read and annotate a mathematical scenario or solution.
-- strategy_comparison: Compare two solution strategies — which is more efficient?
-- convince_me: Write a convincing argument that a mathematical statement is true/false.
+ANALYSIS: error_analysis(find+fix mistake)|error_detective(3 examples)|would_you_rather(justify choice)|which_doesnt_belong|peer_answer_check|build_the_argument|convince_me|strategy_comparison|mathematical_debate
 
-BUILDING & CONSTRUCTING:
-- equation_builder: Drag/arrange components to build an equation from a scenario.
-- build_the_table: Complete a table given the equation or pattern rule.
-- build_the_rule: Discover and write the rule from a pattern or table.
-- sentence_builder: Construct a mathematical sentence using given terms.
-- build_a_story_problem: Write a word problem that matches a given equation or table.
-- input_output_machine: Complete an input-output table given the rule.
-- pattern_continuation: Identify and extend a visual or numeric pattern.
-- build_a_model: Draw or describe a visual model representing the math.
-- area_model_construction: Build an area model for multiplication or algebraic expressions.
-- algebra_tile_arrangement: Represent expressions/equations using algebra tile models.
-- step_reconstruction: Reconstruct the steps of a solution in correct order.
-- equation_step_sort: Put the steps of solving an equation in order.
-- flowchart_completion: Complete a partially-filled flowchart.
-- concept_hierarchy: Arrange concepts from most general to most specific.
+BUILD: build_the_table|equation_builder|input_output_machine|build_the_rule|step_reconstruction|equation_step_sort|pattern_continuation|build_a_story_problem|build_a_model
 
-NUMBER SENSE & VISUAL:
-- number_line_placement: Place values, fractions, solutions on a number line.
-- inequality_number_line: Graph inequalities on a number line.
-- coordinate_point_plotting: Plot and label coordinate points.
-- coordinate_grid_challenge: Navigate a coordinate grid challenge.
-- estimation_placement: Estimate and place values on a number line before calculating.
-- magnitude_ordering: Order values from least to greatest.
-- fraction_ratio_model: Build fraction or ratio bar models.
-- balance_scale_equation: Model equations as a balance — what's on each side?
-- graph_feature_labeling: Label key features (slope, intercepts, points) on a graph.
-- slope_triangle_builder: Build slope triangles on a coordinate grid.
+NUMBER/VISUAL: number_line_placement|balance_scale_equation|graph_feature_labeling|coordinate_point_plotting|magnitude_ordering|estimation_placement|fraction_ratio_model
 
-REAL-WORLD APPLICATION:
-- scenario_analysis_cards: Analyze 3 real-world scenarios using lesson math.
-- real_world_scenario_match: Match real-world situations to mathematical representations.
-- build_a_story: Create a story that matches a given mathematical model.
-- rate_comparison_sort: Compare and rank real-world rates.
-- context_to_variable_mapping: Map real-world contexts to variables and equations.
-- math_connections: Identify how lesson math applies in 3 different professions/situations.
-- estimate_then_reveal: Make a prediction, then calculate to verify.
-- ranking_activity: Rank scenarios by rate, value, or size and justify.
-- real_world_meaning: Explain what a mathematical result means in real-world context.
+REAL-WORLD: scenario_analysis_cards(3 situations)|math_connections(3 professions)|rate_comparison_sort|ranking_activity|context_to_variable_mapping|real_world_meaning|estimate_then_reveal
 
-DISCUSSION & REFLECTION:
-- gallery_walk_prompts: 4-6 discussion prompts for a gallery walk activity.
-- movable_sticky_response: Respond to a prompt — agree/disagree/wonder.
-- discussion_evidence_sort: Sort evidence that supports or challenges a claim.
-- card_flip_discussion: Reveal a scenario, then discuss implications.
-- peer_comparison: Compare your approach to a partner's approach.
-- strategy_ranking: Rank 3 solution strategies from least to most efficient.
-- mathematical_argument_sequencing: Put a mathematical argument in logical order.
+DISCUSSION: gallery_walk_prompts|strategy_ranking|mathematical_argument_sequencing|discussion_evidence_sort|peer_comparison
+
+BEST FITS BY LESSON TYPE:
+- equation/6.EE: table_equation_match, error_analysis, equation_builder, build_the_table, would_you_rather
+- ratio/6.RP: rate_comparison_sort, representation_matching, scenario_equation_match, proportional_sort
+- geometry/6.G: frayer_model, build_a_model, error_detective, graph_feature_labeling
+- statistics/6.SP: representation_sort, build_the_table, gallery_walk_prompts, which_doesnt_belong
+- realworld: scenario_analysis_cards, math_connections, would_you_rather, ranking_activity
+- general: reasoning_ladder, always_sometimes_never, frayer_model, peer_answer_check
 `;
 
 // ══ GLOBALS ═══════════════════════════════════════════════════════════════
@@ -475,31 +397,15 @@ function getActivityNames(plan){
 }
 
 function buildPrompt(slideText){
-  return `You are designing flagship-quality EduWonderLab student notebooks for Grade 6 math. These are premium TPT products.
+  const actSchema = '{"type":"<from library>","title":"<title>","instruction":"<specific>","items":["<i1>","<i2>","<i3>","<i4>","<i5>","<i6>"],"categories":["<CatA>","<CatB>"],"category_a_items":[],"category_b_items":[],"answer_revealed":false,"extra":""}';
+  return `Design TWO flagship Grade 6 EduWonderLab student notebooks from these slides. Premium TPT quality.
 
-SLIDE CONTENT:
+SLIDES:
 ${slideText}
 
 ${ACTIVITY_LIBRARY}
 
-DESIGN STANDARDS:
-- These notebooks must be at Anthropic/flagship TPT quality — not generic fill-in-the-blank
-- Every activity must be GENUINELY INTERACTIVE and specific to THIS lesson's content
-- Problems must come from the slides or be direct mathematical extensions — never invented
-- Scaffolding must decrease across Guided → Collaborative → Independent (gradual release)
-- TWR frames must use THIS lesson's specific vocabulary, scenarios, and concepts
-- Exit tickets must show clear DOK 1→2→3 progression using THIS lesson's content
-- Activities must be chosen because they are the BEST possible fit for this exact lesson
-
-ACTIVITY SELECTION RULES:
-- Select 2-3 activities per session from the activity library
-- Each activity must be a genuinely different format (no two sorting activities in a row)
-- Activity content must come from the actual lesson slides
-- For realworld lessons: prioritize scenario_analysis_cards, math_connections, would_you_rather
-- For equation lessons: prioritize table_equation_match, error_analysis, equation_builder, build_the_table
-- For geometry lessons: prioritize build_a_model, frayer_model, error_detective, label-based activities
-- For statistics lessons: prioritize annotate_analyze, representation_sort, build_the_table
-- For ratio lessons: prioritize rate_comparison_sort, representation_matching, scenario_equation_match
+RULES: Content from slides only — never invent. 2-3 activities per session, different formats, lesson-specific. Gradual release scaffold. TWR uses lesson vocab. Exit DOK 1→2→3. S2 tier 3 references BOTH sessions.
 
 Return ONLY valid JSON:
 
@@ -510,109 +416,8 @@ Return ONLY valid JSON:
   "unit": "unit number",
   "lesson_number": "lesson number",
   "learning_targets": ["I can...", "I can..."],
-  "session1": {
-    "title": "Session 1 title",
-    "scenario": "exact scenario from slides",
-    "key_concept": "core mathematical idea, student-friendly",
-    "vocabulary": [
-      {"en": "exact term", "es": "término", "definition": "definition in 8 words max"},
-      {"en": "term2", "es": "t2", "definition": "d2"},
-      {"en": "term3", "es": "t3", "definition": "d3"},
-      {"en": "term4", "es": "t4", "definition": "d4"}
-    ],
-    "notice_prompt": "specific NOTICE starter using actual lesson content and variable names",
-    "wonder_prompt": "specific WONDER starter using actual lesson content",
-    "twr_stem": "TWR sentence stem using THIS lesson's exact vocabulary",
-    "guided_problem_1": "problem pulled directly from slides",
-    "guided_problem_2": "direct extension of slide content with partial scaffold",
-    "collab_task": "partner task using lesson scenario",
-    "discussion_q1": "specific discussion question using lesson content",
-    "discussion_q2": "specific discussion question pushing deeper thinking",
-    "discussion_q3": "discussion question requiring justification",
-    "ip_p1": "Independent Practice P1 DOK 1-2 — lesson content",
-    "ip_p2": "IP P2 DOK 2 — requires explanation",
-    "ip_p3": "IP P3 DOK 2-3 — transfer or justify",
-    "activities": [
-      {
-        "type": "activity_type_from_library",
-        "title": "Specific engaging title for this activity",
-        "instruction": "Specific instruction for students (not generic)",
-        "items": ["specific item 1 from lesson", "item 2", "item 3", "item 4", "item 5", "item 6"],
-        "categories": ["Category A label", "Category B label"],
-        "category_a_items": ["items that belong in A"],
-        "category_b_items": ["items that belong in B"],
-        "answer_revealed": false,
-        "extra": "any additional specific content needed for this activity"
-      },
-      {
-        "type": "second_activity_type",
-        "title": "Title",
-        "instruction": "Instruction",
-        "items": ["item1","item2","item3","item4"],
-        "categories": ["Cat A","Cat B"],
-        "category_a_items": [],
-        "category_b_items": [],
-        "answer_revealed": false,
-        "extra": ""
-      }
-    ],
-    "twr_frame1": "CLAIM: specific claim frame using lesson vocabulary",
-    "twr_frame2": "EVIDENCE: specific evidence frame referencing lesson data/table",
-    "twr_frame3": "REASONING: specific reasoning frame using lesson concept",
-    "twr_frame4": "REAL-WORLD: connect lesson math to real life using specific lesson context",
-    "et_tier1": "DOK 1 exit ticket — identify or recall using lesson content",
-    "et_tier2": "DOK 2 exit ticket — apply and explain using lesson scenario",
-    "et_tier3": "DOK 3 exit ticket — justify or transfer using lesson content"
-  },
-  "session2": {
-    "title": "Session 2 title",
-    "scenario": "Session 2 scenario",
-    "key_concept": "Session 2 core concept",
-    "vocabulary": [{"en":"t","es":"t","definition":"d"},{"en":"t2","es":"t2","definition":"d2"},{"en":"t3","es":"t3","definition":"d3"},{"en":"t4","es":"t4","definition":"d4"}],
-    "notice_prompt": "S2 notice — may reference S1 data or table",
-    "wonder_prompt": "S2 wonder",
-    "twr_stem": "S2 TWR stem",
-    "guided_problem_1": "S2 GP1",
-    "guided_problem_2": "S2 GP2",
-    "collab_task": "S2 collab task",
-    "discussion_q1": "S2 DQ1",
-    "discussion_q2": "S2 DQ2",
-    "discussion_q3": "How does Session 2 compare to or build on Session 1?",
-    "ip_p1": "S2 IP P1",
-    "ip_p2": "S2 IP P2",
-    "ip_p3": "S2 IP P3 — must reference both sessions",
-    "activities": [
-      {
-        "type": "activity_type",
-        "title": "Title",
-        "instruction": "Instruction",
-        "items": ["i1","i2","i3","i4","i5","i6"],
-        "categories": ["Cat A","Cat B"],
-        "category_a_items": [],
-        "category_b_items": [],
-        "answer_revealed": false,
-        "extra": ""
-      },
-      {
-        "type": "second_type",
-        "title": "Title",
-        "instruction": "Instruction",
-        "items": ["i1","i2","i3","i4"],
-        "categories": ["A","B"],
-        "category_a_items": [],
-        "category_b_items": [],
-        "answer_revealed": false,
-        "extra": ""
-      }
-    ],
-    "twr_frame1": "S2 CLAIM frame",
-    "twr_frame2": "S2 EVIDENCE frame referencing S2 data",
-    "twr_frame3": "S2 REASONING frame",
-    "twr_frame4": "COMPARE: Session 1 showed ___ while Session 2 shows ___ because ___.",
-    "et_tier1": "S2 DOK 1",
-    "et_tier2": "S2 DOK 2",
-    "et_tier3": "S2 DOK 3 — must reference BOTH sessions"
-  }
+  "session1":{"title":"","scenario":"","key_concept":"","vocabulary":[{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""}],"notice_prompt":"","wonder_prompt":"","twr_stem":"","guided_problem_1":"","guided_problem_2":"","collab_task":"","discussion_q1":"","discussion_q2":"","discussion_q3":"","ip_p1":"","ip_p2":"","ip_p3":"","activities":[${actSchema},${actSchema}],"twr_frame1":"CLAIM:","twr_frame2":"EVIDENCE:","twr_frame3":"REASONING:","twr_frame4":"REAL-WORLD:","et_tier1":"DOK1","et_tier2":"DOK2","et_tier3":"DOK3"},
+  "session2":{"title":"","scenario":"","key_concept":"","vocabulary":[{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""}],"notice_prompt":"","wonder_prompt":"","twr_stem":"","guided_problem_1":"","guided_problem_2":"","collab_task":"","discussion_q1":"","discussion_q2":"","discussion_q3":"How does S2 build on S1?","ip_p1":"","ip_p2":"","ip_p3":"must reference both sessions","activities":[${actSchema},${actSchema}],"twr_frame1":"CLAIM:","twr_frame2":"EVIDENCE:","twr_frame3":"REASONING:","twr_frame4":"COMPARE S1 and S2:","et_tier1":"DOK1","et_tier2":"DOK2","et_tier3":"DOK3 — BOTH sessions"}
 }`;
 }
 
