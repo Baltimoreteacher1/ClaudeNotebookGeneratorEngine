@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://api.anthropic.com; img-src 'self' data:;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduWonderLab · Notebook Engine v5</title>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --bg:#0d0f14;--surface:#13161e;--surface2:#1a1e2a;--border:#252a38;--border2:#2e3446;
+  --teal:#14b8a6;--teal-dim:rgba(20,184,166,0.12);--teal-glow:rgba(20,184,166,0.25);
+  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;--success:#10b981;--err:#ef4444;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(20,184,166,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.header{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,#387F84,#14b8a6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px var(--teal-glow)}
+.header-text h1{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.02em}
+.header-text p{font-size:0.78rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
+.badge{margin-left:auto;background:var(--teal-dim);border:1px solid rgba(20,184,166,0.3);color:var(--teal);font-family:'DM Mono',monospace;font-size:0.68rem;padding:3px 8px;border-radius:4px;letter-spacing:.05em}
+.api-bar{display:flex;align-items:center;gap:.6rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;margin-bottom:.75rem}
+.api-bar input{flex:1;background:transparent;border:none;outline:none;color:var(--teal);font-family:'DM Mono',monospace;font-size:.8rem}
+.api-label{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);white-space:nowrap;letter-spacing:.04em}
+#api-status{font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace}
+.api-save{padding:5px 12px;border-radius:6px;font-size:.78rem;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;border:1px solid rgba(20,184,166,.4);background:var(--teal-dim);color:var(--teal);white-space:nowrap}
+.upload-zone{border:2px dashed var(--border2);border-radius:12px;background:var(--surface);padding:3rem 1rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.25rem}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:var(--teal-dim)}
+.u-icon{font-size:2.5rem;margin-bottom:.6rem}
+.u-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);margin-bottom:.3rem}
+.u-sub{font-size:.82rem;color:var(--muted);line-height:1.5}
+.prog-wrap{width:240px;height:3px;background:var(--border);border-radius:2px;margin:.75rem auto 0;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),#0891b2);width:0%;transition:width .4s ease;border-radius:2px}
+.stage-log{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-bottom:1.25rem;display:none}
+.stage-log.show{display:block}
+.si{display:flex;align-items:center;gap:8px;padding:4px 0;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted2)}
+.si-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--muted)}
+.si.done .si-dot{background:var(--success)}
+.si.run .si-dot{background:var(--teal);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.preview-panel{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:1.2rem;margin-bottom:1.5rem;display:none}
+.preview-panel.show{display:block}
+.preview-h{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.5rem}
+.preview-meta{font-size:.8rem;color:var(--muted2);margin-bottom:.8rem;line-height:1.6}
+.preview-meta strong{color:var(--teal)}
+.slide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.45rem}
+.sc{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 11px}
+.sc-n{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--teal);margin-bottom:2px}
+.sc-t{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.sc-d{font-size:.7rem;color:var(--muted);line-height:1.4}
+.sc.activity{border-color:rgba(220,177,91,0.4);background:rgba(220,177,91,0.05)}
+.sc.activity .sc-n{color:#DCB15B}
+.gen-zone{display:flex;flex-direction:column;align-items:center;gap:1rem;margin-top:1.5rem}
+.gen-row{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center}
+.gbtn{padding:12px 28px;border-radius:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;border:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:8px}
+.gbtn.s1{background:linear-gradient(135deg,#1C2E42,#2563eb);color:#fff;border-color:rgba(37,99,235,.5)}
+.gbtn.s1:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,.35)}
+.gbtn.s2{background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border-color:rgba(124,58,237,.5)}
+.gbtn.s2:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.35)}
+.gbtn.both{background:linear-gradient(135deg,#387F84,#14b8a6);color:#000;border-color:rgba(56,127,132,.5);font-size:1rem;padding:14px 36px}
+.gbtn.both:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--teal-glow)}
+.gbtn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.status-box{width:100%;max-width:500px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;display:none}
+.status-box.show{display:block}
+.status-line{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted2);font-family:'DM Mono',monospace}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;animation:pulse 1.2s ease-in-out infinite}
+.sdot.done{background:var(--success);animation:none}.sdot.err{background:var(--err);animation:none}
+.sbarpw{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.sbar{height:100%;background:linear-gradient(90deg,var(--teal),#0891b2);border-radius:2px;width:0%;transition:width .4s ease}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:12px 16px;font-size:.82rem;display:flex;align-items:center;gap:8px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:rgba(16,185,129,.4)}.toast.error{border-color:rgba(239,68,68,.4)}
+.reset-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:5px 14px;border-radius:6px;font-size:.75rem;cursor:pointer;margin-top:.6rem;transition:all .15s}
+.reset-btn:hover{border-color:var(--teal);color:var(--teal)}
+.std-badge{display:inline-flex;align-items:center;background:var(--teal-dim);border:1px solid rgba(20,184,166,.3);border-radius:20px;padding:3px 10px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--teal);margin-top:.4rem}
+
+/* ── REDUCED MOTION ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:0.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.01ms !important;
+  }
+}
+/* ── PRINT ─────────────────────────────────────────────────────── */
+@media print {
+  body { background:#fff !important; color:#000 !important; }
+  body::before { display:none !important; }
+  .api-bar, .upload-zone, .stage-log, .gen-zone, .toast, .reset-btn { display:none !important; }
+  .preview-panel { display:block !important; border:1px solid #ccc; background:#fff; color:#000; }
+}
+/* ── SCREEN READER ONLY ────────────────────────────────────────── */
+.sr-only {
+  position:absolute; width:1px; height:1px; padding:0;
+  margin:-1px; overflow:hidden; clip:rect(0,0,0,0);
+  white-space:nowrap; border:0;
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div class="logo">EW</div>
+  <div class="header-text">
+    <h1>Notebook Engine</h1>
+    <p>Grade 6 · Flagship TPT Quality · v5.0</p>
+  </div>
+  <div class="badge">FLAGSHIP · v5.0</div>
+</div>
+<div class="api-bar">
+  <span class="api-label">API KEY</span>
+  <input id="api-key" type="password" placeholder="sk-ant-api03-...">
+  <span id="api-status">not set</span>
+  <button class="api-save" onclick="saveKey()">Save Key</button>
+</div>
+<div class="upload-zone" id="upload-zone"
+  role="button" tabindex="0"
+  aria-label="Upload a PPTX file. Click to browse, or drag and drop."
+  ondragover="event.preventDefault();this.classList.add('drag')"
+  ondragleave="this.classList.remove('drag')"
+  ondrop="handleDrop(event)"
+  onclick="document.getElementById('file-in').click()">
+  <input type="file" id="file-in" accept=".pptx" style="display:none" onchange="handleFile(event)">
+  <div id="u-idle">
+    <div class="u-icon">📂</div>
+    <div class="u-title">Drop any Reveal Math PPTX here</div>
+    <div class="u-sub">Claude reads your slides · selects the best activities from 100+ types · builds a flagship notebook</div>
+  </div>
+  <div id="u-proc" style="display:none" aria-live="polite">
+    <div class="u-icon">⚡</div>
+    <div class="u-title" id="u-title" style="color:var(--teal)">Extracting slides...</div>
+    <div class="u-sub" id="u-sub">Reading lesson content</div>
+    <div class="prog-wrap"><div class="prog-fill" id="u-prog"></div></div>
+  </div>
+  <div id="u-done" style="display:none">
+    <div class="u-icon">✅</div>
+    <div class="u-title" style="color:var(--success)" id="u-done-msg">Notebook plan ready</div>
+    <div class="u-sub" id="u-done-sub">Review structure · click Generate</div>
+    <div id="u-std" class="std-badge" style="margin:6px auto;width:fit-content;display:none"></div>
+    <button class="reset-btn" onclick="event.stopPropagation();resetUpload()">Upload different file</button>
+  </div>
+</div>
+<div class="stage-log" id="stage-log">
+  <div class="si" id="st1"><div class="si-dot"></div>Extract slide text from PPTX</div>
+  <div class="si" id="st2"><div class="si-dot"></div>Analyze lesson type, content, and learning targets</div>
+  <div class="si" id="st3"><div class="si-dot"></div>Select best activities from library (100+ types)</div>
+  <div class="si" id="st4"><div class="si-dot"></div>Generate all slide content with full detail</div>
+</div>
+<div class="preview-panel" id="preview-panel">
+  <div class="preview-h" id="prev-title">Notebook Plan</div>
+  <div class="preview-meta" id="prev-meta"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#387F84;margin-bottom:.4rem;letter-spacing:.05em">SESSION 1 <span id="s1-count" style="color:var(--muted)"></span></div>
+      <div class="slide-grid" id="s1-prev"></div>
+    </div>
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#a78bfa;margin-bottom:.4rem;letter-spacing:.05em">SESSION 2 <span id="s2-count" style="color:var(--muted)"></span></div>
+      <div class="slide-grid" id="s2-prev"></div>
+    </div>
+  </div>
+</div>
+<div class="gen-zone">
+  <div class="gen-row">
+    <button class="gbtn s1" id="btn-s1" onclick="buildSession('s1')" disabled>▣ Generate S1 Notebook</button>
+    <button class="gbtn s2" id="btn-s2" onclick="buildSession('s2')" disabled>▣ Generate S2 Notebook</button>
+  </div>
+  <button class="gbtn both" id="btn-both" onclick="buildBoth()" disabled>⚡ Generate Both Notebooks</button>
+  <div class="status-box" id="status-box">
+    <div class="status-line"><div class="sdot" id="sdot"></div><span id="stxt">Initializing...</span></div>
+    <div class="sbarpw"><div class="sbar" id="sbar"></div></div>
+  </div>
+</div>
+</div>
+<div role="status" aria-live="polite" aria-atomic="true" class="toast" id="toast"><span id="ticon" aria-hidden="true">✓</span><span id="tmsg"></span></div>
+
+<script>
+'use strict';
+
+/* ══ ENCAPSULATED STATE ══════════════════════════════════════════ */
+const AppState = (() => {
+  let _key = '';
+  let _plan = null;
+  let _generating = false;
+  try { const s = sessionStorage.getItem('ewl_plan'); if (s) _plan = JSON.parse(s); } catch(_) {}
+  return {
+    getKey:        ()  => _key,
+    setKey:        (k) => { _key = k; },
+    getPlan:       ()  => _plan,
+    setPlan:       (p) => { _plan = p; try { sessionStorage.setItem('ewl_plan', JSON.stringify(p)); } catch(_) {} },
+    clearPlan:     ()  => { _plan = null; try { sessionStorage.removeItem('ewl_plan'); } catch(_) {} },
+    isGenerating:  ()  => _generating,
+    setGenerating: (v) => { _generating = v; },
+  };
+})();
+
+const NB = {
+  bg:'F7F4EE', navy:'1C2E42', body:'242A30', teal:'387F84', gold:'DCB15B',
+  sage:'89A373', rust:'C0614A', cardBlue:'EAF2F7', cardCream:'FCF5E0',
+  cardGray:'E8EDF3', cardSage:'EDF2E8', cardRust:'F5EAE7',
+  muted:'5C656E', border:'D6DBDF', writeLine:'A8B2BC', white:'FFFFFF',
+  purple:'7c3aed'
+};
+
+// ══ ACTIVITY LIBRARY (100+ types, Claude picks best per lesson) ══════════
+const ACTIVITY_LIBRARY = `
+FULL ACTIVITY LIBRARY — Claude selects the 2-3 best activities per session based on lesson content:
+
+SORTING & CLASSIFICATION:
+- card_sort: Students sort cards into labeled categories. Best for classification lessons.
+- drag_sort_categorization: Sort items into 2-4 groups with clear category headers.
+- true_false_sort: Sort statements into True/False/Sometimes columns.
+- proportional_sort: Sort relationships as proportional vs non-proportional.
+- equation_expression_sort: Sort as equation vs expression.
+- always_sometimes_never: Classify mathematical statements into 3 columns.
+- increasing_decreasing_sort: Classify graphs/tables as increasing, decreasing, or constant.
+- term_classification_sort: Sort vocabulary terms into categories.
+- problem_type_sort: Sort word problems by type or strategy needed.
+- math_vocab_categorization: Sort terms into concept groups.
+- strategy_sort: Sort solution strategies by efficiency or type.
+- representation_sort: Match table/graph/equation representations of same relationship.
+
+MATCHING:
+- matching_pairs: Match terms to definitions, graphs to equations, inputs to outputs.
+- graph_scenario_match: Match graphs to real-world scenarios they represent.
+- table_equation_match: Match data tables to their equations.
+- model_equation_match: Match visual models to their algebraic representations.
+- word_problem_equation_match: Match word problems to their equations.
+- visual_vocab_match: Match vocabulary words to visual representations.
+- definition_match: Match terms to student-friendly definitions.
+- rate_situation_match: Match rates to their real-world situations.
+- context_variable_match: Match real-world contexts to their independent/dependent variables.
+- scenario_equation_match: Match scenarios to equations y=mx or y=mx+b.
+- fraction_decimal_match: Match fractions to decimal equivalents.
+- representation_matching: Match all three representations (table, graph, equation) of the same relationship.
+
+GRAPHIC ORGANIZERS:
+- frayer_model: 4-box organizer: Definition, Characteristics, Examples, Non-Examples.
+- t_chart: Two-column comparison of two concepts, methods, or sessions.
+- venn_diagram: Two overlapping circles for comparing similarities and differences.
+- concept_map: Central concept with radiating connections.
+- flow_chart: Step-by-step process with decision boxes.
+- cause_effect: Cause → Effect chains for mathematical relationships.
+- kwl_chart: Know / Want to Know / Learned.
+- four_corners: Four-quadrant organizer for exploring a concept from multiple angles.
+- reasoning_ladder: Claim → Evidence → Reasoning scaffold in steps.
+- hierarchical_organizer: Main concept branching to subcategories.
+
+ANALYSIS & REASONING:
+- error_analysis: Students identify and explain a mathematical mistake in worked solution.
+- error_detective: Spot the error in 3 worked examples — circle and explain.
+- missing_step_detective: Identify which step is missing from a solution.
+- would_you_rather: Two scenarios — pick one and justify with math.
+- which_doesnt_belong: Four items — identify the outlier and explain.
+- spot_the_difference: Compare two solutions — find what differs.
+- build_the_argument: Claim-Evidence-Reasoning scaffold for mathematical justification.
+- mathematical_debate: Two competing claims — students pick a side with evidence.
+- peer_answer_check: Evaluate a fictional student's answer — correct or fix it.
+- annotate_analyze: Read and annotate a mathematical scenario or solution.
+- strategy_comparison: Compare two solution strategies — which is more efficient?
+- convince_me: Write a convincing argument that a mathematical statement is true/false.
+
+BUILDING & CONSTRUCTING:
+- equation_builder: Drag/arrange components to build an equation from a scenario.
+- build_the_table: Complete a table given the equation or pattern rule.
+- build_the_rule: Discover and write the rule from a pattern or table.
+- sentence_builder: Construct a mathematical sentence using given terms.
+- build_a_story_problem: Write a word problem that matches a given equation or table.
+- input_output_machine: Complete an input-output table given the rule.
+- pattern_continuation: Identify and extend a visual or numeric pattern.
+- build_a_model: Draw or describe a visual model representing the math.
+- area_model_construction: Build an area model for multiplication or algebraic expressions.
+- algebra_tile_arrangement: Represent expressions/equations using algebra tile models.
+- step_reconstruction: Reconstruct the steps of a solution in correct order.
+- equation_step_sort: Put the steps of solving an equation in order.
+- flowchart_completion: Complete a partially-filled flowchart.
+- concept_hierarchy: Arrange concepts from most general to most specific.
+
+NUMBER SENSE & VISUAL:
+- number_line_placement: Place values, fractions, solutions on a number line.
+- inequality_number_line: Graph inequalities on a number line.
+- coordinate_point_plotting: Plot and label coordinate points.
+- coordinate_grid_challenge: Navigate a coordinate grid challenge.
+- estimation_placement: Estimate and place values on a number line before calculating.
+- magnitude_ordering: Order values from least to greatest.
+- fraction_ratio_model: Build fraction or ratio bar models.
+- balance_scale_equation: Model equations as a balance — what's on each side?
+- graph_feature_labeling: Label key features (slope, intercepts, points) on a graph.
+- slope_triangle_builder: Build slope triangles on a coordinate grid.
+
+REAL-WORLD APPLICATION:
+- scenario_analysis_cards: Analyze 3 real-world scenarios using lesson math.
+- real_world_scenario_match: Match real-world situations to mathematical representations.
+- build_a_story: Create a story that matches a given mathematical model.
+- rate_comparison_sort: Compare and rank real-world rates.
+- context_to_variable_mapping: Map real-world contexts to variables and equations.
+- math_connections: Identify how lesson math applies in 3 different professions/situations.
+- estimate_then_reveal: Make a prediction, then calculate to verify.
+- ranking_activity: Rank scenarios by rate, value, or size and justify.
+- real_world_meaning: Explain what a mathematical result means in real-world context.
+
+DISCUSSION & REFLECTION:
+- gallery_walk_prompts: 4-6 discussion prompts for a gallery walk activity.
+- movable_sticky_response: Respond to a prompt — agree/disagree/wonder.
+- discussion_evidence_sort: Sort evidence that supports or challenges a claim.
+- card_flip_discussion: Reveal a scenario, then discuss implications.
+- peer_comparison: Compare your approach to a partner's approach.
+- strategy_ranking: Rank 3 solution strategies from least to most efficient.
+- mathematical_argument_sequencing: Put a mathematical argument in logical order.
+`;
+
+// ══ GLOBALS ═══════════════════════════════════════════════════════════════
+let _key = '';
+let _plan = null;
+
+// ══ UI HELPERS ═════════════════════════════════════════════════════════════
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  document.getElementById('ticon').textContent=type==='success'?'✓':'✗';
+  document.getElementById('tmsg').textContent=msg;
+  el.className=`toast ${type} show`;
+  setTimeout(()=>el.classList.remove('show'),3500);
+}
+function setStatus(txt,pct,state='run'){
+  document.getElementById('status-box').classList.add('show');
+  document.getElementById('stxt').textContent=txt;
+  document.getElementById('sbar').style.width=pct+'%';
+  document.getElementById('sdot').className='sdot'+(state==='done'?' done':state==='err'?' err':'');
+}
+function setStage(id,state){
+  const el=document.getElementById(id);
+  if(el) el.className='si '+state;
+}
+function setUpProg(pct,title,sub){
+  document.getElementById('u-prog').style.width=pct+'%';
+  if(title) document.getElementById('u-title').textContent=title;
+  if(sub) document.getElementById('u-sub').textContent=sub;
+}
+function tick(){return new Promise(r=>setTimeout(r,18));}
+
+// ══ API KEY ════════════════════════════════════════════════════════════════
+
+/* ══ EVENT LISTENERS ════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  const zone   = document.getElementById('upload-zone');
+  const fileIn = document.getElementById('file-in');
+  document.getElementById('api-key').addEventListener('keydown', e => { if(e.key==='Enter') saveKey(); });
+  zone.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();fileIn.click();} });
+  // Restore plan from sessionStorage
+  const plan = AppState.getPlan();
+  if(plan){
+    renderPreview(plan);
+    document.getElementById('u-idle').style.display='none';
+    document.getElementById('u-done').style.display='block';
+    document.getElementById('u-done-msg').textContent=plan.lesson_title||'Previous Plan';
+    document.getElementById('u-done-sub').textContent=cap(plan.lesson_type)||'';
+    ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=false);
+    toast('Previous plan restored ✓');
+  }
+});
+
+function saveKey(){
+  const k=document.getElementById('api-key').value.trim();
+  if(!k.startsWith('sk-ant')){toast('Key should start with sk-ant-...','error');return;}
+  AppState.setKey(k);
+  const s=document.getElementById('api-status');
+  s.textContent='set ✓';s.style.color='#10b981';
+  toast('API key saved ✓');
+}
+
+// ══ UPLOAD & EXTRACTION ═══════════════════════════════════════════════════
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const f=e.dataTransfer.files[0];if(f)processFile(f);
+}
+function handleFile(e){const f=e.target.files[0];if(f)processFile(f);}
+function resetUpload(){
+  ['u-idle','u-proc','u-done'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display=id==='u-idle'?'block':'none';
+  });
+  document.getElementById('stage-log').classList.remove('show');
+  document.getElementById('preview-panel').classList.remove('show');
+  document.getElementById('file-in').value='';
+  ['st1','st2','st3','st4'].forEach(id=>setStage(id,''));
+  _plan=null;
+  ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=true);
+}
+
+async function extractPptxText(file){
+  const buf=await file.arrayBuffer();
+  const zip=await JSZip.loadAsync(buf);
+  const slideFiles=Object.keys(zip.files)
+    .filter(n=>n.match(/^ppt\/slides\/slide\d+\.xml$/))
+    .sort((a,b)=>parseInt(a.match(/\d+/)[0])-parseInt(b.match(/\d+/)[0]));
+  let text='';
+  for(const sf of slideFiles){
+    const xml=await zip.files[sf].async('string');
+    let slideText=xml
+      .replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g,(_,t)=>t+' ')
+      .replace(/<[^>]+>/g,' ')
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'")
+      .replace(/\s+/g,' ').trim();
+    const num=sf.match(/slide(\d+)/)[1];
+    if(slideText.length>2) text+=`\n--- Slide ${num} ---\n${slideText}\n`;
+  }
+  return text.trim()||'(No text found)';
+}
+
+async function processFile(file){
+  if(!file.name.endsWith('.pptx')){toast('Please upload a .pptx file','error');return;}
+  if(!AppState.getKey()){toast('Paste your API key first','error');return;}
+  document.getElementById('u-idle').style.display='none';
+  document.getElementById('u-proc').style.display='block';
+  document.getElementById('u-done').style.display='none';
+  document.getElementById('stage-log').classList.add('show');
+  setUpProg(5,'Extracting slides...','');
+  setStage('st1','run');
+  try{
+    const slideText=await extractPptxText(file);
+    setStage('st1','done');setStage('st2','run');
+    setUpProg(22,'Analyzing lesson...','Sending to Claude');
+    const prompt=buildPrompt(slideText);
+    const controller=new AbortController();
+    const timeoutId=setTimeout(()=>controller.abort(),60000);
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      signal:controller.signal,
+      headers:{'Content-Type':'application/json','x-api-key':AppState.getKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-opus-4-6',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+    });
+    clearTimeout(timeoutId);
+    setStage('st2','done');setStage('st3','run');
+    setUpProg(60,'Selecting activities...','');
+    if(!resp.ok){
+      const e=await resp.json().catch(()=>({}));
+      const code=e?.error?.type||'HTTP '+resp.status;
+      throw new Error('Request failed ('+code+'). Check your API key and try again.');
+    }
+    const data=await resp.json();
+    const raw=data.content?.find(b=>b.type==='text')?.text||'';
+    const clean=raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    let plan;
+    try{plan=JSON.parse(clean);}
+    catch(e){throw new Error('Claude returned invalid JSON — try again.');}
+    setStage('st3','done');setStage('st4','done');
+    setUpProg(100,'Plan ready!','');
+    AppState.setPlan(plan);
+    renderPreview(plan);
+    document.getElementById('u-proc').style.display='none';
+    document.getElementById('u-done').style.display='block';
+    document.getElementById('u-done-msg').textContent=plan.lesson_title||file.name;
+    document.getElementById('u-done-sub').textContent=`${cap(plan.lesson_type)} · Activities: ${getActivityNames(plan)}`;
+    const badge=document.getElementById('u-std');
+    if(plan.detected_standard){badge.textContent='Standard: '+plan.detected_standard;badge.style.display='inline-flex';}
+    ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=false);
+    toast('Notebook plan ready ✓');
+  }catch(err){
+    console.error(err);
+    document.getElementById('u-proc').style.display='none';
+    document.getElementById('u-idle').style.display='block';
+    toast(err.message.slice(0,80),'error');
+  }
+}
+
+function getActivityNames(plan){
+  const acts=[];
+  (plan.session1?.activities||[]).forEach(a=>acts.push(a.type));
+  return [...new Set(acts)].slice(0,3).map(cap).join(', ');
+}
+
+function buildPrompt(slideText){
+  return `You are designing flagship-quality EduWonderLab student notebooks for Grade 6 math. These are premium TPT products.
+
+SLIDE CONTENT:
+${slideText}
+
+${ACTIVITY_LIBRARY}
+
+DESIGN STANDARDS:
+- These notebooks must be at Anthropic/flagship TPT quality — not generic fill-in-the-blank
+- Every activity must be GENUINELY INTERACTIVE and specific to THIS lesson's content
+- Problems must come from the slides or be direct mathematical extensions — never invented
+- Scaffolding must decrease across Guided → Collaborative → Independent (gradual release)
+- TWR frames must use THIS lesson's specific vocabulary, scenarios, and concepts
+- Exit tickets must show clear DOK 1→2→3 progression using THIS lesson's content
+- Activities must be chosen because they are the BEST possible fit for this exact lesson
+
+ACTIVITY SELECTION RULES:
+- Select 2-3 activities per session from the activity library
+- Each activity must be a genuinely different format (no two sorting activities in a row)
+- Activity content must come from the actual lesson slides
+- For realworld lessons: prioritize scenario_analysis_cards, math_connections, would_you_rather
+- For equation lessons: prioritize table_equation_match, error_analysis, equation_builder, build_the_table
+- For geometry lessons: prioritize build_a_model, frayer_model, error_detective, label-based activities
+- For statistics lessons: prioritize annotate_analyze, representation_sort, build_the_table
+- For ratio lessons: prioritize rate_comparison_sort, representation_matching, scenario_equation_match
+
+Return ONLY valid JSON:
+
+{
+  "lesson_title": "exact title",
+  "lesson_type": "equation|ratio|geometry|statistics|realworld|number|general",
+  "detected_standard": "e.g. 6.EE.C.9",
+  "unit": "unit number",
+  "lesson_number": "lesson number",
+  "learning_targets": ["I can...", "I can..."],
+  "session1": {
+    "title": "Session 1 title",
+    "scenario": "exact scenario from slides",
+    "key_concept": "core mathematical idea, student-friendly",
+    "vocabulary": [
+      {"en": "exact term", "es": "término", "definition": "definition in 8 words max"},
+      {"en": "term2", "es": "t2", "definition": "d2"},
+      {"en": "term3", "es": "t3", "definition": "d3"},
+      {"en": "term4", "es": "t4", "definition": "d4"}
+    ],
+    "notice_prompt": "specific NOTICE starter using actual lesson content and variable names",
+    "wonder_prompt": "specific WONDER starter using actual lesson content",
+    "twr_stem": "TWR sentence stem using THIS lesson's exact vocabulary",
+    "guided_problem_1": "problem pulled directly from slides",
+    "guided_problem_2": "direct extension of slide content with partial scaffold",
+    "collab_task": "partner task using lesson scenario",
+    "discussion_q1": "specific discussion question using lesson content",
+    "discussion_q2": "specific discussion question pushing deeper thinking",
+    "discussion_q3": "discussion question requiring justification",
+    "ip_p1": "Independent Practice P1 DOK 1-2 — lesson content",
+    "ip_p2": "IP P2 DOK 2 — requires explanation",
+    "ip_p3": "IP P3 DOK 2-3 — transfer or justify",
+    "activities": [
+      {
+        "type": "activity_type_from_library",
+        "title": "Specific engaging title for this activity",
+        "instruction": "Specific instruction for students (not generic)",
+        "items": ["specific item 1 from lesson", "item 2", "item 3", "item 4", "item 5", "item 6"],
+        "categories": ["Category A label", "Category B label"],
+        "category_a_items": ["items that belong in A"],
+        "category_b_items": ["items that belong in B"],
+        "answer_revealed": false,
+        "extra": "any additional specific content needed for this activity"
+      },
+      {
+        "type": "second_activity_type",
+        "title": "Title",
+        "instruction": "Instruction",
+        "items": ["item1","item2","item3","item4"],
+        "categories": ["Cat A","Cat B"],
+        "category_a_items": [],
+        "category_b_items": [],
+        "answer_revealed": false,
+        "extra": ""
+      }
+    ],
+    "twr_frame1": "CLAIM: specific claim frame using lesson vocabulary",
+    "twr_frame2": "EVIDENCE: specific evidence frame referencing lesson data/table",
+    "twr_frame3": "REASONING: specific reasoning frame using lesson concept",
+    "twr_frame4": "REAL-WORLD: connect lesson math to real life using specific lesson context",
+    "et_tier1": "DOK 1 exit ticket — identify or recall using lesson content",
+    "et_tier2": "DOK 2 exit ticket — apply and explain using lesson scenario",
+    "et_tier3": "DOK 3 exit ticket — justify or transfer using lesson content"
+  },
+  "session2": {
+    "title": "Session 2 title",
+    "scenario": "Session 2 scenario",
+    "key_concept": "Session 2 core concept",
+    "vocabulary": [{"en":"t","es":"t","definition":"d"},{"en":"t2","es":"t2","definition":"d2"},{"en":"t3","es":"t3","definition":"d3"},{"en":"t4","es":"t4","definition":"d4"}],
+    "notice_prompt": "S2 notice — may reference S1 data or table",
+    "wonder_prompt": "S2 wonder",
+    "twr_stem": "S2 TWR stem",
+    "guided_problem_1": "S2 GP1",
+    "guided_problem_2": "S2 GP2",
+    "collab_task": "S2 collab task",
+    "discussion_q1": "S2 DQ1",
+    "discussion_q2": "S2 DQ2",
+    "discussion_q3": "How does Session 2 compare to or build on Session 1?",
+    "ip_p1": "S2 IP P1",
+    "ip_p2": "S2 IP P2",
+    "ip_p3": "S2 IP P3 — must reference both sessions",
+    "activities": [
+      {
+        "type": "activity_type",
+        "title": "Title",
+        "instruction": "Instruction",
+        "items": ["i1","i2","i3","i4","i5","i6"],
+        "categories": ["Cat A","Cat B"],
+        "category_a_items": [],
+        "category_b_items": [],
+        "answer_revealed": false,
+        "extra": ""
+      },
+      {
+        "type": "second_type",
+        "title": "Title",
+        "instruction": "Instruction",
+        "items": ["i1","i2","i3","i4"],
+        "categories": ["A","B"],
+        "category_a_items": [],
+        "category_b_items": [],
+        "answer_revealed": false,
+        "extra": ""
+      }
+    ],
+    "twr_frame1": "S2 CLAIM frame",
+    "twr_frame2": "S2 EVIDENCE frame referencing S2 data",
+    "twr_frame3": "S2 REASONING frame",
+    "twr_frame4": "COMPARE: Session 1 showed ___ while Session 2 shows ___ because ___.",
+    "et_tier1": "S2 DOK 1",
+    "et_tier2": "S2 DOK 2",
+    "et_tier3": "S2 DOK 3 — must reference BOTH sessions"
+  }
+}`;
+}
+
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1).replace(/_/g,' '):''}
+
+function renderPreview(plan){
+  const panel=document.getElementById('preview-panel');
+  panel.classList.add('show');
+  document.getElementById('prev-title').textContent=plan.lesson_title||'Notebook Plan';
+  document.getElementById('prev-meta').innerHTML=
+    `<strong>Type:</strong> ${cap(plan.lesson_type)} &nbsp;·&nbsp; <strong>Standard:</strong> ${plan.detected_standard||'Grade 6'}<br>`+
+    `<strong>Targets:</strong> ${(plan.learning_targets||[]).join(' · ')}`;
+  ['s1','s2'].forEach(s=>{
+    const sd=plan[s==='s1'?'session1':'session2'];
+    const grid=document.getElementById(s+'-prev');
+    grid.innerHTML='';
+    const baseSlides=[
+      {n:1,t:'Cover',d:'Title · Objectives · Before/After'},
+      {n:2,t:'Notice & Wonder',d:'Stimulus · NOTICE/WONDER · TWR'},
+      {n:3,t:'Vocabulary',d:'4 terms · EN+ES · Frayer-style'},
+      {n:4,t:'Guided Practice',d:'2 scaffolded problems'},
+      {n:5,t:'Collaborative Practice',d:'Partner task · Discussion Qs'},
+      {n:6,t:'Independent Practice',d:'P1 · P2 · P3 (DOK 1→3)'},
+    ];
+    const activities=(sd?.activities||[]);
+    activities.forEach((a,i)=>{
+      baseSlides.push({n:7+i,t:a.title||cap(a.type),d:cap(a.type),isActivity:true});
+    });
+    const afterAct=7+activities.length;
+    baseSlides.push({n:afterAct,t:'TWR Frame',d:'4 reasoning frames'});
+    baseSlides.push({n:afterAct+1,t:'Exit Ticket',d:'3 tiers · DOK 1–3'});
+    baseSlides.push({n:afterAct+2,t:'Goal Tracker',d:'1–4 scale · reflection'});
+    document.getElementById(s+'-count').textContent=`· ${baseSlides.length} slides`;
+    baseSlides.forEach(sl=>{
+      const div=document.createElement('div');
+      div.className='sc'+(sl.isActivity?' activity':'');
+      div.innerHTML=`<div class="sc-n">Slide ${sl.n}</div><div class="sc-t">${sl.t}</div><div class="sc-d">${sl.d}</div>`;
+      grid.appendChild(div);
+    });
+  });
+}
+
+// ══ PPTX HELPERS ═══════════════════════════════════════════════════════════
+function ms(){return{type:'outer',color:'000000',opacity:0.07,blur:5,offset:2,angle:135};}
+function ms2(){return{type:'outer',color:'000000',opacity:0.13,blur:8,offset:3,angle:135};}
+
+function hdr(slide,pres,session,title,subtitle){
+  const ac=session==='s1'?NB.navy:NB.purple;
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:0.68,fill:{color:ac},line:{color:ac}});
+  // Decorative stripe
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:0.28,h:0.68,fill:{color:NB.teal},line:{color:NB.teal}});
+  slide.addText(title,{x:0.44,y:0,w:8.1,h:0.68,fontSize:15,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+  const std=(_plan?.detected_standard||'Grade 6');
+  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:8.72,y:0.12,w:1.12,h:0.42,fill:{color:NB.teal},line:{color:NB.teal},rectRadius:0.05});
+  slide.addText(std,{x:8.72,y:0.12,w:1.12,h:0.42,fontSize:7.5,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+  if(subtitle) slide.addText(subtitle,{x:0.44,y:0.68,w:9.4,h:0.26,fontSize:9,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
+}
+
+function ftr(slide,pres,n){
+  const std=_plan?.detected_standard||'Grade 6';
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:10,h:0.325,fill:{color:NB.navy,transparency:94},line:{color:NB.border}});
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:0.28,h:0.325,fill:{color:NB.teal,transparency:60},line:{color:NB.teal,transparency:60}});
+  slide.addText(`EduWonderLab © · ${std} · Neft.Alba`,{x:0.36,y:5.3,w:7.5,h:0.325,fontSize:7.5,color:NB.muted,fontFace:'Calibri',valign:'middle',margin:0});
+  slide.addText(String(n),{x:9.55,y:5.3,w:0.35,h:0.325,fontSize:7.5,color:NB.muted,fontFace:'Calibri',align:'right',valign:'middle',margin:0});
+}
+
+function wl(slide,pres,x,y,w,n,lh=0.27){
+  for(let i=0;i<n;i++) slide.addShape(pres.shapes.LINE,{x,y:y+i*lh,w,h:0,line:{color:NB.writeLine,width:0.9}});
+}
+
+function coloredCard(slide,pres,x,y,w,h,fill,lineColor,opts={}){
+  slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h,fill:{color:fill||NB.white},line:{color:lineColor||NB.border},shadow:opts.shadow!==false?ms():undefined});
+  if(opts.topBar) slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:opts.topBar,fill:{color:opts.topBarColor||NB.teal},line:{color:opts.topBarColor||NB.teal}});
+  if(opts.leftBar) slide.addShape(pres.shapes.RECTANGLE,{x,y,w:opts.leftBar,h,fill:{color:opts.leftBarColor||NB.teal},line:{color:opts.leftBarColor||NB.teal}});
+}
+
+function sectionLabel(slide,pres,x,y,label,color){
+  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x,y,w:label.length*0.085+0.24,h:0.24,fill:{color:color||NB.teal,transparency:85},line:{color:color||NB.teal,transparency:40},rectRadius:0.04});
+  slide.addText(label,{x:x+0.08,y,w:label.length*0.085+0.1,h:0.24,fontSize:7.5,bold:true,color:color||NB.teal,fontFace:'Calibri',valign:'middle',charSpacing:1,margin:0});
+}
+
+function numBadge(slide,pres,x,y,num,color){
+  slide.addShape(pres.shapes.OVAL,{x,y,w:0.32,h:0.32,fill:{color:color||NB.teal},line:{color:color||NB.teal}});
+  slide.addText(String(num),{x,y,w:0.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+}
+
+// ══ SLIDE 1: COVER ══════════════════════════════════════════════════════════
+function buildCover(pres,session,plan){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  const sLabel=session==='s1'?'Session 1':'Session 2';
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,`${plan.lesson_title||'Lesson'} · ${sLabel}`,sd.scenario||'');
+
+  // Left accent stripe
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0.68,w:0.28,h:4.62,fill:{color:NB.teal,transparency:70},line:{color:NB.teal,transparency:70}});
+
+  // Title block with decorative element
+  slide.addText('Student Notebook',{x:0.48,y:0.82,w:7,h:0.48,fontSize:24,bold:true,color:ac,fontFace:'Calibri',margin:0});
+  slide.addText(sd.key_concept||'',{x:0.48,y:1.28,w:9.1,h:0.32,fontSize:11,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+
+  // Session badge
+  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:7.6,y:0.82,w:2.1,h:0.72,fill:{color:ac,transparency:88},line:{color:ac},rectRadius:0.08});
+  slide.addText(sLabel,{x:7.6,y:0.82,w:2.1,h:0.36,fontSize:10,bold:true,color:ac,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+  slide.addText(plan.unit?`Unit ${plan.unit} · Lesson ${plan.lesson_number||''}`:plan.detected_standard||'',{x:7.6,y:1.18,w:2.1,h:0.36,fontSize:8.5,color:NB.muted,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+
+  // Before/After checkboxes
+  coloredCard(slide,pres,0.48,1.7,3.5,0.58,NB.cardBlue,NB.border);
+  slide.addText([
+    {text:'☐',options:{color:NB.teal,bold:true,fontSize:12}},
+    {text:'  Before   ',options:{color:NB.muted,fontSize:10}},
+    {text:'☐',options:{color:NB.teal,bold:true,fontSize:12}},
+    {text:'  After',options:{color:NB.muted,fontSize:10}}
+  ],{x:0.64,y:1.7,w:3.2,h:0.58,valign:'middle',fontFace:'Calibri',margin:0});
+
+  // Objectives card — premium layout
+  coloredCard(slide,pres,0.48,2.38,9.2,1.56,NB.cardCream,NB.border,{topBar:0.32,topBarColor:ac});
+  slide.addShape(pres.shapes.RECTANGLE,{x:0.48,y:2.38,w:0.1,h:1.56,fill:{color:NB.teal},line:{color:NB.teal}});
+  slide.addText('LEARNING TARGETS',{x:0.68,y:2.38,w:8.8,h:0.32,fontSize:8,bold:true,color:NB.white,fontFace:'Calibri',charSpacing:2,valign:'middle',margin:0});
+  (plan.learning_targets||['I can...']).slice(0,3).forEach((t,i)=>{
+    slide.addShape(pres.shapes.OVAL,{x:0.68,y:2.74+i*0.36,w:0.22,h:0.22,fill:{color:NB.teal},line:{color:NB.teal}});
+    slide.addText(t,{x:1.0,y:2.72+i*0.36,w:8.5,h:0.32,fontSize:10,color:NB.body,fontFace:'Calibri',margin:0});
+  });
+
+  // What's Inside — icon-style list
+  sectionLabel(slide,pres,0.48,4.06,"WHAT'S INSIDE",NB.muted);
+  const acts=(plan.session1?.activities||[]).map(a=>a.title||cap(a.type));
+  const secs=['Notice & Wonder','Vocabulary','Guided Practice','Collab Practice','Independent Practice',...acts,'TWR Frame','Exit Ticket','Goal Tracker'];
+  const iw=9.2/3;
+  secs.slice(0,9).forEach((sec,i)=>{
+    slide.addText([
+      {text:'▸ ',options:{color:NB.teal,bold:true,fontSize:8.5}},
+      {text:sec,options:{color:NB.body,fontSize:8.5}}
+    ],{x:0.48+(i%3)*iw,y:4.32+(Math.floor(i/3))*0.22,w:iw,h:0.22,fontFace:'Calibri',margin:0});
+  });
+
+  // ToU
+  slide.addText('For classroom use only. Not for redistribution. © EduWonderLab',{x:0.48,y:4.98,w:9.2,h:0.2,fontSize:7,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
+
+  ftr(slide,pres,1);
+}
+
+// ══ SLIDE 2: NOTICE & WONDER ═══════════════════════════════════════════════
+function buildNoticeWonder(pres,session,plan){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const s1d=plan.session1;
+  const isS2=session==='s2';
+  const ac=session==='s1'?NB.navy:NB.purple;
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Notice & Wonder',null);
+
+  const topY=0.8,cH=4.24;
+
+  // Left panel
+  coloredCard(slide,pres,0.2,topY,4.55,cH,isS2?NB.cardBlue:NB.cardGray,NB.border);
+  if(!isS2){
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY,w:4.55,h:0.3,fill:{color:NB.navy,transparency:85},line:{color:NB.border}});
+    slide.addText('📸  Lesson Image',{x:0.3,y:topY,w:4.35,h:0.3,fontSize:8.5,color:NB.navy,fontFace:'Calibri',bold:true,valign:'middle',margin:0});
+    slide.addText('[ Lesson Image / Stimulus ]',{x:0.2,y:topY+0.3,w:4.55,h:cH-0.62,fontSize:10,color:NB.muted,fontFace:'Calibri',align:'center',valign:'middle',italic:true,margin:0});
+    slide.addText('What do you notice? What do you wonder?',{x:0.28,y:topY+cH-0.3,w:4.38,h:0.26,fontSize:8,italic:true,color:NB.muted,fontFace:'Calibri',align:'center',margin:0});
+  } else {
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY,w:4.55,h:0.32,fill:{color:NB.purple},line:{color:NB.purple}});
+    slide.addText('📋  Session 1 — Reference',{x:0.32,y:topY,w:4.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY+0.32,w:4.55,h:0.04,fill:{color:NB.teal},line:{color:NB.teal}});
+    slide.addText(s1d.key_concept||'',{x:0.32,y:topY+0.42,w:4.3,h:0.38,fontSize:9.5,bold:true,italic:true,color:NB.teal,fontFace:'Calibri',margin:0});
+    slide.addText(s1d.scenario||'',{x:0.32,y:topY+0.84,w:4.3,h:0.52,fontSize:9,color:NB.body,fontFace:'Calibri',margin:0});
+    // Mini vocab list
+    sectionLabel(slide,pres,0.32,topY+1.42,'KEY TERMS',NB.teal);
+    (s1d.vocabulary||[]).slice(0,3).forEach((v,i)=>{
+      slide.addShape(pres.shapes.OVAL,{x:0.32,y:topY+1.74+i*0.3,w:0.16,h:0.16,fill:{color:NB.teal},line:{color:NB.teal}});
+      slide.addText([{text:v.en+': ',options:{bold:true,color:NB.navy,fontSize:9}},{text:v.definition||'',options:{color:NB.body,fontSize:9}}],{x:0.56,y:topY+1.68+i*0.3,w:4.08,h:0.28,fontFace:'Calibri',margin:0});
+    });
+    wl(slide,pres,0.32,topY+2.7,4.28,5,0.3);
+  }
+
+  // NOTICE card — premium
+  const rX=5.0,cardW=4.8,nH=(cH-0.14)/2;
+  coloredCard(slide,pres,rX,topY,cardW,nH,NB.white,NB.teal,{topBar:0.32,topBarColor:NB.teal});
+  slide.addText('👁  NOTICE',{x:rX+0.12,y:topY,w:cardW-0.18,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+  sectionLabel(slide,pres,rX+0.14,topY+0.38,'I NOTICE THAT...',NB.teal);
+  slide.addText(sd.notice_prompt||'I notice that ___ and ___.', {x:rX+0.14,y:topY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+  wl(slide,pres,rX+0.14,topY+1.12,cardW-0.24,3,0.25);
+
+  // WONDER card
+  const wY=topY+nH+0.14;
+  coloredCard(slide,pres,rX,wY,cardW,nH,NB.white,ac,{topBar:0.32,topBarColor:ac});
+  slide.addText('💭  WONDER',{x:rX+0.12,y:wY,w:cardW-0.18,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+  sectionLabel(slide,pres,rX+0.14,wY+0.38,'I WONDER IF...',ac);
+  const wonderTxt=isS2?'I wonder how this connects to Session 1 because ___.':(sd.wonder_prompt||'I wonder if ___ because ___.');
+  slide.addText(wonderTxt,{x:rX+0.14,y:wY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+  wl(slide,pres,rX+0.14,wY+1.12,cardW-0.24,3,0.25);
+
+  // TWR strip — premium
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.0,w:10,h:0.28,fill:{color:NB.cardCream},line:{color:NB.border}});
+  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.0,w:0.28,h:0.28,fill:{color:NB.gold},line:{color:NB.gold}});
+  slide.addText([
+    {text:'✏ TWR: ',options:{bold:true,color:NB.gold,fontSize:8.5}},
+    {text:sd.twr_stem||'The ___ depends on ___ because ___.',options:{color:NB.body,fontSize:8.5,italic:true}}
+  ],{x:0.38,y:5.0,w:9.5,h:0.28,fontFace:'Calibri',valign:'middle',margin:0});
+
+  ftr(slide,pres,2);
+}
+
+// ══ SLIDE 3: VOCABULARY ════════════════════════════════════════════════════
+function buildVocab(pres,session,plan){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Vocabulary','Academic Language for This Lesson');
+
+  const vocab=(sd.vocabulary||[]).slice(0,4);
+  while(vocab.length<4) vocab.push({en:'—',es:'—',definition:'—'});
+
+  // Premium Frayer-inspired 4-card layout
+  const fills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust];
+  const bars=[NB.teal,NB.gold,NB.sage,NB.rust];
+  const cW=4.52,cH=1.88,gX=0.32,sX=0.24,sY=0.9,gY=0.2;
+
+  vocab.forEach((t,i)=>{
+    const col=i%2,row=Math.floor(i/2);
+    const cx=sX+col*(cW+gX),cy=sY+row*(cH+gY);
+    coloredCard(slide,pres,cx,cy,cW,cH,fills[i],NB.border,{topBar:0.32,topBarColor:bars[i]});
+    // Number badge
+    slide.addShape(pres.shapes.OVAL,{x:cx+0.12,y:cy,w:0.32,h:0.32,fill:{color:NB.white,transparency:40},line:{color:NB.white}});
+    slide.addText(String(i+1),{x:cx+0.12,y:cy,w:0.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    // EN term — large, bold
+    slide.addText(t.en||'',{x:cx+0.54,y:cy+0.04,w:cW-0.66,h:0.28,fontSize:12,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+    // ES translation with flag emoji
+    slide.addText('🇪🇸 '+( t.es||''),{x:cx+0.14,y:cy+0.38,w:cW-0.24,h:0.22,fontSize:9.5,italic:true,color:NB.muted,fontFace:'Calibri',margin:0});
+    // Definition line
+    if(t.definition && t.definition!=='—'){
+      slide.addShape(pres.shapes.RECTANGLE,{x:cx+0.14,y:cy+0.62,w:cW-0.24,h:0.26,fill:{color:NB.white,transparency:50},line:{color:NB.border,transparency:40}});
+      slide.addText(t.definition,{x:cx+0.2,y:cy+0.62,w:cW-0.32,h:0.26,fontSize:9,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+    } else {
+      sectionLabel(slide,pres,cx+0.14,cy+0.62,'DEFINITION',bars[i]);
+    }
+    // Write lines for student notes
+    wl(slide,pres,cx+0.14,cy+0.96,cW-0.24,3,0.29);
+  });
+
+  ftr(slide,pres,3);
+}
+
+// ══ SLIDE 4: GUIDED PRACTICE ═══════════════════════════════════════════════
+function buildGuided(pres,session,plan){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Guided Practice','Work with your teacher · '+sd.scenario);
+
+  // Scenario banner — premium
+  coloredCard(slide,pres,0.2,0.86,9.6,0.58,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
+  sectionLabel(slide,pres,0.38,0.9,'SCENARIO',NB.teal);
+  slide.addText(sd.scenario||'',{x:1.24,y:0.86,w:8.42,h:0.58,fontSize:9.5,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+
+  // Problem 1 — scaffolded
+  const p1Y=1.54;
+  coloredCard(slide,pres,0.2,p1Y,9.6,1.48,NB.white,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
+  numBadge(slide,pres,0.3,p1Y+0.1,1,NB.teal);
+  sectionLabel(slide,pres,0.74,p1Y+0.06,'WE DO',NB.teal);
+  slide.addText(sd.guided_problem_1||'',{x:0.38,y:p1Y+0.36,w:9.3,h:0.44,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
+  // Scaffold hint box
+  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:0.38,y:p1Y+0.84,w:3.5,h:0.56,fill:{color:NB.cardSage,transparency:30},line:{color:NB.sage,transparency:50},rectRadius:0.05});
+  slide.addText('💡 Think: ',{x:0.5,y:p1Y+0.88,w:3.26,h:0.22,fontSize:8.5,bold:true,color:NB.sage,fontFace:'Calibri',margin:0});
+  slide.addText('What information do I have? What am I finding?',{x:0.5,y:p1Y+1.08,w:3.26,h:0.22,fontSize:8,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
+  wl(slide,pres,4.08,p1Y+0.88,5.6,2,0.28);
+
+  // Problem 2 — partial scaffold
+  const p2Y=3.1;
+  coloredCard(slide,pres,0.2,p2Y,9.6,1.52,NB.white,NB.border,{leftBar:0.08,leftBarColor:ac});
+  numBadge(slide,pres,0.3,p2Y+0.1,2,ac);
+  sectionLabel(slide,pres,0.74,p2Y+0.06,'TRY IT',ac);
+  slide.addText(sd.guided_problem_2||'',{x:0.38,y:p2Y+0.36,w:9.3,h:0.44,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
+  wl(slide,pres,0.38,p2Y+0.86,9.3,2,0.3);
+
+  ftr(slide,pres,4);
+}
+
+// ══ SLIDE 5: COLLABORATIVE PRACTICE ════════════════════════════════════════
+function buildCollab(pres,session,plan){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Collaborative Practice','Work with a partner');
+
+  // Partner task header
+  coloredCard(slide,pres,0.2,0.86,9.6,0.58,NB.cardSage,NB.border,{leftBar:0.08,leftBarColor:NB.sage});
+  sectionLabel(slide,pres,0.38,0.9,'PARTNER TASK',NB.sage);
+  slide.addText(sd.collab_task||'',{x:1.38,y:0.86,w:8.28,h:0.58,fontSize:9.5,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+
+  // Discussion questions — 3-card layout
+  const colors=[NB.teal,ac,NB.gold];
+  const fills=[NB.cardBlue,NB.cardCream,NB.cardRust];
+  const qs=[sd.discussion_q1,sd.discussion_q2,sd.discussion_q3||'How does this connect to what you already know?'];
+
+  // Header bar for questions section
+  slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.54,w:9.6,h:0.3,fill:{color:ac},line:{color:ac}});
+  slide.addText('💬  Discussion Questions',{x:0.36,y:1.54,w:9.3,h:0.3,fontSize:9.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+
+  qs.slice(0,3).forEach((q,i)=>{
+    const qY=1.92+i*1.0;
+    coloredCard(slide,pres,0.2,qY,9.6,0.9,fills[i],colors[i],{leftBar:0.08,leftBarColor:colors[i]});
+    numBadge(slide,pres,0.3,qY+0.08,i+1,colors[i]);
+    slide.addText(q||'',{x:0.74,y:qY+0.06,w:8.94,h:0.32,fontSize:9.5,bold:true,color:NB.body,fontFace:'Calibri',margin:0});
+    wl(slide,pres,0.74,qY+0.44,8.94,2,0.24);
+  });
+
+  ftr(slide,pres,5);
+}
+
+// ══ SLIDE 6: INDEPENDENT PRACTICE ══════════════════════════════════════════
+function buildIndependent(pres,session,plan){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  const isS2=session==='s2';
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Independent Practice','Show what you know · No help needed');
+
+  const problems=[
+    {num:'P1',label:'APPLY',text:sd.ip_p1||'',bar:NB.teal,fill:NB.cardBlue,dok:'DOK 1–2'},
+    {num:'P2',label:'EXPLAIN',text:sd.ip_p2||'',bar:ac,fill:NB.cardCream,dok:'DOK 2'},
+    {num:'P3',label:isS2?'CONNECT':'JUSTIFY',text:sd.ip_p3||'',bar:NB.gold,fill:NB.cardRust,dok:'DOK 2–3'}
+  ];
+
+  const pX=0.2,pW=9.6,pH=1.38,pG=0.1,pSY=0.86;
+  problems.forEach((p,i)=>{
+    const py=pSY+i*(pH+pG);
+    coloredCard(slide,pres,pX,py,pW,pH,p.fill,p.bar,{leftBar:0.08,leftBarColor:p.bar});
+    numBadge(slide,pres,pX+0.18,py+0.08,p.num,p.bar);
+    sectionLabel(slide,pres,pX+0.62,py+0.06,p.label,p.bar);
+    // DOK badge
+    slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:pX+pW-1.1,y:py+0.06,w:0.9,h:0.22,fill:{color:p.bar,transparency:80},line:{color:p.bar,transparency:50},rectRadius:0.04});
+    slide.addText(p.dok,{x:pX+pW-1.1,y:py+0.06,w:0.9,h:0.22,fontSize:7,bold:true,color:p.bar,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addText(p.text,{x:pX+0.38,y:py+0.36,w:pW-0.52,h:0.46,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
+    wl(slide,pres,pX+0.24,py+0.88,pW-0.36,2,0.27);
+  });
+
+  ftr(slide,pres,6);
+}
+
+// ══ ACTIVITY SLIDES (adaptive, from library) ═══════════════════════════════
+function buildActivitySlide(pres,session,plan,activityData,slideNum){
+  const slide=pres.addSlide();
+  const ac=session==='s1'?NB.navy:NB.purple;
+  const sd=plan[session==='s1'?'session1':'session2'];
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,activityData.title||cap(activityData.type),'');
+
+  // Instruction banner
+  coloredCard(slide,pres,0.2,0.86,9.6,0.5,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.gold});
+  slide.addText([
+    {text:'📋 ',options:{fontSize:9.5}},
+    {text:activityData.instruction||'Complete the activity below.',options:{color:NB.body,fontSize:9.5,italic:true}}
+  ],{x:0.38,y:0.86,w:9.3,h:0.5,fontFace:'Calibri',valign:'middle',margin:0});
+
+  const at=activityData.type||'extend_apply';
+  const items=activityData.items||[];
+  const cats=activityData.categories||['Category A','Category B'];
+
+  // ── SORTING ACTIVITIES ──
+  if(['card_sort','drag_sort_categorization','true_false_sort','proportional_sort',
+      'equation_expression_sort','always_sometimes_never','increasing_decreasing_sort',
+      'term_classification_sort','problem_type_sort','strategy_sort','representation_sort'].includes(at)){
+
+    const col1Label=cats[0]||'Category A';
+    const col2Label=cats[1]||'Category B';
+    const hasThree=cats[2];
+    const colW=hasThree?3.0:4.6;
+    const colPositions=hasThree?[0.2,3.4,6.6]:[0.2,5.12];
+    const colColors=[NB.teal,ac,NB.gold];
+
+    colPositions.forEach((cx,i)=>{
+      coloredCard(slide,pres,cx,1.44,colW,2.8,NB.white,colColors[i],{topBar:0.34,topBarColor:colColors[i]});
+      slide.addText(cats[i]||`Category ${i+1}`,{x:cx+0.1,y:1.44,w:colW-0.16,h:0.34,fontSize:8.5,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:0.5,margin:0});
+      for(let r=0;r<4;r++){
+        slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:cx+0.14,y:1.86+r*0.54,w:colW-0.24,h:0.46,fill:{color:NB.cardGray,transparency:30},line:{color:NB.border,dashType:'dash'},rectRadius:0.04});
+      }
+    });
+
+    // Cards to cut
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:4.32,w:9.6,h:0.22,fill:{color:NB.navy,transparency:92},line:{color:NB.border}});
+    slide.addText('✂  Cut out and sort these cards:',{x:0.32,y:4.32,w:9.4,h:0.22,fontSize:8,color:NB.muted,italic:true,fontFace:'Calibri',valign:'middle',margin:0});
+    const cFills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust,NB.cardBlue,NB.cardCream];
+    items.slice(0,6).forEach((item,i)=>{
+      const cx2=0.2+i*(1.58);if(cx2+1.5>9.82)return;
+      coloredCard(slide,pres,cx2,4.6,1.5,0.44,cFills[i],NB.border,{topBar:0.06,topBarColor:colColors[i%colColors.length]});
+      slide.addText(item,{x:cx2+0.06,y:4.6,w:1.38,h:0.44,fontSize:8.5,color:NB.body,fontFace:'Calibri',align:'center',valign:'middle',bold:true,margin:0});
+    });
+
+  // ── MATCHING ACTIVITIES ──
+  } else if(['matching_pairs','graph_scenario_match','table_equation_match','definition_match',
+             'word_problem_equation_match','visual_vocab_match','scenario_equation_match',
+             'representation_matching','model_equation_match','rate_situation_match'].includes(at)){
+
+    const leftItems=items.slice(0,4);
+    const rightItems=activityData.category_a_items?.length?activityData.category_a_items.slice(0,4):items.slice(4,8).length?items.slice(4,8):['Match A','Match B','Match C','Match D'];
+    const rH=0.72,startY=1.44;
+
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.38,w:4.55,h:0.3,fill:{color:NB.teal},line:{color:NB.teal}});
+    slide.addText(cats[0]||'Column A',{x:0.3,y:1.38,w:4.35,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addShape(pres.shapes.RECTANGLE,{x:5.05,y:1.38,w:4.75,h:0.3,fill:{color:ac},line:{color:ac}});
+    slide.addText(cats[1]||'Column B',{x:5.15,y:1.38,w:4.55,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+
+    leftItems.forEach((item,i)=>{
+      const iy=startY+0.3+i*(rH+0.1);
+      coloredCard(slide,pres,0.2,iy,4.55,rH,i%2===0?NB.cardBlue:NB.white,NB.teal,{leftBar:0.06,leftBarColor:NB.teal});
+      slide.addText(String.fromCharCode(65+i)+'.',{x:0.32,y:iy,w:0.3,h:rH,fontSize:11,bold:true,color:NB.teal,fontFace:'Calibri',valign:'middle',margin:0});
+      slide.addText(item,{x:0.64,y:iy+0.06,w:3.98,h:rH-0.1,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
+      coloredCard(slide,pres,5.05,iy,4.75,rH,i%2===0?NB.cardCream:NB.white,NB.border,{leftBar:0.06,leftBarColor:NB.border});
+      slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:5.15,y:iy+0.15,w:0.38,h:0.38,fill:{color:NB.cardGray},line:{color:NB.border},rectRadius:0.04});
+      slide.addText(rightItems[i]||'',{x:5.6,y:iy+0.06,w:4.08,h:rH-0.1,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
+    });
+
+  // ── GRAPHIC ORGANIZERS ──
+  } else if(['frayer_model','t_chart','venn_diagram','four_corners','kwl_chart','reasoning_ladder'].includes(at)){
+
+    if(at==='frayer_model'){
+      const centerLabel=items[0]||sd.key_concept||'Concept';
+      // Center diamond/label
+      coloredCard(slide,pres,3.5,2.0,3.0,1.2,NB.navy,NB.navy);
+      slide.addText(centerLabel,{x:3.5,y:2.0,w:3.0,h:1.2,fontSize:13,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      // 4 boxes
+      const boxes=[
+        {x:0.2,y:1.0,w:3.0,h:1.4,label:'DEFINITION',fill:NB.cardBlue,color:NB.teal},
+        {x:6.7,y:1.0,w:3.1,h:1.4,label:'CHARACTERISTICS',fill:NB.cardCream,color:NB.gold},
+        {x:0.2,y:2.78,w:3.0,h:1.4,label:'EXAMPLES',fill:NB.cardSage,color:NB.sage},
+        {x:6.7,y:2.78,w:3.1,h:1.4,label:'NON-EXAMPLES',fill:NB.cardRust,color:NB.rust}
+      ];
+      boxes.forEach(b=>{
+        coloredCard(slide,pres,b.x,b.y,b.w,b.h,b.fill,b.color,{topBar:0.28,topBarColor:b.color});
+        slide.addText(b.label,{x:b.x+0.1,y:b.y,w:b.w-0.16,h:0.28,fontSize:8,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:0.5,margin:0});
+        wl(slide,pres,b.x+0.14,b.y+0.36,b.w-0.24,3,0.33);
+      });
+    } else if(at==='t_chart'){
+      const col1=cats[0]||'Session 1';const col2=cats[1]||'Session 2';
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.38,w:4.65,h:0.34,fill:{color:NB.teal},line:{color:NB.teal}});
+      slide.addText(col1,{x:0.3,y:1.38,w:4.45,h:0.34,fontSize:10,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addShape(pres.shapes.RECTANGLE,{x:5.05,y:1.38,w:4.75,h:0.34,fill:{color:ac},line:{color:ac}});
+      slide.addText(col2,{x:5.15,y:1.38,w:4.55,h:0.34,fontSize:10,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      coloredCard(slide,pres,0.2,1.72,4.65,3.22,NB.cardBlue,NB.teal);
+      coloredCard(slide,pres,5.05,1.72,4.75,3.22,NB.cardCream,ac);
+      wl(slide,pres,0.36,2.0,4.32,8,0.3);
+      wl(slide,pres,5.2,2.0,4.44,8,0.3);
+    } else if(at==='reasoning_ladder'){
+      const steps=[
+        {label:'CLAIM',hint:'My claim is that...',color:NB.teal,fill:NB.cardBlue},
+        {label:'EVIDENCE',hint:'My evidence is... (from the lesson)',color:ac,fill:NB.cardCream},
+        {label:'REASONING',hint:'This evidence supports my claim because...',color:NB.gold,fill:NB.cardSage},
+        {label:'CONCLUSION',hint:'Therefore...',color:NB.rust,fill:NB.cardRust}
+      ];
+      steps.forEach((s,i)=>{
+        const sy=1.36+i*0.92;
+        coloredCard(slide,pres,0.2,sy,9.6,0.84,s.fill,s.color,{leftBar:0.08,leftBarColor:s.color});
+        sectionLabel(slide,pres,0.38,sy+0.06,s.label,s.color);
+        slide.addText(s.hint,{x:1.5,y:sy+0.04,w:8.0,h:0.26,fontSize:8.5,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
+        wl(slide,pres,0.38,sy+0.4,9.3,2,0.26);
+      });
+    } else {
+      // Generic graphic organizer fallback
+      const quadrants=[
+        {x:0.2,y:1.36,label:cats[0]||'Quadrant 1',fill:NB.cardBlue,color:NB.teal},
+        {x:5.06,y:1.36,label:cats[1]||'Quadrant 2',fill:NB.cardCream,color:NB.gold},
+        {x:0.2,y:3.14,label:items[0]||'Quadrant 3',fill:NB.cardSage,color:NB.sage},
+        {x:5.06,y:3.14,label:items[1]||'Quadrant 4',fill:NB.cardRust,color:NB.rust}
+      ];
+      quadrants.forEach(q=>{
+        coloredCard(slide,pres,q.x,q.y,4.6,1.6,q.fill,q.color,{topBar:0.3,topBarColor:q.color});
+        slide.addText(q.label,{x:q.x+0.1,y:q.y,w:4.4,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+        wl(slide,pres,q.x+0.14,q.y+0.42,4.32,4,0.28);
+      });
+    }
+
+  // ── ERROR ANALYSIS ──
+  } else if(['error_analysis','error_detective','missing_step_detective','peer_answer_check'].includes(at)){
+    const examples=items.slice(0,3);
+    while(examples.length<3) examples.push(`Student work ${examples.length+1}`);
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.38,w:9.6,h:0.28,fill:{color:NB.rust,transparency:85},line:{color:NB.rust}});
+    slide.addText('🔍  Find the error, explain it, and fix it.',{x:0.36,y:1.38,w:9.3,h:0.28,fontSize:8.5,color:NB.rust,fontFace:'Calibri',bold:true,valign:'middle',margin:0});
+    examples.forEach((ex,i)=>{
+      const ey=1.74+i*1.08;
+      coloredCard(slide,pres,0.2,ey,9.6,0.98,i%2===0?NB.cardBlue:NB.white,NB.border,{leftBar:0.08,leftBarColor:NB.rust});
+      slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:0.3,y:ey+0.08,w:0.82,h:0.3,fill:{color:NB.rust,transparency:85},line:{color:NB.rust},rectRadius:0.04});
+      slide.addText(`Case ${i+1}`,{x:0.3,y:ey+0.08,w:0.82,h:0.3,fontSize:7.5,bold:true,color:NB.rust,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText(ex,{x:1.24,y:ey+0.06,w:8.24,h:0.36,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
+      slide.addText('My explanation: ',{x:0.38,y:ey+0.52,w:2.5,h:0.22,fontSize:8.5,bold:true,color:NB.muted,fontFace:'Calibri',margin:0});
+      wl(slide,pres,1.86,ey+0.54,7.76,1,0);
+      slide.addText('Correction: ',{x:0.38,y:ey+0.74,w:2,h:0.22,fontSize:8.5,bold:true,color:NB.muted,fontFace:'Calibri',margin:0});
+      wl(slide,pres,1.36,ey+0.76,8.26,1,0);
+    });
+
+  // ── SCENARIO ANALYSIS ──
+  } else if(['scenario_analysis_cards','math_connections','real_world_scenario_match','build_a_story'].includes(at)){
+    const scenarios=items.slice(0,3);
+    while(scenarios.length<3) scenarios.push(`Scenario ${scenarios.length+1}`);
+    const sColors=[NB.teal,ac,NB.gold];
+    const sFills=[NB.cardBlue,NB.cardCream,NB.cardSage];
+    scenarios.forEach((sc,i)=>{
+      const sy=1.36+i*1.14;
+      coloredCard(slide,pres,0.2,sy,9.6,1.06,sFills[i],sColors[i],{leftBar:0.08,leftBarColor:sColors[i]});
+      numBadge(slide,pres,0.3,sy+0.08,i+1,sColors[i]);
+      sectionLabel(slide,pres,0.74,sy+0.06,`SITUATION ${i+1}`,sColors[i]);
+      slide.addText(sc,{x:0.38,y:sy+0.32,w:5.2,h:0.34,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+      slide.addText('The math here is: ',{x:5.68,y:sy+0.06,w:3.9,h:0.24,fontSize:8.5,bold:true,color:NB.muted,fontFace:'Calibri',margin:0});
+      wl(slide,pres,5.68,sy+0.34,3.9,2,0.28);
+    });
+
+  // ── WOULD YOU RATHER / DEBATE ──
+  } else if(['would_you_rather','mathematical_debate','convince_me'].includes(at)){
+    const opt1=items[0]||'Option A';
+    const opt2=items[1]||'Option B';
+    coloredCard(slide,pres,0.2,1.36,4.65,2.8,NB.cardBlue,NB.teal,{topBar:0.34,topBarColor:NB.teal});
+    slide.addText('OPTION A',{x:0.3,y:1.36,w:4.45,h:0.34,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
+    slide.addText(opt1,{x:0.34,y:1.78,w:4.38,h:0.68,fontSize:10,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+    sectionLabel(slide,pres,0.34,2.5,'MY REASONING',NB.teal);
+    wl(slide,pres,0.34,2.8,4.38,3,0.3);
+    coloredCard(slide,pres,5.1,1.36,4.7,2.8,NB.cardRust,ac,{topBar:0.34,topBarColor:ac});
+    slide.addText('OPTION B',{x:5.2,y:1.36,w:4.5,h:0.34,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
+    slide.addText(opt2,{x:5.24,y:1.78,w:4.38,h:0.68,fontSize:10,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+    sectionLabel(slide,pres,5.24,2.5,'MY REASONING',ac);
+    wl(slide,pres,5.24,2.8,4.38,3,0.3);
+    // I choose
+    coloredCard(slide,pres,0.2,4.24,9.6,0.7,NB.cardCream,NB.gold,{leftBar:0.08,leftBarColor:NB.gold});
+    slide.addText([{text:'⭐ I choose: ',options:{bold:true,color:NB.gold,fontSize:10}},{text:'Option ___ because ___.',options:{color:NB.body,fontSize:10,italic:true}}],{x:0.38,y:4.24,w:9.3,h:0.34,fontFace:'Calibri',valign:'middle',margin:0});
+    wl(slide,pres,0.38,4.62,9.3,1,0);
+
+  // ── BUILD / CONSTRUCT ──
+  } else if(['equation_builder','build_the_table','input_output_machine','build_the_rule',
+             'pattern_continuation','build_a_model','step_reconstruction'].includes(at)){
+    const buildItems=items.slice(0,6);
+    // Component cards to arrange
+    sectionLabel(slide,pres,0.22,1.38,'COMPONENTS — arrange these to build your answer',NB.teal);
+    const bFills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust,NB.cardBlue,NB.cardCream];
+    buildItems.forEach((item,i)=>{
+      const row=Math.floor(i/3),col=i%3;
+      const bx=0.2+col*3.26,by=1.68+row*0.72;
+      coloredCard(slide,pres,bx,by,3.1,0.62,bFills[i],NB.border,{topBar:0.06,topBarColor:NB.teal});
+      slide.addText(item,{x:bx+0.14,y:by,w:2.82,h:0.62,fontSize:9.5,color:NB.body,fontFace:'Calibri',align:'center',valign:'middle',bold:true,margin:0});
+    });
+    // Answer area
+    coloredCard(slide,pres,0.2,3.2,9.6,1.62,NB.cardCream,NB.gold,{topBar:0.3,topBarColor:NB.gold});
+    slide.addText('MY ANSWER',{x:0.3,y:3.2,w:9.4,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
+    wl(slide,pres,0.34,3.6,9.28,4,0.28);
+
+  // ── DEFAULT: EXTEND & APPLY ──
+  } else {
+    const extItems=items.slice(0,3);
+    const extColors=[NB.teal,ac,NB.gold];
+    const extFills=[NB.cardBlue,NB.cardCream,NB.cardSage];
+    extItems.forEach((item,i)=>{
+      const cy=1.36+i*1.14;
+      coloredCard(slide,pres,0.2,cy,9.6,1.06,extFills[i],extColors[i],{leftBar:0.08,leftBarColor:extColors[i]});
+      numBadge(slide,pres,0.3,cy+0.08,i+1,extColors[i]);
+      slide.addText(item,{x:0.74,y:cy+0.08,w:8.74,h:0.38,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+      wl(slide,pres,0.74,cy+0.54,8.74,2,0.26);
+    });
+  }
+
+  ftr(slide,pres,slideNum);
+}
+
+// ══ TWR FRAME ══════════════════════════════════════════════════════════════
+function buildTWR(pres,session,plan,slideNum){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  const isS2=session==='s2';
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Thinking · Writing · Reasoning','Use evidence from the lesson to support your thinking');
+
+  const frames=[
+    {label:'FRAME 1 — CLAIM',text:sd.twr_frame1||'My claim is that ___ because ___.', fill:NB.cardBlue,bar:NB.teal,icon:'💡'},
+    {label:'FRAME 2 — EVIDENCE',text:sd.twr_frame2||'My evidence is ___ which shows ___.', fill:NB.cardCream,bar:ac,icon:'📊'},
+    {label:'FRAME 3 — REASONING',text:sd.twr_frame3||'This makes sense because ___.', fill:NB.cardSage,bar:NB.sage,icon:'🔗'},
+    {label:isS2?'FRAME 4 — CONNECT SESSIONS ★':'FRAME 4 — REAL-WORLD',
+     text:sd.twr_frame4||'This connects to real life because ___.', fill:NB.cardRust,bar:NB.gold,icon:'🌍'}
+  ];
+
+  const fW=4.52,fH=1.46,fG=0.12,sX=0.22,sY=0.88;
+  frames.forEach((f,i)=>{
+    const col=i%2,row=Math.floor(i/2);
+    const fx=sX+col*(fW+fG),fy=sY+row*(fH+fG);
+    coloredCard(slide,pres,fx,fy,fW,fH,f.fill,f.bar,{topBar:0.3,topBarColor:f.bar,leftBar:0.08,leftBarColor:f.bar});
+    slide.addText(f.icon+'  '+f.label,{x:fx+0.12,y:fy,w:fW-0.18,h:0.3,fontSize:8.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+    slide.addText(f.text,{x:fx+0.14,y:fy+0.36,w:fW-0.22,h:0.52,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+    wl(slide,pres,fx+0.14,fy+0.96,fW-0.22,2,0.25);
+  });
+
+  ftr(slide,pres,slideNum);
+}
+
+// ══ EXIT TICKET ════════════════════════════════════════════════════════════
+function buildExitTicket(pres,session,plan,slideNum){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Exit Ticket','Choose your tier · Show your thinking · No help needed');
+
+  const tiers=[
+    {stars:'⭐',label:'Tier 1',sub:'DOK 1 — Recall & Identify',text:sd.et_tier1||'',bar:'4ade80',fill:NB.cardSage,lines:2},
+    {stars:'⭐⭐',label:'Tier 2',sub:'DOK 2 — Apply & Explain',text:sd.et_tier2||'',bar:NB.teal,fill:NB.cardBlue,lines:3},
+    {stars:'⭐⭐⭐',label:'Tier 3',sub:'DOK 3 — Justify & Transfer',text:sd.et_tier3||'',bar:ac,fill:NB.cardCream,lines:4}
+  ];
+
+  const tX=0.2,tW=9.6,tH=1.38,tG=0.08,tSY=0.88;
+  tiers.forEach((t,i)=>{
+    const ty=tSY+i*(tH+tG);
+    coloredCard(slide,pres,tX,ty,tW,tH,t.fill,t.bar,{leftBar:0.08,leftBarColor:t.bar});
+    // Stars + tier label
+    slide.addText(t.stars,{x:tX+0.2,y:ty+0.04,w:1.4,h:0.28,fontSize:10,fontFace:'Calibri',margin:0});
+    slide.addText(t.label,{x:tX+0.2,y:ty+0.3,w:2.6,h:0.24,fontSize:10,bold:true,color:t.bar,fontFace:'Calibri',margin:0});
+    slide.addText(t.sub,{x:tX+0.2,y:ty+0.54,w:2.6,h:0.2,fontSize:7.5,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
+    // Vertical divider
+    slide.addShape(pres.shapes.LINE,{x:tX+3.0,y:ty+0.1,w:0,h:tH-0.2,line:{color:NB.border,width:0.75}});
+    // Question
+    slide.addText(t.text,{x:tX+3.15,y:ty+0.05,w:tW-3.35,h:0.5,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+    wl(slide,pres,tX+3.15,ty+0.6,tW-3.32,t.lines,0.22);
+  });
+
+  ftr(slide,pres,slideNum);
+}
+
+// ══ GOAL TRACKER ═══════════════════════════════════════════════════════════
+function buildGoalTracker(pres,session,plan,slideNum){
+  const slide=pres.addSlide();
+  const sd=plan[session==='s1'?'session1':'session2'];
+  const ac=session==='s1'?NB.navy:NB.purple;
+  const isS2=session==='s2';
+  slide.background={color:NB.bg};
+  hdr(slide,pres,session,'Goal Tracker','Reflect on your learning today');
+
+  // Learning goal banner
+  coloredCard(slide,pres,0.2,0.88,9.6,0.56,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
+  sectionLabel(slide,pres,0.38,0.92,'LEARNING GOAL',NB.teal);
+  slide.addText((plan.learning_targets||['I can...'])[0],{x:1.44,y:0.88,w:8.24,h:0.56,fontSize:11,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+
+  // Rating scale — premium 4-card layout
+  const ratings=[
+    {num:'1',label:'Beginning',desc:'I need more help.',bar:'ef4444',fill:NB.cardRust},
+    {num:'2',label:'Developing',desc:'I understand a little.',bar:'f59e0b',fill:NB.cardCream},
+    {num:'3',label:'Meeting',desc:'I can do this.',bar:NB.teal,fill:NB.cardSage},
+    {num:'4',label:'Exceeding',desc:'I can teach others.',bar:ac,fill:NB.cardBlue}
+  ];
+  const rW=2.28,rH=1.62,rG=0.1,rY=1.54,rsX=0.2;
+  ratings.forEach((r,i)=>{
+    const rx=rsX+i*(rW+rG);
+    coloredCard(slide,pres,rx,rY,rW,rH,r.fill,r.bar,{topBar:0.5,topBarColor:r.bar});
+    // Big number
+    slide.addText(r.num,{x:rx+0.1,y:rY,w:0.48,h:0.5,fontSize:22,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+    slide.addText(r.label,{x:rx+0.6,y:rY+0.1,w:rW-0.66,h:0.3,fontSize:9.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
+    slide.addText(r.desc,{x:rx+0.12,y:rY+0.58,w:rW-0.2,h:0.38,fontSize:9,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
+    // Selection circle
+    slide.addShape(pres.shapes.OVAL,{x:rx+rW/2-0.26,y:rY+1.06,w:0.52,h:0.52,fill:{color:NB.white},line:{color:r.bar}});
+    slide.addText('Circle me!',{x:rx,y:rY+1.56,w:rW,h:0.18,fontSize:6.5,color:NB.muted,fontFace:'Calibri',align:'center',italic:true,margin:0});
+  });
+
+  // Reflection area
+  const refY=3.28;
+  sectionLabel(slide,pres,0.22,refY,'EXIT REFLECTION',ac);
+  const reflectText=isS2?
+    `Compare Session 1 and Session 2. What is similar? What is different? Use specific examples.`:
+    `One important thing I learned about ${sd.key_concept||'today\'s lesson'} is...`;
+  slide.addText(reflectText,{x:0.22,y:refY+0.28,w:9.6,h:0.32,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+  wl(slide,pres,0.22,refY+0.66,9.6,4,0.28);
+
+  // Before/After
+  coloredCard(slide,pres,0.22,4.95,6.5,0.3,NB.cardBlue,NB.border,{shadow:false});
+  slide.addText([
+    {text:'☐ Before  ',options:{color:NB.teal,fontSize:10.5,bold:true}},
+    {text:' I could do this.     ',options:{color:NB.muted,fontSize:10}},
+    {text:'☐ After  ',options:{color:NB.teal,fontSize:10.5,bold:true}},
+    {text:' I can do this!',options:{color:NB.muted,fontSize:10}}
+  ],{x:0.36,y:4.95,w:6.22,h:0.3,fontFace:'Calibri',valign:'middle',margin:0});
+
+  ftr(slide,pres,slideNum);
+}
+
+// ══ BUILD SESSION ══════════════════════════════════════════════════════════
+async function buildSession(session){
+  if(!AppState.getPlan()){toast('Upload a PPTX first','error');return;}
+  setStatus('Initializing...',5);
+  document.querySelectorAll('.gbtn').forEach(b=>b.disabled=true);
+  try{
+    const pres=new PptxGenJS();
+    pres.layout='LAYOUT_16x9';
+    pres.author='EduWonderLab · Neft.Alba';
+    pres.title=`${_plan.lesson_title||'Lesson'} — Session ${session[1]} Notebook`;
+
+    const sd=_plan[session==='s1'?'session1':'session2'];
+    const activities=sd.activities||[];
+
+    // Build fixed slides
+    const fixedSteps=[
+      ['Slide 1 — Cover',8,()=>buildCover(pres,session,_plan)],
+      ['Slide 2 — Notice & Wonder',16,()=>buildNoticeWonder(pres,session,_plan)],
+      ['Slide 3 — Vocabulary',24,()=>buildVocab(pres,session,_plan)],
+      ['Slide 4 — Guided Practice',34,()=>buildGuided(pres,session,_plan)],
+      ['Slide 5 — Collaborative Practice',44,()=>buildCollab(pres,session,_plan)],
+      ['Slide 6 — Independent Practice',54,()=>buildIndependent(pres,session,_plan)],
+    ];
+    for(const [label,pct,fn] of fixedSteps){
+      setStatus('Building '+label,pct);await tick();fn();
+    }
+
+    // Build adaptive activity slides
+    let slideNum=7;
+    for(let i=0;i<activities.length;i++){
+      const a=activities[i];
+      const pct=54+Math.round((i+1)/(activities.length+3)*30);
+      setStatus(`Building Slide ${slideNum} — ${a.title||cap(a.type)}`,pct);
+      await tick();
+      buildActivitySlide(pres,session,_plan,a,slideNum);
+      slideNum++;
+    }
+
+    // Build final slides
+    setStatus(`Building Slide ${slideNum} — TWR Frame`,84);await tick();
+    buildTWR(pres,session,_plan,slideNum);slideNum++;
+    setStatus(`Building Slide ${slideNum} — Exit Ticket`,91);await tick();
+    buildExitTicket(pres,session,_plan,slideNum);slideNum++;
+    setStatus(`Building Slide ${slideNum} — Goal Tracker`,96);await tick();
+    buildGoalTracker(pres,session,_plan,slideNum);
+
+    setStatus('Writing file...',98);await tick();
+    const title=(_plan.lesson_title||'Lesson').replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,24);
+    await pres.writeFile({fileName:`${title}_S${session[1]}_Notebook.pptx`});
+    setStatus(`✓ Session ${session[1]} — ${slideNum} slides downloaded!`,100,'done');
+    toast(`S${session[1]} notebook ready · ${slideNum} slides ✓`);
+  }catch(err){
+    console.error(err);
+    setStatus('Error: '+err.message,0,'err');
+    toast(err.message.slice(0,70),'error');
+  }finally{
+    document.querySelectorAll('.gbtn').forEach(b=>b.disabled=!_plan);
+  }
+}
+
+async function buildBoth(){
+  await buildSession('s1');
+  await new Promise(r=>setTimeout(r,700));
+  await buildSession('s2');
+}
+
+</script>
+</body>
+</html>
