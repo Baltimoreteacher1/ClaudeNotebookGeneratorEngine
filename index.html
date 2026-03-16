@@ -236,8 +236,6 @@ BEST FITS BY LESSON TYPE:
 `;
 
 // ══ GLOBALS ═══════════════════════════════════════════════════════════════
-let _key = '';
-let _plan = null;
 
 // ══ UI HELPERS ═════════════════════════════════════════════════════════════
 function toast(msg,type='success'){
@@ -310,7 +308,7 @@ function resetUpload(){
   document.getElementById('preview-panel').classList.remove('show');
   document.getElementById('file-in').value='';
   ['st1','st2','st3','st4'].forEach(id=>setStage(id,''));
-  _plan=null;
+  AppState.clearPlan();
   ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=true);
 }
 
@@ -354,7 +352,7 @@ async function processFile(file){
       method:'POST',
       signal:controller.signal,
       headers:{'Content-Type':'application/json','x-api-key':AppState.getKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-6',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})
     });
     clearTimeout(timeoutId);
     setStage('st2','done');setStage('st3','run');
@@ -467,17 +465,16 @@ function ms2(){return{type:'outer',color:'000000',opacity:0.13,blur:8,offset:3,a
 function hdr(slide,pres,session,title,subtitle){
   const ac=session==='s1'?NB.navy:NB.purple;
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:0.68,fill:{color:ac},line:{color:ac}});
-  // Decorative stripe
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:0.28,h:0.68,fill:{color:NB.teal},line:{color:NB.teal}});
   slide.addText(title,{x:0.44,y:0,w:8.1,h:0.68,fontSize:15,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-  const std=(_plan?.detected_standard||'Grade 6');
+  const std=(AppState.getPlan()?.detected_standard||'Grade 6');
   slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:8.72,y:0.12,w:1.12,h:0.42,fill:{color:NB.teal},line:{color:NB.teal},rectRadius:0.05});
   slide.addText(std,{x:8.72,y:0.12,w:1.12,h:0.42,fontSize:7.5,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
   if(subtitle) slide.addText(subtitle,{x:0.44,y:0.68,w:9.4,h:0.26,fontSize:9,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
 }
 
 function ftr(slide,pres,n){
-  const std=_plan?.detected_standard||'Grade 6';
+  const std=AppState.getPlan()?.detected_standard||'Grade 6';
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:10,h:0.325,fill:{color:NB.navy,transparency:94},line:{color:NB.border}});
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:0.28,h:0.325,fill:{color:NB.teal,transparency:60},line:{color:NB.teal,transparency:60}});
   slide.addText(`EduWonderLab © · ${std} · Neft.Alba`,{x:0.36,y:5.3,w:7.5,h:0.325,fontSize:7.5,color:NB.muted,fontFace:'Calibri',valign:'middle',margin:0});
@@ -513,19 +510,14 @@ function buildCover(pres,session,plan){
   slide.background={color:NB.bg};
   hdr(slide,pres,session,`${plan.lesson_title||'Lesson'} · ${sLabel}`,sd.scenario||'');
 
-  // Left accent stripe
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0.68,w:0.28,h:4.62,fill:{color:NB.teal,transparency:70},line:{color:NB.teal,transparency:70}});
-
-  // Title block with decorative element
   slide.addText('Student Notebook',{x:0.48,y:0.82,w:7,h:0.48,fontSize:24,bold:true,color:ac,fontFace:'Calibri',margin:0});
   slide.addText(sd.key_concept||'',{x:0.48,y:1.28,w:9.1,h:0.32,fontSize:11,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
 
-  // Session badge
   slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:7.6,y:0.82,w:2.1,h:0.72,fill:{color:ac,transparency:88},line:{color:ac},rectRadius:0.08});
   slide.addText(sLabel,{x:7.6,y:0.82,w:2.1,h:0.36,fontSize:10,bold:true,color:ac,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
   slide.addText(plan.unit?`Unit ${plan.unit} · Lesson ${plan.lesson_number||''}`:plan.detected_standard||'',{x:7.6,y:1.18,w:2.1,h:0.36,fontSize:8.5,color:NB.muted,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
 
-  // Before/After checkboxes
   coloredCard(slide,pres,0.48,1.7,3.5,0.58,NB.cardBlue,NB.border);
   slide.addText([
     {text:'☐',options:{color:NB.teal,bold:true,fontSize:12}},
@@ -534,7 +526,6 @@ function buildCover(pres,session,plan){
     {text:'  After',options:{color:NB.muted,fontSize:10}}
   ],{x:0.64,y:1.7,w:3.2,h:0.58,valign:'middle',fontFace:'Calibri',margin:0});
 
-  // Objectives card — premium layout
   coloredCard(slide,pres,0.48,2.38,9.2,1.56,NB.cardCream,NB.border,{topBar:0.32,topBarColor:ac});
   slide.addShape(pres.shapes.RECTANGLE,{x:0.48,y:2.38,w:0.1,h:1.56,fill:{color:NB.teal},line:{color:NB.teal}});
   slide.addText('LEARNING TARGETS',{x:0.68,y:2.38,w:8.8,h:0.32,fontSize:8,bold:true,color:NB.white,fontFace:'Calibri',charSpacing:2,valign:'middle',margin:0});
@@ -543,7 +534,6 @@ function buildCover(pres,session,plan){
     slide.addText(t,{x:1.0,y:2.72+i*0.36,w:8.5,h:0.32,fontSize:10,color:NB.body,fontFace:'Calibri',margin:0});
   });
 
-  // What's Inside — icon-style list
   sectionLabel(slide,pres,0.48,4.06,"WHAT'S INSIDE",NB.muted);
   const acts=(plan.session1?.activities||[]).map(a=>a.title||cap(a.type));
   const secs=['Notice & Wonder','Vocabulary','Guided Practice','Collab Practice','Independent Practice',...acts,'TWR Frame','Exit Ticket','Goal Tracker'];
@@ -555,9 +545,7 @@ function buildCover(pres,session,plan){
     ],{x:0.48+(i%3)*iw,y:4.32+(Math.floor(i/3))*0.22,w:iw,h:0.22,fontFace:'Calibri',margin:0});
   });
 
-  // ToU
   slide.addText('For classroom use only. Not for redistribution. © EduWonderLab',{x:0.48,y:4.98,w:9.2,h:0.2,fontSize:7,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-
   ftr(slide,pres,1);
 }
 
@@ -573,7 +561,6 @@ function buildNoticeWonder(pres,session,plan){
 
   const topY=0.8,cH=4.24;
 
-  // Left panel
   coloredCard(slide,pres,0.2,topY,4.55,cH,isS2?NB.cardBlue:NB.cardGray,NB.border);
   if(!isS2){
     slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY,w:4.55,h:0.3,fill:{color:NB.navy,transparency:85},line:{color:NB.border}});
@@ -586,7 +573,6 @@ function buildNoticeWonder(pres,session,plan){
     slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY+0.32,w:4.55,h:0.04,fill:{color:NB.teal},line:{color:NB.teal}});
     slide.addText(s1d.key_concept||'',{x:0.32,y:topY+0.42,w:4.3,h:0.38,fontSize:9.5,bold:true,italic:true,color:NB.teal,fontFace:'Calibri',margin:0});
     slide.addText(s1d.scenario||'',{x:0.32,y:topY+0.84,w:4.3,h:0.52,fontSize:9,color:NB.body,fontFace:'Calibri',margin:0});
-    // Mini vocab list
     sectionLabel(slide,pres,0.32,topY+1.42,'KEY TERMS',NB.teal);
     (s1d.vocabulary||[]).slice(0,3).forEach((v,i)=>{
       slide.addShape(pres.shapes.OVAL,{x:0.32,y:topY+1.74+i*0.3,w:0.16,h:0.16,fill:{color:NB.teal},line:{color:NB.teal}});
@@ -595,15 +581,13 @@ function buildNoticeWonder(pres,session,plan){
     wl(slide,pres,0.32,topY+2.7,4.28,5,0.3);
   }
 
-  // NOTICE card — premium
   const rX=5.0,cardW=4.8,nH=(cH-0.14)/2;
   coloredCard(slide,pres,rX,topY,cardW,nH,NB.white,NB.teal,{topBar:0.32,topBarColor:NB.teal});
   slide.addText('👁  NOTICE',{x:rX+0.12,y:topY,w:cardW-0.18,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
   sectionLabel(slide,pres,rX+0.14,topY+0.38,'I NOTICE THAT...',NB.teal);
-  slide.addText(sd.notice_prompt||'I notice that ___ and ___.', {x:rX+0.14,y:topY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
+  slide.addText(sd.notice_prompt||'I notice that ___ and ___.',{x:rX+0.14,y:topY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
   wl(slide,pres,rX+0.14,topY+1.12,cardW-0.24,3,0.25);
 
-  // WONDER card
   const wY=topY+nH+0.14;
   coloredCard(slide,pres,rX,wY,cardW,nH,NB.white,ac,{topBar:0.32,topBarColor:ac});
   slide.addText('💭  WONDER',{x:rX+0.12,y:wY,w:cardW-0.18,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
@@ -612,7 +596,6 @@ function buildNoticeWonder(pres,session,plan){
   slide.addText(wonderTxt,{x:rX+0.14,y:wY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
   wl(slide,pres,rX+0.14,wY+1.12,cardW-0.24,3,0.25);
 
-  // TWR strip — premium
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.0,w:10,h:0.28,fill:{color:NB.cardCream},line:{color:NB.border}});
   slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.0,w:0.28,h:0.28,fill:{color:NB.gold},line:{color:NB.gold}});
   slide.addText([
@@ -634,30 +617,24 @@ function buildVocab(pres,session,plan){
   const vocab=(sd.vocabulary||[]).slice(0,4);
   while(vocab.length<4) vocab.push({en:'—',es:'—',definition:'—'});
 
-  // Premium Frayer-inspired 4-card layout
   const fills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust];
   const bars=[NB.teal,NB.gold,NB.sage,NB.rust];
-  const cW=4.52,cH=1.88,gX=0.32,sX=0.24,sY=0.9,gY=0.2;
+  const cW=4.52,cH=1.88,gX=0.24,sX=0.24,sY=0.9,gY=0.2;
 
   vocab.forEach((t,i)=>{
     const col=i%2,row=Math.floor(i/2);
     const cx=sX+col*(cW+gX),cy=sY+row*(cH+gY);
     coloredCard(slide,pres,cx,cy,cW,cH,fills[i],NB.border,{topBar:0.32,topBarColor:bars[i]});
-    // Number badge
     slide.addShape(pres.shapes.OVAL,{x:cx+0.12,y:cy,w:0.32,h:0.32,fill:{color:NB.white,transparency:40},line:{color:NB.white}});
     slide.addText(String(i+1),{x:cx+0.12,y:cy,w:0.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    // EN term — large, bold
     slide.addText(t.en||'',{x:cx+0.54,y:cy+0.04,w:cW-0.66,h:0.28,fontSize:12,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-    // ES translation with flag emoji
-    slide.addText('🇪🇸 '+( t.es||''),{x:cx+0.14,y:cy+0.38,w:cW-0.24,h:0.22,fontSize:9.5,italic:true,color:NB.muted,fontFace:'Calibri',margin:0});
-    // Definition line
+    slide.addText('🇪🇸 '+(t.es||''),{x:cx+0.14,y:cy+0.38,w:cW-0.24,h:0.22,fontSize:9.5,italic:true,color:NB.muted,fontFace:'Calibri',margin:0});
     if(t.definition && t.definition!=='—'){
       slide.addShape(pres.shapes.RECTANGLE,{x:cx+0.14,y:cy+0.62,w:cW-0.24,h:0.26,fill:{color:NB.white,transparency:50},line:{color:NB.border,transparency:40}});
       slide.addText(t.definition,{x:cx+0.2,y:cy+0.62,w:cW-0.32,h:0.26,fontSize:9,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
     } else {
       sectionLabel(slide,pres,cx+0.14,cy+0.62,'DEFINITION',bars[i]);
     }
-    // Write lines for student notes
     wl(slide,pres,cx+0.14,cy+0.96,cW-0.24,3,0.29);
   });
 
@@ -672,24 +649,20 @@ function buildGuided(pres,session,plan){
   slide.background={color:NB.bg};
   hdr(slide,pres,session,'Guided Practice','Work with your teacher · '+sd.scenario);
 
-  // Scenario banner — premium
   coloredCard(slide,pres,0.2,0.86,9.6,0.58,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
   sectionLabel(slide,pres,0.38,0.9,'SCENARIO',NB.teal);
   slide.addText(sd.scenario||'',{x:1.24,y:0.86,w:8.42,h:0.58,fontSize:9.5,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
 
-  // Problem 1 — scaffolded
   const p1Y=1.54;
   coloredCard(slide,pres,0.2,p1Y,9.6,1.48,NB.white,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
   numBadge(slide,pres,0.3,p1Y+0.1,1,NB.teal);
   sectionLabel(slide,pres,0.74,p1Y+0.06,'WE DO',NB.teal);
   slide.addText(sd.guided_problem_1||'',{x:0.38,y:p1Y+0.36,w:9.3,h:0.44,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-  // Scaffold hint box
   slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:0.38,y:p1Y+0.84,w:3.5,h:0.56,fill:{color:NB.cardSage,transparency:30},line:{color:NB.sage,transparency:50},rectRadius:0.05});
   slide.addText('💡 Think: ',{x:0.5,y:p1Y+0.88,w:3.26,h:0.22,fontSize:8.5,bold:true,color:NB.sage,fontFace:'Calibri',margin:0});
   slide.addText('What information do I have? What am I finding?',{x:0.5,y:p1Y+1.08,w:3.26,h:0.22,fontSize:8,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
   wl(slide,pres,4.08,p1Y+0.88,5.6,2,0.28);
 
-  // Problem 2 — partial scaffold
   const p2Y=3.1;
   coloredCard(slide,pres,0.2,p2Y,9.6,1.52,NB.white,NB.border,{leftBar:0.08,leftBarColor:ac});
   numBadge(slide,pres,0.3,p2Y+0.1,2,ac);
@@ -708,17 +681,14 @@ function buildCollab(pres,session,plan){
   slide.background={color:NB.bg};
   hdr(slide,pres,session,'Collaborative Practice','Work with a partner');
 
-  // Partner task header
   coloredCard(slide,pres,0.2,0.86,9.6,0.58,NB.cardSage,NB.border,{leftBar:0.08,leftBarColor:NB.sage});
   sectionLabel(slide,pres,0.38,0.9,'PARTNER TASK',NB.sage);
   slide.addText(sd.collab_task||'',{x:1.38,y:0.86,w:8.28,h:0.58,fontSize:9.5,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
 
-  // Discussion questions — 3-card layout
   const colors=[NB.teal,ac,NB.gold];
   const fills=[NB.cardBlue,NB.cardCream,NB.cardRust];
   const qs=[sd.discussion_q1,sd.discussion_q2,sd.discussion_q3||'How does this connect to what you already know?'];
 
-  // Header bar for questions section
   slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.54,w:9.6,h:0.3,fill:{color:ac},line:{color:ac}});
   slide.addText('💬  Discussion Questions',{x:0.36,y:1.54,w:9.3,h:0.3,fontSize:9.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
 
@@ -754,7 +724,6 @@ function buildIndependent(pres,session,plan){
     coloredCard(slide,pres,pX,py,pW,pH,p.fill,p.bar,{leftBar:0.08,leftBarColor:p.bar});
     numBadge(slide,pres,pX+0.18,py+0.08,p.num,p.bar);
     sectionLabel(slide,pres,pX+0.62,py+0.06,p.label,p.bar);
-    // DOK badge
     slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:pX+pW-1.1,y:py+0.06,w:0.9,h:0.22,fill:{color:p.bar,transparency:80},line:{color:p.bar,transparency:50},rectRadius:0.04});
     slide.addText(p.dok,{x:pX+pW-1.1,y:py+0.06,w:0.9,h:0.22,fontSize:7,bold:true,color:p.bar,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
     slide.addText(p.text,{x:pX+0.38,y:py+0.36,w:pW-0.52,h:0.46,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
@@ -772,7 +741,6 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
   slide.background={color:NB.bg};
   hdr(slide,pres,session,activityData.title||cap(activityData.type),'');
 
-  // Instruction banner
   coloredCard(slide,pres,0.2,0.86,9.6,0.5,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.gold});
   slide.addText([
     {text:'📋 ',options:{fontSize:9.5}},
@@ -783,13 +751,8 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
   const items=activityData.items||[];
   const cats=activityData.categories||['Category A','Category B'];
 
-  // ── SORTING ACTIVITIES ──
-  if(['card_sort','drag_sort_categorization','true_false_sort','proportional_sort',
-      'equation_expression_sort','always_sometimes_never','increasing_decreasing_sort',
-      'term_classification_sort','problem_type_sort','strategy_sort','representation_sort'].includes(at)){
+  if(['card_sort','drag_sort_categorization','true_false_sort','proportional_sort','equation_expression_sort','always_sometimes_never','increasing_decreasing_sort','term_classification_sort','problem_type_sort','strategy_sort','representation_sort'].includes(at)){
 
-    const col1Label=cats[0]||'Category A';
-    const col2Label=cats[1]||'Category B';
     const hasThree=cats[2];
     const colW=hasThree?3.0:4.6;
     const colPositions=hasThree?[0.2,3.4,6.6]:[0.2,5.12];
@@ -803,7 +766,6 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       }
     });
 
-    // Cards to cut
     slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:4.32,w:9.6,h:0.22,fill:{color:NB.navy,transparency:92},line:{color:NB.border}});
     slide.addText('✂  Cut out and sort these cards:',{x:0.32,y:4.32,w:9.4,h:0.22,fontSize:8,color:NB.muted,italic:true,fontFace:'Calibri',valign:'middle',margin:0});
     const cFills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust,NB.cardBlue,NB.cardCream];
@@ -813,10 +775,7 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       slide.addText(item,{x:cx2+0.06,y:4.6,w:1.38,h:0.44,fontSize:8.5,color:NB.body,fontFace:'Calibri',align:'center',valign:'middle',bold:true,margin:0});
     });
 
-  // ── MATCHING ACTIVITIES ──
-  } else if(['matching_pairs','graph_scenario_match','table_equation_match','definition_match',
-             'word_problem_equation_match','visual_vocab_match','scenario_equation_match',
-             'representation_matching','model_equation_match','rate_situation_match'].includes(at)){
+  } else if(['matching_pairs','graph_scenario_match','table_equation_match','definition_match','word_problem_equation_match','visual_vocab_match','scenario_equation_match','representation_matching','model_equation_match','rate_situation_match'].includes(at)){
 
     const leftItems=items.slice(0,4);
     const rightItems=activityData.category_a_items?.length?activityData.category_a_items.slice(0,4):items.slice(4,8).length?items.slice(4,8):['Match A','Match B','Match C','Match D'];
@@ -837,15 +796,12 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       slide.addText(rightItems[i]||'',{x:5.6,y:iy+0.06,w:4.08,h:rH-0.1,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
     });
 
-  // ── GRAPHIC ORGANIZERS ──
   } else if(['frayer_model','t_chart','venn_diagram','four_corners','kwl_chart','reasoning_ladder'].includes(at)){
 
     if(at==='frayer_model'){
       const centerLabel=items[0]||sd.key_concept||'Concept';
-      // Center diamond/label
       coloredCard(slide,pres,3.5,2.0,3.0,1.2,NB.navy,NB.navy);
       slide.addText(centerLabel,{x:3.5,y:2.0,w:3.0,h:1.2,fontSize:13,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      // 4 boxes
       const boxes=[
         {x:0.2,y:1.0,w:3.0,h:1.4,label:'DEFINITION',fill:NB.cardBlue,color:NB.teal},
         {x:6.7,y:1.0,w:3.1,h:1.4,label:'CHARACTERISTICS',fill:NB.cardCream,color:NB.gold},
@@ -882,7 +838,6 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
         wl(slide,pres,0.38,sy+0.4,9.3,2,0.26);
       });
     } else {
-      // Generic graphic organizer fallback
       const quadrants=[
         {x:0.2,y:1.36,label:cats[0]||'Quadrant 1',fill:NB.cardBlue,color:NB.teal},
         {x:5.06,y:1.36,label:cats[1]||'Quadrant 2',fill:NB.cardCream,color:NB.gold},
@@ -896,7 +851,6 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       });
     }
 
-  // ── ERROR ANALYSIS ──
   } else if(['error_analysis','error_detective','missing_step_detective','peer_answer_check'].includes(at)){
     const examples=items.slice(0,3);
     while(examples.length<3) examples.push(`Student work ${examples.length+1}`);
@@ -914,7 +868,6 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       wl(slide,pres,1.36,ey+0.76,8.26,1,0);
     });
 
-  // ── SCENARIO ANALYSIS ──
   } else if(['scenario_analysis_cards','math_connections','real_world_scenario_match','build_a_story'].includes(at)){
     const scenarios=items.slice(0,3);
     while(scenarios.length<3) scenarios.push(`Scenario ${scenarios.length+1}`);
@@ -930,7 +883,6 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       wl(slide,pres,5.68,sy+0.34,3.9,2,0.28);
     });
 
-  // ── WOULD YOU RATHER / DEBATE ──
   } else if(['would_you_rather','mathematical_debate','convince_me'].includes(at)){
     const opt1=items[0]||'Option A';
     const opt2=items[1]||'Option B';
@@ -944,16 +896,12 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
     slide.addText(opt2,{x:5.24,y:1.78,w:4.38,h:0.68,fontSize:10,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
     sectionLabel(slide,pres,5.24,2.5,'MY REASONING',ac);
     wl(slide,pres,5.24,2.8,4.38,3,0.3);
-    // I choose
     coloredCard(slide,pres,0.2,4.24,9.6,0.7,NB.cardCream,NB.gold,{leftBar:0.08,leftBarColor:NB.gold});
     slide.addText([{text:'⭐ I choose: ',options:{bold:true,color:NB.gold,fontSize:10}},{text:'Option ___ because ___.',options:{color:NB.body,fontSize:10,italic:true}}],{x:0.38,y:4.24,w:9.3,h:0.34,fontFace:'Calibri',valign:'middle',margin:0});
     wl(slide,pres,0.38,4.62,9.3,1,0);
 
-  // ── BUILD / CONSTRUCT ──
-  } else if(['equation_builder','build_the_table','input_output_machine','build_the_rule',
-             'pattern_continuation','build_a_model','step_reconstruction'].includes(at)){
+  } else if(['equation_builder','build_the_table','input_output_machine','build_the_rule','pattern_continuation','build_a_model','step_reconstruction'].includes(at)){
     const buildItems=items.slice(0,6);
-    // Component cards to arrange
     sectionLabel(slide,pres,0.22,1.38,'COMPONENTS — arrange these to build your answer',NB.teal);
     const bFills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust,NB.cardBlue,NB.cardCream];
     buildItems.forEach((item,i)=>{
@@ -962,12 +910,10 @@ function buildActivitySlide(pres,session,plan,activityData,slideNum){
       coloredCard(slide,pres,bx,by,3.1,0.62,bFills[i],NB.border,{topBar:0.06,topBarColor:NB.teal});
       slide.addText(item,{x:bx+0.14,y:by,w:2.82,h:0.62,fontSize:9.5,color:NB.body,fontFace:'Calibri',align:'center',valign:'middle',bold:true,margin:0});
     });
-    // Answer area
     coloredCard(slide,pres,0.2,3.2,9.6,1.62,NB.cardCream,NB.gold,{topBar:0.3,topBarColor:NB.gold});
     slide.addText('MY ANSWER',{x:0.3,y:3.2,w:9.4,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
     wl(slide,pres,0.34,3.6,9.28,4,0.28);
 
-  // ── DEFAULT: EXTEND & APPLY ──
   } else {
     const extItems=items.slice(0,3);
     const extColors=[NB.teal,ac,NB.gold];
@@ -994,11 +940,10 @@ function buildTWR(pres,session,plan,slideNum){
   hdr(slide,pres,session,'Thinking · Writing · Reasoning','Use evidence from the lesson to support your thinking');
 
   const frames=[
-    {label:'FRAME 1 — CLAIM',text:sd.twr_frame1||'My claim is that ___ because ___.', fill:NB.cardBlue,bar:NB.teal,icon:'💡'},
-    {label:'FRAME 2 — EVIDENCE',text:sd.twr_frame2||'My evidence is ___ which shows ___.', fill:NB.cardCream,bar:ac,icon:'📊'},
-    {label:'FRAME 3 — REASONING',text:sd.twr_frame3||'This makes sense because ___.', fill:NB.cardSage,bar:NB.sage,icon:'🔗'},
-    {label:isS2?'FRAME 4 — CONNECT SESSIONS ★':'FRAME 4 — REAL-WORLD',
-     text:sd.twr_frame4||'This connects to real life because ___.', fill:NB.cardRust,bar:NB.gold,icon:'🌍'}
+    {label:'FRAME 1 — CLAIM',text:sd.twr_frame1||'My claim is that ___ because ___.',fill:NB.cardBlue,bar:NB.teal,icon:'💡'},
+    {label:'FRAME 2 — EVIDENCE',text:sd.twr_frame2||'My evidence is ___ which shows ___.',fill:NB.cardCream,bar:ac,icon:'📊'},
+    {label:'FRAME 3 — REASONING',text:sd.twr_frame3||'This makes sense because ___.',fill:NB.cardSage,bar:NB.sage,icon:'🔗'},
+    {label:isS2?'FRAME 4 — CONNECT SESSIONS ★':'FRAME 4 — REAL-WORLD',text:sd.twr_frame4||'This connects to real life because ___.',fill:NB.cardRust,bar:NB.gold,icon:'🌍'}
   ];
 
   const fW=4.52,fH=1.46,fG=0.12,sX=0.22,sY=0.88;
@@ -1032,13 +977,10 @@ function buildExitTicket(pres,session,plan,slideNum){
   tiers.forEach((t,i)=>{
     const ty=tSY+i*(tH+tG);
     coloredCard(slide,pres,tX,ty,tW,tH,t.fill,t.bar,{leftBar:0.08,leftBarColor:t.bar});
-    // Stars + tier label
     slide.addText(t.stars,{x:tX+0.2,y:ty+0.04,w:1.4,h:0.28,fontSize:10,fontFace:'Calibri',margin:0});
     slide.addText(t.label,{x:tX+0.2,y:ty+0.3,w:2.6,h:0.24,fontSize:10,bold:true,color:t.bar,fontFace:'Calibri',margin:0});
     slide.addText(t.sub,{x:tX+0.2,y:ty+0.54,w:2.6,h:0.2,fontSize:7.5,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-    // Vertical divider
     slide.addShape(pres.shapes.LINE,{x:tX+3.0,y:ty+0.1,w:0,h:tH-0.2,line:{color:NB.border,width:0.75}});
-    // Question
     slide.addText(t.text,{x:tX+3.15,y:ty+0.05,w:tW-3.35,h:0.5,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
     wl(slide,pres,tX+3.15,ty+0.6,tW-3.32,t.lines,0.22);
   });
@@ -1055,12 +997,10 @@ function buildGoalTracker(pres,session,plan,slideNum){
   slide.background={color:NB.bg};
   hdr(slide,pres,session,'Goal Tracker','Reflect on your learning today');
 
-  // Learning goal banner
   coloredCard(slide,pres,0.2,0.88,9.6,0.56,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
   sectionLabel(slide,pres,0.38,0.92,'LEARNING GOAL',NB.teal);
   slide.addText((plan.learning_targets||['I can...'])[0],{x:1.44,y:0.88,w:8.24,h:0.56,fontSize:11,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
 
-  // Rating scale — premium 4-card layout
   const ratings=[
     {num:'1',label:'Beginning',desc:'I need more help.',bar:'ef4444',fill:NB.cardRust},
     {num:'2',label:'Developing',desc:'I understand a little.',bar:'f59e0b',fill:NB.cardCream},
@@ -1071,25 +1011,21 @@ function buildGoalTracker(pres,session,plan,slideNum){
   ratings.forEach((r,i)=>{
     const rx=rsX+i*(rW+rG);
     coloredCard(slide,pres,rx,rY,rW,rH,r.fill,r.bar,{topBar:0.5,topBarColor:r.bar});
-    // Big number
     slide.addText(r.num,{x:rx+0.1,y:rY,w:0.48,h:0.5,fontSize:22,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
     slide.addText(r.label,{x:rx+0.6,y:rY+0.1,w:rW-0.66,h:0.3,fontSize:9.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
     slide.addText(r.desc,{x:rx+0.12,y:rY+0.58,w:rW-0.2,h:0.38,fontSize:9,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-    // Selection circle
     slide.addShape(pres.shapes.OVAL,{x:rx+rW/2-0.26,y:rY+1.06,w:0.52,h:0.52,fill:{color:NB.white},line:{color:r.bar}});
     slide.addText('Circle me!',{x:rx,y:rY+1.56,w:rW,h:0.18,fontSize:6.5,color:NB.muted,fontFace:'Calibri',align:'center',italic:true,margin:0});
   });
 
-  // Reflection area
   const refY=3.28;
   sectionLabel(slide,pres,0.22,refY,'EXIT REFLECTION',ac);
   const reflectText=isS2?
     `Compare Session 1 and Session 2. What is similar? What is different? Use specific examples.`:
-    `One important thing I learned about ${sd.key_concept||'today\'s lesson'} is...`;
+    `One important thing I learned about ${sd.key_concept||"today's lesson"} is...`;
   slide.addText(reflectText,{x:0.22,y:refY+0.28,w:9.6,h:0.32,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
   wl(slide,pres,0.22,refY+0.66,9.6,4,0.28);
 
-  // Before/After
   coloredCard(slide,pres,0.22,4.95,6.5,0.3,NB.cardBlue,NB.border,{shadow:false});
   slide.addText([
     {text:'☐ Before  ',options:{color:NB.teal,fontSize:10.5,bold:true}},
@@ -1103,6 +1039,7 @@ function buildGoalTracker(pres,session,plan,slideNum){
 
 // ══ BUILD SESSION ══════════════════════════════════════════════════════════
 async function buildSession(session){
+  const plan=AppState.getPlan();
   if(!AppState.getPlan()){toast('Upload a PPTX first','error');return;}
   setStatus('Initializing...',5);
   document.querySelectorAll('.gbtn').forEach(b=>b.disabled=true);
@@ -1110,45 +1047,42 @@ async function buildSession(session){
     const pres=new PptxGenJS();
     pres.layout='LAYOUT_16x9';
     pres.author='EduWonderLab · Neft.Alba';
-    pres.title=`${_plan.lesson_title||'Lesson'} — Session ${session[1]} Notebook`;
+    pres.title=`${plan.lesson_title||'Lesson'} — Session ${session[1]} Notebook`;
 
-    const sd=_plan[session==='s1'?'session1':'session2'];
+    const sd=plan[session==='s1'?'session1':'session2'];
     const activities=sd.activities||[];
 
-    // Build fixed slides
     const fixedSteps=[
-      ['Slide 1 — Cover',8,()=>buildCover(pres,session,_plan)],
-      ['Slide 2 — Notice & Wonder',16,()=>buildNoticeWonder(pres,session,_plan)],
-      ['Slide 3 — Vocabulary',24,()=>buildVocab(pres,session,_plan)],
-      ['Slide 4 — Guided Practice',34,()=>buildGuided(pres,session,_plan)],
-      ['Slide 5 — Collaborative Practice',44,()=>buildCollab(pres,session,_plan)],
-      ['Slide 6 — Independent Practice',54,()=>buildIndependent(pres,session,_plan)],
+      ['Slide 1 — Cover',8,()=>buildCover(pres,session,plan)],
+      ['Slide 2 — Notice & Wonder',16,()=>buildNoticeWonder(pres,session,plan)],
+      ['Slide 3 — Vocabulary',24,()=>buildVocab(pres,session,plan)],
+      ['Slide 4 — Guided Practice',34,()=>buildGuided(pres,session,plan)],
+      ['Slide 5 — Collaborative Practice',44,()=>buildCollab(pres,session,plan)],
+      ['Slide 6 — Independent Practice',54,()=>buildIndependent(pres,session,plan)],
     ];
     for(const [label,pct,fn] of fixedSteps){
       setStatus('Building '+label,pct);await tick();fn();
     }
 
-    // Build adaptive activity slides
     let slideNum=7;
     for(let i=0;i<activities.length;i++){
       const a=activities[i];
       const pct=54+Math.round((i+1)/(activities.length+3)*30);
       setStatus(`Building Slide ${slideNum} — ${a.title||cap(a.type)}`,pct);
       await tick();
-      buildActivitySlide(pres,session,_plan,a,slideNum);
+      buildActivitySlide(pres,session,plan,a,slideNum);
       slideNum++;
     }
 
-    // Build final slides
     setStatus(`Building Slide ${slideNum} — TWR Frame`,84);await tick();
-    buildTWR(pres,session,_plan,slideNum);slideNum++;
+    buildTWR(pres,session,plan,slideNum);slideNum++;
     setStatus(`Building Slide ${slideNum} — Exit Ticket`,91);await tick();
-    buildExitTicket(pres,session,_plan,slideNum);slideNum++;
+    buildExitTicket(pres,session,plan,slideNum);slideNum++;
     setStatus(`Building Slide ${slideNum} — Goal Tracker`,96);await tick();
-    buildGoalTracker(pres,session,_plan,slideNum);
+    buildGoalTracker(pres,session,plan,slideNum);
 
     setStatus('Writing file...',98);await tick();
-    const title=(_plan.lesson_title||'Lesson').replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,24);
+    const title=(plan.lesson_title||'Lesson').replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,24);
     await pres.writeFile({fileName:`${title}_S${session[1]}_Notebook.pptx`});
     setStatus(`✓ Session ${session[1]} — ${slideNum} slides downloaded!`,100,'done');
     toast(`S${session[1]} notebook ready · ${slideNum} slides ✓`);
@@ -1157,7 +1091,7 @@ async function buildSession(session){
     setStatus('Error: '+err.message,0,'err');
     toast(err.message.slice(0,70),'error');
   }finally{
-    document.querySelectorAll('.gbtn').forEach(b=>b.disabled=!_plan);
+    document.querySelectorAll('.gbtn').forEach(b=>b.disabled=!plan);
   }
 }
 
@@ -1166,7 +1100,6 @@ async function buildBoth(){
   await new Promise(r=>setTimeout(r,700));
   await buildSession('s2');
 }
-
 </script>
 </body>
 </html>
