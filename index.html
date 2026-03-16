@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://api.anthropic.com; img-src 'self' data:;">
@@ -9,96 +9,103 @@
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap');
-:root{
-  --bg:#0d0f14;--surface:#13161e;--surface2:#1a1e2a;--border:#252a38;--border2:#2e3446;
-  --teal:#14b8a6;--teal-dim:rgba(20,184,166,0.12);--teal-glow:rgba(20,184,166,0.25);
-  --text:#e2e8f0;--muted:#64748b;--muted2:#94a3b8;--success:#10b981;--err:#ef4444;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(20,184,166,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-.app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
-.header{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
-.logo{width:44px;height:44px;background:linear-gradient(135deg,#387F84,#14b8a6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;flex-shrink:0;box-shadow:0 0 20px var(--teal-glow)}
-.header-text h1{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.02em}
-.header-text p{font-size:0.78rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px}
-.badge{margin-left:auto;background:var(--teal-dim);border:1px solid rgba(20,184,166,0.3);color:var(--teal);font-family:'DM Mono',monospace;font-size:0.68rem;padding:3px 8px;border-radius:4px;letter-spacing:.05em}
-.api-bar{display:flex;align-items:center;gap:.6rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;margin-bottom:.75rem}
-.api-bar input{flex:1;background:transparent;border:none;outline:none;color:var(--teal);font-family:'DM Mono',monospace;font-size:.8rem}
-.api-label{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);white-space:nowrap;letter-spacing:.04em}
-#api-status{font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace}
-.api-save{padding:5px 12px;border-radius:6px;font-size:.78rem;font-family:'Inter',sans-serif;font-weight:500;cursor:pointer;border:1px solid rgba(20,184,166,.4);background:var(--teal-dim);color:var(--teal);white-space:nowrap}
-.upload-zone{border:2px dashed var(--border2);border-radius:12px;background:var(--surface);padding:3rem 1rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1.25rem}
-.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:var(--teal-dim)}
-.u-icon{font-size:2.5rem;margin-bottom:.6rem}
-.u-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);margin-bottom:.3rem}
-.u-sub{font-size:.82rem;color:var(--muted);line-height:1.5}
-.prog-wrap{width:240px;height:3px;background:var(--border);border-radius:2px;margin:.75rem auto 0;overflow:hidden}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),#0891b2);width:0%;transition:width .4s ease;border-radius:2px}
-.stage-log{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-bottom:1.25rem;display:none}
-.stage-log.show{display:block}
-.si{display:flex;align-items:center;gap:8px;padding:4px 0;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--muted2)}
-.si-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--muted)}
-.si.done .si-dot{background:var(--success)}
-.si.run .si-dot{background:var(--teal);animation:pulse 1s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.preview-panel{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:1.2rem;margin-bottom:1.5rem;display:none}
-.preview-panel.show{display:block}
-.preview-h{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.5rem}
-.preview-meta{font-size:.8rem;color:var(--muted2);margin-bottom:.8rem;line-height:1.6}
-.preview-meta strong{color:var(--teal)}
-.slide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:.45rem}
-.sc{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 11px}
-.sc-n{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--teal);margin-bottom:2px}
-.sc-t{font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:2px}
-.sc-d{font-size:.7rem;color:var(--muted);line-height:1.4}
-.sc.activity{border-color:rgba(220,177,91,0.4);background:rgba(220,177,91,0.05)}
-.sc.activity .sc-n{color:#DCB15B}
-.gen-zone{display:flex;flex-direction:column;align-items:center;gap:1rem;margin-top:1.5rem}
-.gen-row{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center}
-.gbtn{padding:12px 28px;border-radius:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;border:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:8px}
-.gbtn.s1{background:linear-gradient(135deg,#1C2E42,#2563eb);color:#fff;border-color:rgba(37,99,235,.5)}
-.gbtn.s1:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,.35)}
-.gbtn.s2{background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border-color:rgba(124,58,237,.5)}
-.gbtn.s2:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,.35)}
-.gbtn.both{background:linear-gradient(135deg,#387F84,#14b8a6);color:#000;border-color:rgba(56,127,132,.5);font-size:1rem;padding:14px 36px}
-.gbtn.both:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--teal-glow)}
-.gbtn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
-.status-box{width:100%;max-width:500px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;display:none}
-.status-box.show{display:block}
-.status-line{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted2);font-family:'DM Mono',monospace}
-.sdot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;animation:pulse 1.2s ease-in-out infinite}
-.sdot.done{background:var(--success);animation:none}.sdot.err{background:var(--err);animation:none}
-.sbarpw{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
-.sbar{height:100%;background:linear-gradient(90deg,var(--teal),#0891b2);border-radius:2px;width:0%;transition:width .4s ease}
-.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:12px 16px;font-size:.82rem;display:flex;align-items:center;gap:8px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-width:320px}
-.toast.show{transform:translateY(0);opacity:1}
-.toast.success{border-color:rgba(16,185,129,.4)}.toast.error{border-color:rgba(239,68,68,.4)}
-.reset-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:5px 14px;border-radius:6px;font-size:.75rem;cursor:pointer;margin-top:.6rem;transition:all .15s}
-.reset-btn:hover{border-color:var(--teal);color:var(--teal)}
-.std-badge{display:inline-flex;align-items:center;background:var(--teal-dim);border:1px solid rgba(20,184,166,.3);border-radius:20px;padding:3px 10px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--teal);margin-top:.4rem}
 
-/* ── REDUCED MOTION ────────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration:0.01ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:0.01ms !important;
-  }
+:root {
+  --bg: #0d0f14; --surface: #13161e; --surface2: #1a1e2a; 
+  --border: #252a38; --border2: #2e3446; --text: #e2e8f0; 
+  --muted: #64748b; --muted2: #94a3b8;
+  --teal: #14b8a6; --teal-dim: rgba(20,184,166,0.12); --teal-glow: rgba(20,184,166,0.25);
+  --success: #10b981; --err: #ef4444; --warn: #f59e0b;
 }
-/* ── PRINT ─────────────────────────────────────────────────────── */
-@media print {
-  body { background:#fff !important; color:#000 !important; }
-  body::before { display:none !important; }
-  .api-bar, .upload-zone, .stage-log, .gen-zone, .toast, .reset-btn { display:none !important; }
-  .preview-panel { display:block !important; border:1px solid #ccc; background:#fff; color:#000; }
+
+[data-theme="light"] {
+  --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9;
+  --border: #e2e8f0; --border2: #cbd5e1; --text: #0f172a;
+  --muted: #64748b; --muted2: #475569;
+  --teal: #0d9488; --teal-dim: rgba(13,148,136,0.12); --teal-glow: rgba(13,148,136,0.2);
 }
-/* ── SCREEN READER ONLY ────────────────────────────────────────── */
-.sr-only {
-  position:absolute; width:1px; height:1px; padding:0;
-  margin:-1px; overflow:hidden; clip:rect(0,0,0,0);
-  white-space:nowrap; border:0;
-}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; transition: background 0.3s, color 0.3s; }
+body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(20,184,166,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,0.04) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+
+.app { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+.header { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border); }
+.logo { width:44px; height:44px; background:linear-gradient(135deg,#387F84,#14b8a6); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:#fff; flex-shrink:0; box-shadow:0 0 20px var(--teal-glow); }
+.header-text h1 { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; color:var(--text); letter-spacing:-0.02em; }
+.header-text p { font-size:0.78rem; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
+.theme-toggle { margin-left:auto; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:0.8rem; transition:all 0.2s; }
+.theme-toggle:hover { border-color:var(--teal); color:var(--teal); }
+.badge { background:var(--teal-dim); border:1px solid rgba(20,184,166,0.3); color:var(--teal); font-family:'DM Mono',monospace; font-size:0.68rem; padding:4px 8px; border-radius:4px; letter-spacing:.05em; }
+
+.api-box { background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:12px 16px; margin-bottom:1.25rem; }
+.api-bar { display:flex; align-items:center; gap:.6rem; }
+.api-bar input { flex:1; background:transparent; border:none; outline:none; color:var(--teal); font-family:'DM Mono',monospace; font-size:.8rem; }
+.api-label { font-family:'DM Mono',monospace; font-size:.72rem; color:var(--muted); white-space:nowrap; letter-spacing:.04em; }
+#api-status { font-size:.72rem; color:var(--muted); font-family:'DM Mono',monospace; }
+.api-save { padding:5px 12px; border-radius:6px; font-size:.78rem; font-family:'Inter',sans-serif; font-weight:500; cursor:pointer; border:1px solid rgba(20,184,166,.4); background:var(--teal-dim); color:var(--teal); white-space:nowrap; transition:all 0.2s; }
+.api-save:hover { background:var(--teal); color:#fff; }
+.sec-warn { font-size:0.7rem; color:var(--warn); margin-top:8px; display:flex; align-items:center; gap:6px; }
+
+.upload-zone { border:2px dashed var(--border2); border-radius:12px; background:var(--surface); padding:3rem 1rem; text-align:center; cursor:pointer; transition:all .2s; margin-bottom:1.25rem; }
+.upload-zone:hover, .upload-zone.drag { border-color:var(--teal); background:var(--teal-dim); }
+.u-icon { font-size:2.5rem; margin-bottom:.6rem; }
+.u-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:.3rem; }
+.u-sub { font-size:.82rem; color:var(--muted); line-height:1.5; }
+.prog-wrap { width:240px; height:3px; background:var(--border); border-radius:2px; margin:.75rem auto 0; overflow:hidden; }
+.prog-fill { height:100%; background:linear-gradient(90deg,var(--teal),#0891b2); width:0%; transition:width .4s ease; border-radius:2px; }
+
+.stage-log { background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:12px 14px; margin-bottom:1.25rem; display:none; }
+.stage-log.show { display:block; }
+.si { display:flex; align-items:center; gap:8px; padding:4px 0; font-family:'DM Mono',monospace; font-size:.75rem; color:var(--muted2); transition:all 0.2s; }
+.si-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--muted); transition:background 0.3s; }
+.si.done .si-dot { background:var(--success); }
+.si.err .si-dot { background:var(--err); }
+.si.run .si-dot { background:var(--teal); animation:pulse 1s ease-in-out infinite; }
+.err-detail { font-size:0.7rem; color:var(--err); margin-left:24px; margin-top:2px; display:none; }
+.si.err + .err-detail { display:block; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.preview-panel { background:var(--surface); border:1px solid var(--border2); border-radius:10px; padding:1.2rem; margin-bottom:1.5rem; display:none; }
+.preview-panel.show { display:block; }
+.preview-h { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
+.preview-meta { font-size:.8rem; color:var(--muted2); margin-bottom:1rem; line-height:1.6; background:var(--surface2); padding:10px; border-radius:6px; border:1px solid var(--border); }
+.preview-meta strong { color:var(--teal); }
+.slide-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.6rem; }
+.sc { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:4px; }
+.sc-n { font-family:'DM Mono',monospace; font-size:.65rem; color:var(--teal); text-transform:uppercase; }
+.sc-t { font-size:.85rem; font-weight:600; color:var(--text); }
+.sc-d { font-size:.75rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sc.activity { border-color:rgba(220,177,91,0.4); background:rgba(220,177,91,0.05); }
+
+.gen-zone { display:flex; flex-direction:column; align-items:center; gap:1rem; margin-top:1.5rem; }
+.gen-row { display:flex; gap:.75rem; flex-wrap:wrap; justify-content:center; }
+.gbtn { padding:12px 28px; border-radius:9px; font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; cursor:pointer; border:2px solid transparent; transition:all .2s; display:flex; align-items:center; gap:8px; }
+.gbtn.s1 { background:linear-gradient(135deg,#1C2E42,#2563eb); color:#fff; border-color:rgba(37,99,235,.5); }
+.gbtn.s1:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(37,99,235,.35); }
+.gbtn.s2 { background:linear-gradient(135deg,#5A7B54,#89A373); color:#fff; border-color:rgba(137,163,115,.5); }
+.gbtn.s2:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(137,163,115,.35); }
+.gbtn.both { background:linear-gradient(135deg,#387F84,#14b8a6); color:#000; border-color:rgba(56,127,132,.5); font-size:1rem; padding:14px 36px; }
+.gbtn.both:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 28px var(--teal-glow); }
+.gbtn:disabled { opacity:.4; cursor:not-allowed; transform:none!important; box-shadow:none!important; }
+
+.status-box { width:100%; max-width:500px; background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:14px 16px; display:none; }
+.status-box.show { display:block; }
+.status-line { display:flex; align-items:center; gap:8px; font-size:.82rem; color:var(--muted2); font-family:'DM Mono',monospace; }
+.sdot { width:7px; height:7px; border-radius:50%; background:var(--teal); flex-shrink:0; animation:pulse 1.2s ease-in-out infinite; }
+.sdot.done { background:var(--success); animation:none; } .sdot.err { background:var(--err); animation:none; }
+.sbarpw { width:100%; height:3px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden; }
+.sbar { height:100%; background:linear-gradient(90deg,var(--teal),#0891b2); border-radius:2px; width:0%; transition:width .4s ease; }
+
+.toast { position:fixed; bottom:2rem; right:2rem; background:var(--surface2); border:1px solid var(--border2); border-radius:9px; padding:12px 16px; font-size:.82rem; display:flex; align-items:center; gap:8px; z-index:999; transform:translateY(80px); opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1); max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-color:rgba(16,185,129,.4); } .toast.error { border-color:rgba(239,68,68,.4); }
+.reset-btn { background:none; border:1px solid var(--border2); color:var(--muted); padding:5px 14px; border-radius:6px; font-size:.75rem; cursor:pointer; margin-top:.6rem; transition:all .15s; }
+.reset-btn:hover { border-color:var(--teal); color:var(--teal); }
+
+#protocol-warn { display:none; background:rgba(245,158,11,0.1); border:1px solid #f59e0b; color:#f59e0b; padding:10px; border-radius:8px; margin-bottom:1rem; font-size:0.8rem; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; } }
 </style>
 </head>
 <body>
@@ -109,997 +116,613 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <h1>Notebook Engine</h1>
     <p>Grade 6 · Flagship TPT Quality · v5.0</p>
   </div>
+  <button class="theme-toggle" onclick="ThemeService.toggle()" id="theme-btn">☀️ Light Mode</button>
   <div class="badge">FLAGSHIP · v5.0</div>
 </div>
-<div class="api-bar">
-  <span class="api-label">API KEY</span>
-  <input id="api-key" type="password" placeholder="sk-ant-api03-...">
-  <span id="api-status">not set</span>
-  <button class="api-save" onclick="saveKey()">Save Key</button>
+
+<div id="protocol-warn">⚠️ Warning: Running from local file system (`file://`). Extraction APIs may fail due to browser security restrictions. Please host on a local server.</div>
+
+<div class="api-box">
+  <div class="api-bar">
+    <span class="api-label">API KEY</span>
+    <input id="api-key" type="password" placeholder="sk-ant-api03-...">
+    <span id="api-status">not set</span>
+    <button class="api-save" onclick="AppState.saveKey()">Save Key</button>
+  </div>
+  <div class="sec-warn">⚠️ Local/Testing Mode: Key is stored in your browser session only. Do not deploy this client-side architecture to production.</div>
 </div>
-<div class="upload-zone" id="upload-zone"
-  role="button" tabindex="0"
-  aria-label="Upload a PPTX file. Click to browse, or drag and drop."
-  ondragover="event.preventDefault();this.classList.add('drag')"
-  ondragleave="this.classList.remove('drag')"
-  ondrop="handleDrop(event)"
-  onclick="document.getElementById('file-in').click()">
-  <input type="file" id="file-in" accept=".pptx" style="display:none" onchange="handleFile(event)">
+
+<div class="upload-zone" id="upload-zone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="FileHandler.handleDrop(event)" onclick="document.getElementById('file-in').click()">
+  <input type="file" id="file-in" accept=".pptx" style="display:none" onchange="FileHandler.handleFile(event)">
+  
   <div id="u-idle">
     <div class="u-icon">📂</div>
     <div class="u-title">Drop any Reveal Math PPTX here</div>
-    <div class="u-sub">Claude reads your slides · selects the best activities from 100+ types · builds a flagship notebook</div>
+    <div class="u-sub">Engine extracts text · formats strict pedagogical structures · builds interactive notebook</div>
   </div>
-  <div id="u-proc" style="display:none" aria-live="polite">
+  
+  <div id="u-proc" style="display:none">
     <div class="u-icon">⚡</div>
     <div class="u-title" id="u-title" style="color:var(--teal)">Extracting slides...</div>
     <div class="u-sub" id="u-sub">Reading lesson content</div>
     <div class="prog-wrap"><div class="prog-fill" id="u-prog"></div></div>
   </div>
+  
   <div id="u-done" style="display:none">
     <div class="u-icon">✅</div>
     <div class="u-title" style="color:var(--success)" id="u-done-msg">Notebook plan ready</div>
     <div class="u-sub" id="u-done-sub">Review structure · click Generate</div>
-    <div id="u-std" class="std-badge" style="margin:6px auto;width:fit-content;display:none"></div>
-    <button class="reset-btn" onclick="event.stopPropagation();resetUpload()">Upload different file</button>
+    <button class="reset-btn" onclick="event.stopPropagation();UI.reset()">Upload different file</button>
   </div>
 </div>
+
 <div class="stage-log" id="stage-log">
   <div class="si" id="st1"><div class="si-dot"></div>Extract slide text from PPTX</div>
-  <div class="si" id="st2"><div class="si-dot"></div>Analyze lesson type, content, and learning targets</div>
-  <div class="si" id="st3"><div class="si-dot"></div>Select best activities from library (100+ types)</div>
-  <div class="si" id="st4"><div class="si-dot"></div>Generate all slide content with full detail</div>
+  <div class="err-detail" id="st1-err"></div>
+  <div class="si" id="st2"><div class="si-dot"></div>Analyze content and generate pedagogy structures</div>
+  <div class="err-detail" id="st2-err"></div>
+  <div class="si" id="st3"><div class="si-dot"></div>Normalize schema and validate requirements</div>
+  <div class="err-detail" id="st3-err"></div>
+  <div class="si" id="st4"><div class="si-dot"></div>Map editable manipulatives and workspaces</div>
+  <div class="err-detail" id="st4-err"></div>
 </div>
+
 <div class="preview-panel" id="preview-panel">
   <div class="preview-h" id="prev-title">Notebook Plan</div>
   <div class="preview-meta" id="prev-meta"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
     <div>
-      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#387F84;margin-bottom:.4rem;letter-spacing:.05em">SESSION 1 <span id="s1-count" style="color:var(--muted)"></span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#387F84;margin-bottom:.6rem;letter-spacing:.05em">SESSION 1 <span id="s1-count" style="color:var(--muted)"></span></div>
       <div class="slide-grid" id="s1-prev"></div>
     </div>
     <div>
-      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#a78bfa;margin-bottom:.4rem;letter-spacing:.05em">SESSION 2 <span id="s2-count" style="color:var(--muted)"></span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#89A373;margin-bottom:.6rem;letter-spacing:.05em">SESSION 2 <span id="s2-count" style="color:var(--muted)"></span></div>
       <div class="slide-grid" id="s2-prev"></div>
     </div>
   </div>
 </div>
+
 <div class="gen-zone">
   <div class="gen-row">
-    <button class="gbtn s1" id="btn-s1" onclick="buildSession('s1')" disabled>▣ Generate S1 Notebook</button>
-    <button class="gbtn s2" id="btn-s2" onclick="buildSession('s2')" disabled>▣ Generate S2 Notebook</button>
+    <button class="gbtn s1" id="btn-s1" onclick="Exporter.buildSession('s1')" disabled>▣ Generate S1 Notebook</button>
+    <button class="gbtn s2" id="btn-s2" onclick="Exporter.buildSession('s2')" disabled>▣ Generate S2 Notebook</button>
   </div>
-  <button class="gbtn both" id="btn-both" onclick="buildBoth()" disabled>⚡ Generate Both Notebooks</button>
+  <button class="gbtn both" id="btn-both" onclick="Exporter.buildBoth()" disabled>⚡ Generate Master Notebook</button>
+  
   <div class="status-box" id="status-box">
     <div class="status-line"><div class="sdot" id="sdot"></div><span id="stxt">Initializing...</span></div>
     <div class="sbarpw"><div class="sbar" id="sbar"></div></div>
   </div>
 </div>
 </div>
-<div role="status" aria-live="polite" aria-atomic="true" class="toast" id="toast"><span id="ticon" aria-hidden="true">✓</span><span id="tmsg"></span></div>
+<div class="toast" id="toast"><span id="ticon">✓</span><span id="tmsg"></span></div>
 
 <script>
 'use strict';
 
-/* ══ ENCAPSULATED STATE ══════════════════════════════════════════ */
+// ══ 1. PURE FUNCTIONS & UTILS ═══════════════════════════════════
+const Utils = {
+  sanitizeFilename: (name) => (name || 'Notebook').replace(/[^a-z0-9]/gi, '_'),
+  fmtMath: (str) => {
+    if (typeof str !== 'string') return '';
+    return str.replace(/>=/g, '≥').replace(/<=/g, '≤').replace(/\*/g, '×');
+  },
+  delay: (ms) => new Promise(r => setTimeout(r, ms))
+};
+
+const PlanNormalizer = {
+  normalize: (raw) => {
+    const p = JSON.parse(JSON.stringify(raw)); // Deep copy to prevent mutations
+    if (p.session1 && !p.s1) p.s1 = p.session1;
+    if (p.session2 && !p.s2) p.s2 = p.session2;
+    
+    ['s1', 's2'].forEach(k => {
+      const s = p[k];
+      if (!s) return;
+      if (s.matching_activity && !s.matching) s.matching = s.matching_activity;
+      if (s.drag_drop_activity && !s.drag_drop) s.drag_drop = s.drag_drop_activity;
+      if (s.notice_wonder && !s.be_curious) s.be_curious = s.notice_wonder;
+      if (s.vocabulary && s.vocabulary.student_definition && !s.vocabulary.definition) {
+        s.vocabulary.definition = s.vocabulary.student_definition;
+      }
+    });
+    return p;
+  },
+  validate: (plan) => {
+    const requiredPaths = [
+      ['lesson_title'], ['detected_standard'],
+      ['s1', 'objectives'], ['s1', 'you_do', 'problems'],
+      ['s2', 'objectives'], ['s2', 'you_do', 'problems']
+    ];
+    for (const path of requiredPaths) {
+      let cur = plan;
+      for (const key of path) { cur = cur?.[key]; if (cur === undefined) break; }
+      if (cur === undefined || cur === null) throw new Error(`Schema mismatch: Missing ${path.join('.')}`);
+    }
+  }
+};
+
+// ══ 2. STATE MANAGEMENT ═════════════════════════════════════════
 const AppState = (() => {
-  let _key = '';
-  let _plan = null;
-  let _generating = false;
+  let _key = ''; let _plan = null; let _generating = false;
   try { const s = sessionStorage.getItem('ewl_plan'); if (s) _plan = JSON.parse(s); } catch(_) {}
+  
   return {
-    getKey:        ()  => _key,
-    setKey:        (k) => { _key = k; },
-    getPlan:       ()  => _plan,
-    setPlan:       (p) => { _plan = p; try { sessionStorage.setItem('ewl_plan', JSON.stringify(p)); } catch(_) {} },
-    clearPlan:     ()  => { _plan = null; try { sessionStorage.removeItem('ewl_plan'); } catch(_) {} },
-    isGenerating:  ()  => _generating,
-    setGenerating: (v) => { _generating = v; },
+    getKey: () => _key, 
+    setKey: (k) => { _key = k; },
+    saveKey: () => {
+      const k = document.getElementById('api-key').value.trim();
+      if (!k.startsWith('sk-ant')) { UI.toast('Key should start with sk-ant-...', 'error'); return; }
+      AppState.setKey(k);
+      const st = document.getElementById('api-status'); st.textContent = 'set ✓'; st.style.color = 'var(--success)';
+      UI.toast('API key saved temporarily for session ✓');
+    },
+    getPlan: () => _plan, 
+    setPlan: (p) => { _plan = p; try { sessionStorage.setItem('ewl_plan', JSON.stringify(p)); } catch(_) {} },
+    clearPlan: () => { _plan = null; try { sessionStorage.removeItem('ewl_plan'); } catch(_) {} },
+    isGenerating: () => _generating, 
+    setGenerating: (v) => { _generating = v; }
   };
 })();
 
-const NB = {
-  bg:'F7F4EE', navy:'1C2E42', body:'242A30', teal:'387F84', gold:'DCB15B',
-  sage:'89A373', rust:'C0614A', cardBlue:'EAF2F7', cardCream:'FCF5E0',
-  cardGray:'E8EDF3', cardSage:'EDF2E8', cardRust:'F5EAE7',
-  muted:'5C656E', border:'D6DBDF', writeLine:'A8B2BC', white:'FFFFFF',
-  purple:'7c3aed'
+const ThemeService = {
+  init: () => {
+    let pref = localStorage.getItem('ewl_theme');
+    if (!pref) { pref = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
+    document.documentElement.setAttribute('data-theme', pref);
+    document.getElementById('theme-btn').textContent = pref === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  },
+  toggle: () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('ewl_theme', next);
+    document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  }
 };
 
-// ══ ACTIVITY LIBRARY (100+ types, Claude picks best per lesson) ══════════
-const ACTIVITY_LIBRARY = `
-ACTIVITY LIBRARY — select 2-3 best per session. Format: type_name: one-line description.
-
-SORT: card_sort|always_sometimes_never|true_false_sort|proportional_sort|equation_expression_sort|increasing_decreasing_sort|representation_sort|term_classification_sort|strategy_sort
-
-MATCH: matching_pairs|table_equation_match|graph_scenario_match|scenario_equation_match|definition_match|representation_matching|word_problem_equation_match|context_variable_match|rate_situation_match
-
-ORGANIZER: frayer_model(def/char/ex/non-ex)|t_chart(2-col compare)|reasoning_ladder(claim→evidence→reasoning)|venn_diagram|flow_chart|four_corners|concept_map
-
-ANALYSIS: error_analysis(find+fix mistake)|error_detective(3 examples)|would_you_rather(justify choice)|which_doesnt_belong|peer_answer_check|build_the_argument|convince_me|strategy_comparison|mathematical_debate
-
-BUILD: build_the_table|equation_builder|input_output_machine|build_the_rule|step_reconstruction|equation_step_sort|pattern_continuation|build_a_story_problem|build_a_model
-
-NUMBER/VISUAL: number_line_placement|balance_scale_equation|graph_feature_labeling|coordinate_point_plotting|magnitude_ordering|estimation_placement|fraction_ratio_model
-
-REAL-WORLD: scenario_analysis_cards(3 situations)|math_connections(3 professions)|rate_comparison_sort|ranking_activity|context_to_variable_mapping|real_world_meaning|estimate_then_reveal
-
-DISCUSSION: gallery_walk_prompts|strategy_ranking|mathematical_argument_sequencing|discussion_evidence_sort|peer_comparison
-
-BEST FITS BY LESSON TYPE:
-- equation/6.EE: table_equation_match, error_analysis, equation_builder, build_the_table, would_you_rather
-- ratio/6.RP: rate_comparison_sort, representation_matching, scenario_equation_match, proportional_sort
-- geometry/6.G: frayer_model, build_a_model, error_detective, graph_feature_labeling
-- statistics/6.SP: representation_sort, build_the_table, gallery_walk_prompts, which_doesnt_belong
-- realworld: scenario_analysis_cards, math_connections, would_you_rather, ranking_activity
-- general: reasoning_ladder, always_sometimes_never, frayer_model, peer_answer_check
-`;
-
-// ══ GLOBALS ═══════════════════════════════════════════════════════════════
-
-// ══ UI HELPERS ═════════════════════════════════════════════════════════════
-function toast(msg,type='success'){
-  const el=document.getElementById('toast');
-  document.getElementById('ticon').textContent=type==='success'?'✓':'✗';
-  document.getElementById('tmsg').textContent=msg;
-  el.className=`toast ${type} show`;
-  setTimeout(()=>el.classList.remove('show'),3500);
-}
-function setStatus(txt,pct,state='run'){
-  document.getElementById('status-box').classList.add('show');
-  document.getElementById('stxt').textContent=txt;
-  document.getElementById('sbar').style.width=pct+'%';
-  document.getElementById('sdot').className='sdot'+(state==='done'?' done':state==='err'?' err':'');
-}
-function setStage(id,state){
-  const el=document.getElementById(id);
-  if(el) el.className='si '+state;
-}
-function setUpProg(pct,title,sub){
-  document.getElementById('u-prog').style.width=pct+'%';
-  if(title) document.getElementById('u-title').textContent=title;
-  if(sub) document.getElementById('u-sub').textContent=sub;
-}
-function tick(){return new Promise(r=>setTimeout(r,18));}
-
-// ══ API KEY ════════════════════════════════════════════════════════════════
-
-/* ══ EVENT LISTENERS ════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  const zone   = document.getElementById('upload-zone');
-  const fileIn = document.getElementById('file-in');
-  document.getElementById('api-key').addEventListener('keydown', e => { if(e.key==='Enter') saveKey(); });
-  zone.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();fileIn.click();} });
-  // Restore plan from sessionStorage
-  const plan = AppState.getPlan();
-  if(plan){
-    renderPreview(plan);
-    document.getElementById('u-idle').style.display='none';
-    document.getElementById('u-done').style.display='block';
-    document.getElementById('u-done-msg').textContent=plan.lesson_title||'Previous Plan';
-    document.getElementById('u-done-sub').textContent=cap(plan.lesson_type)||'';
-    ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=false);
-    toast('Previous plan restored ✓');
-  }
-});
-
-function saveKey(){
-  const k=document.getElementById('api-key').value.trim();
-  if(!k.startsWith('sk-ant')){toast('Key should start with sk-ant-...','error');return;}
-  AppState.setKey(k);
-  const s=document.getElementById('api-status');
-  s.textContent='set ✓';s.style.color='#10b981';
-  toast('API key saved ✓');
-}
-
-// ══ UPLOAD & EXTRACTION ═══════════════════════════════════════════════════
-function handleDrop(e){
-  e.preventDefault();
-  document.getElementById('upload-zone').classList.remove('drag');
-  const f=e.dataTransfer.files[0];if(f)processFile(f);
-}
-function handleFile(e){const f=e.target.files[0];if(f)processFile(f);}
-function resetUpload(){
-  ['u-idle','u-proc','u-done'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.style.display=id==='u-idle'?'block':'none';
-  });
-  document.getElementById('stage-log').classList.remove('show');
-  document.getElementById('preview-panel').classList.remove('show');
-  document.getElementById('file-in').value='';
-  ['st1','st2','st3','st4'].forEach(id=>setStage(id,''));
-  AppState.clearPlan();
-  ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=true);
-}
-
-async function extractPptxText(file){
-  const buf=await file.arrayBuffer();
-  const zip=await JSZip.loadAsync(buf);
-  const slideFiles=Object.keys(zip.files)
-    .filter(n=>n.match(/^ppt\/slides\/slide\d+\.xml$/))
-    .sort((a,b)=>parseInt(a.match(/\d+/)[0])-parseInt(b.match(/\d+/)[0]));
-  let text='';
-  for(const sf of slideFiles){
-    const xml=await zip.files[sf].async('string');
-    let slideText=xml
-      .replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g,(_,t)=>t+' ')
-      .replace(/<[^>]+>/g,' ')
-      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'")
-      .replace(/\s+/g,' ').trim();
-    const num=sf.match(/slide(\d+)/)[1];
-    if(slideText.length>2) text+=`\n--- Slide ${num} ---\n${slideText}\n`;
-  }
-  return text.trim()||'(No text found)';
-}
-
-async function processFile(file){
-  if(!file.name.endsWith('.pptx')){toast('Please upload a .pptx file','error');return;}
-  if(!AppState.getKey()){toast('Paste your API key first','error');return;}
-  document.getElementById('u-idle').style.display='none';
-  document.getElementById('u-proc').style.display='block';
-  document.getElementById('u-done').style.display='none';
-  document.getElementById('stage-log').classList.add('show');
-  setUpProg(5,'Extracting slides...','');
-  setStage('st1','run');
-  try{
-    const slideText=await extractPptxText(file);
-    setStage('st1','done');setStage('st2','run');
-    setUpProg(22,'Analyzing lesson...','Sending to Claude');
-    const prompt=buildPrompt(slideText);
-    const controller=new AbortController();
-    const timeoutId=setTimeout(()=>controller.abort(),60000);
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      signal:controller.signal,
-      headers:{'Content-Type':'application/json','x-api-key':AppState.getKey(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})
-    });
-    clearTimeout(timeoutId);
-    setStage('st2','done');setStage('st3','run');
-    setUpProg(60,'Selecting activities...','');
-    if(!resp.ok){
-      const e=await resp.json().catch(()=>({}));
-      const code=e?.error?.type||'HTTP '+resp.status;
-      throw new Error('Request failed ('+code+'). Check your API key and try again.');
+// ══ 3. UI CONTROLLER ════════════════════════════════════════════
+const UI = {
+  toast: (msg, type='success') => {
+    const el = document.getElementById('toast');
+    document.getElementById('ticon').textContent = type === 'success' ? '✓' : '✗';
+    document.getElementById('tmsg').textContent = msg;
+    el.className = `toast ${type} show`;
+    setTimeout(() => el.classList.remove('show'), 4000);
+  },
+  setStatus: (txt, pct, state='run') => {
+    document.getElementById('status-box').classList.add('show');
+    document.getElementById('stxt').textContent = txt;
+    document.getElementById('sbar').style.width = pct + '%';
+    document.getElementById('sdot').className = 'sdot' + (state==='done'?' done':state==='err'?' err':'');
+  },
+  setStage: (id, state, errMsg='') => {
+    const el = document.getElementById(id); if (!el) return;
+    el.className = 'si ' + state;
+    if (state === 'err') {
+      const errEl = document.getElementById(`${id}-err`);
+      if (errEl) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
+    } else {
+      const errEl = document.getElementById(`${id}-err`);
+      if (errEl) errEl.style.display = 'none';
     }
-    const data=await resp.json();
-    const raw=data.content?.find(b=>b.type==='text')?.text||'';
-    const clean=raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-    let plan;
-    try{plan=JSON.parse(clean);}
-    catch(e){throw new Error('Claude returned invalid JSON — try again.');}
-    setStage('st3','done');setStage('st4','done');
-    setUpProg(100,'Plan ready!','');
-    AppState.setPlan(plan);
-    renderPreview(plan);
-    document.getElementById('u-proc').style.display='none';
-    document.getElementById('u-done').style.display='block';
-    document.getElementById('u-done-msg').textContent=plan.lesson_title||file.name;
-    document.getElementById('u-done-sub').textContent=`${cap(plan.lesson_type)} · Activities: ${getActivityNames(plan)}`;
-    const badge=document.getElementById('u-std');
-    if(plan.detected_standard){badge.textContent='Standard: '+plan.detected_standard;badge.style.display='inline-flex';}
-    ['btn-s1','btn-s2','btn-both'].forEach(id=>document.getElementById(id).disabled=false);
-    toast('Notebook plan ready ✓');
-  }catch(err){
-    console.error(err);
-    document.getElementById('u-proc').style.display='none';
-    document.getElementById('u-idle').style.display='block';
-    toast(err.message.slice(0,80),'error');
+  },
+  setProgress: (pct, title, sub) => {
+    document.getElementById('u-prog').style.width = pct + '%';
+    if (title) document.getElementById('u-title').textContent = title;
+    if (sub) document.getElementById('u-sub').textContent = sub;
+  },
+  reset: () => {
+    ['u-idle','u-proc','u-done'].forEach(id => document.getElementById(id).style.display = id === 'u-idle' ? 'block' : 'none');
+    document.getElementById('stage-log').classList.remove('show');
+    document.getElementById('preview-panel').classList.remove('show');
+    document.getElementById('file-in').value = '';
+    ['st1','st2','st3','st4'].forEach(id => UI.setStage(id, ''));
+    AppState.clearPlan();
+    ['btn-s1','btn-s2','btn-both'].forEach(id => document.getElementById(id).disabled = true);
+  },
+  renderPreview: (plan) => {
+    const panel = document.getElementById('preview-panel'); panel.classList.add('show');
+    document.getElementById('prev-title').textContent = plan.lesson_title || 'Untitled Lesson';
+    
+    // Diagnostic Metadata
+    const s1Acts = (plan.s1.matching?1:0) + (plan.s1.drag_drop?1:0);
+    const s2Acts = (plan.s2.matching?1:0) + (plan.s2.drag_drop?1:0);
+    document.getElementById('prev-meta').innerHTML = `
+      <strong>Standard:</strong> ${plan.detected_standard || 'N/A'} &nbsp;·&nbsp;
+      <strong>Vocab:</strong> ${plan.s1?.vocabulary?.term || 'None'} &nbsp;·&nbsp;
+      <strong>Total Activities:</strong> ${s1Acts + s2Acts} Moveable Card Sorts
+    `;
+    
+    ['s1','s2'].forEach(key => {
+      const s = plan[key]; const grid = document.getElementById(`${key}-prev`); grid.innerHTML = '';
+      const cards = [
+        { t: 'Cover', d: s.scenario || 'No scenario provided' },
+        { t: 'Objectives', d: s.objectives?.[0] || 'Missing obj' },
+        { t: 'Be Curious', d: s.be_curious?.prompt || 'Missing notice/wonder' },
+        { t: 'I Do', d: 'Teacher Model' },
+        { t: 'We Do', d: 'Scaffolded Workspace' },
+        { t: 'You Do', d: `${s.you_do?.problems?.length || 0} Problems` },
+        { t: 'Moveable Sort', d: s.matching?.title || 'Matching', isAct: true },
+        { t: 'Student Manipulatives', d: s.drag_drop?.title || 'Categorize', isAct: true },
+        { t: 'Error Analysis', d: s.error_analysis?.misconception || 'Misconception check' },
+        { t: 'Vocabulary', d: s.vocabulary?.term || 'Term' },
+        { t: 'Exit Ticket', d: `DOK 3: ${s.exit_ticket?.dok3 ? 'Yes' : 'No'}` },
+        { t: 'Reflection', d: 'Goal tracking' }
+      ];
+      cards.forEach((c, i) => {
+        const div = document.createElement('div'); div.className = 'sc' + (c.isAct ? ' activity' : '');
+        div.innerHTML = `<div class="sc-n">Slide ${i+1}</div><div class="sc-t">${c.t}</div><div class="sc-d" title="${c.d}">${c.d}</div>`;
+        grid.appendChild(div);
+      });
+      document.getElementById(`${key}-count`).textContent = `· 12 slides`;
+    });
+    
+    document.getElementById('u-idle').style.display = 'none';
+    document.getElementById('u-proc').style.display = 'none';
+    document.getElementById('u-done').style.display = 'block';
+    document.getElementById('u-done-msg').textContent = plan.lesson_title;
+    ['btn-s1','btn-s2','btn-both'].forEach(id => document.getElementById(id).disabled = false);
   }
-}
+};
 
-function getActivityNames(plan){
-  const acts=[];
-  (plan.session1?.activities||[]).forEach(a=>acts.push(a.type));
-  return [...new Set(acts)].slice(0,3).map(cap).join(', ');
-}
-
-function buildPrompt(slideText){
-  const actSchema = '{"type":"<from library>","title":"<title>","instruction":"<specific>","items":["<i1>","<i2>","<i3>","<i4>","<i5>","<i6>"],"categories":["<CatA>","<CatB>"],"category_a_items":[],"category_b_items":[],"answer_revealed":false,"extra":""}';
-  return `Design TWO flagship Grade 6 EduWonderLab student notebooks from these slides. Premium TPT quality.
+// ══ 4. EXTRACTOR & CLAUDE INTEGRATION ═══════════════════════════
+const FileHandler = {
+  handleDrop: (e) => { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag'); const f = e.dataTransfer.files[0]; if(f) FileHandler.process(f); },
+  handleFile: (e) => { const f = e.target.files[0]; if(f) FileHandler.process(f); },
+  process: async (file) => {
+    if (!file.name.endsWith('.pptx')) { UI.toast('Please upload a .pptx file', 'error'); return; }
+    if (file.size > 50 * 1024 * 1024) { UI.toast('File too large (Max 50MB)', 'error'); return; }
+    if (!AppState.getKey()) { UI.toast('Paste your API key first', 'error'); return; }
+    
+    document.getElementById('u-idle').style.display = 'none';
+    document.getElementById('u-proc').style.display = 'block';
+    document.getElementById('stage-log').classList.add('show');
+    UI.setProgress(5, 'Extracting slides...', '');
+    UI.setStage('st1', 'run');
+    
+    try {
+      const slideText = await FileHandler.extractPptxText(file);
+      UI.setStage('st1', 'done'); UI.setStage('st2', 'run'); 
+      UI.setProgress(30, 'Building strict sequence...', 'Claude analyzing content');
+      
+      const rawJson = await FileHandler.fetchAnthropicPlan(slideText);
+      UI.setStage('st2', 'done'); UI.setStage('st3', 'run');
+      UI.setProgress(70, 'Normalizing schema...', 'Validating requirements');
+      
+      const plan = PlanNormalizer.normalize(rawJson);
+      PlanNormalizer.validate(plan);
+      
+      UI.setStage('st3', 'done'); UI.setStage('st4', 'run');
+      UI.setProgress(90, 'Mapping pedagogical layouts...', '');
+      await Utils.delay(400); // Visual pacing
+      
+      UI.setStage('st4', 'done'); UI.setProgress(100, 'Plan Ready!', '');
+      AppState.setPlan(plan); UI.renderPreview(plan);
+      UI.toast('Notebook plan ready ✓');
+    } catch(err) {
+      console.error(err);
+      UI.setProgress(0);
+      document.getElementById('u-proc').style.display = 'none';
+      document.getElementById('u-idle').style.display = 'block';
+      UI.toast(err.message, 'error');
+      
+      // Attempt to identify failed stage
+      if(err.message.includes('Schema')||err.message.includes('Missing')) UI.setStage('st3', 'err', err.message);
+      else if(err.message.includes('API')) UI.setStage('st2', 'err', err.message);
+      else UI.setStage('st1', 'err', err.message);
+    }
+  },
+  extractPptxText: async (file) => {
+    const buf = await file.arrayBuffer(); const zip = await JSZip.loadAsync(buf);
+    const slideFiles = Object.keys(zip.files).filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+    if(slideFiles.length > 100) throw new Error("Deck too large. Max 100 slides.");
+    let text = '';
+    for (const sf of slideFiles) {
+      const xml = await zip.files[sf].async('string');
+      let slideText = xml.replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g, (_,t)=>t+' ').replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();
+      if (slideText.length > 2) text += `\n--- Slide ${sf.match(/slide(\d+)/)[1]} ---\n${slideText}\n`;
+    }
+    return text.trim() || '(No text found)';
+  },
+  fetchAnthropicPlan: async (slideText) => {
+    const sessionSchema = `"objectives": ["",""], "scenario": "", "be_curious": {"prompt":"","twr_starter":""}, "i_do": {"problem":"","steps":["","",""]}, "we_do": {"problem":""}, "you_do": {"problems":["",""]}, "matching": {"title":"", "pairs":[{"target":"","card":""},{"target":"","card":""},{"target":"","card":""},{"target":"","card":""}]}, "drag_drop": {"title":"", "zones":["","",""], "cards":["","","","",""]}, "error_analysis": {"misconception":"","flawed_work":"","prompt":""}, "vocabulary": {"term":"","definition":"","example":"","non_example":"","visual_cue":"","sentence_frame":""}, "exit_ticket": {"dok1":"","dok2":"","dok3":""}, "reflection": "String"`;
+    
+    const prompt = `Act as a master Grade 6 Math/ESOL Curriculum Designer. Parse the provided lesson slides into a strict, highly engaging digital notebook JSON schema. Output ONLY valid JSON, nothing else.
 
 SLIDES:
 ${slideText}
 
-${ACTIVITY_LIBRARY}
+REQUIRED STRUCTURE PER SESSION (Generate content for BOTH s1 and s2):
+- scenario: Short real-world context for the lesson
+- objectives: 2 clear "I can" statements
+- be_curious: notice_wonder prompt, twr_starter (kernel/because/but/so)
+- i_do: 1 worked example problem, 3 distinct steps
+- we_do: 1 scaffolded problem
+- you_do: 2 independent practice problems
+- matching: title, 4 pairs of (target_label, draggable_card_text)
+- drag_drop: title, 3 empty zone_labels, 5 draggable_card_texts
+- error_analysis: misconception (real 6th grade error), flawed_work, prompt to fix
+- vocabulary: term, definition, example, non_example, visual_cue (what to draw), sentence_frame
+- exit_ticket: 3 questions increasing DOK 1->3. (S2 DOK 3 MUST synthesize S1 and S2).
+- reflection: prompt
 
-RULES: Content from slides only — never invent. 2-3 activities per session, different formats, lesson-specific. Gradual release scaffold. TWR uses lesson vocab. Exit DOK 1→2→3. S2 tier 3 references BOTH sessions.
-
-Return ONLY valid JSON:
-
+Output JSON format EXACTLY matching this structure:
 {
-  "lesson_title": "exact title",
-  "lesson_type": "equation|ratio|geometry|statistics|realworld|number|general",
-  "detected_standard": "e.g. 6.EE.C.9",
-  "unit": "unit number",
-  "lesson_number": "lesson number",
-  "learning_targets": ["I can...", "I can..."],
-  "session1":{"title":"","scenario":"","key_concept":"","vocabulary":[{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""}],"notice_prompt":"","wonder_prompt":"","twr_stem":"","guided_problem_1":"","guided_problem_2":"","collab_task":"","discussion_q1":"","discussion_q2":"","discussion_q3":"","ip_p1":"","ip_p2":"","ip_p3":"","activities":[${actSchema},${actSchema}],"twr_frame1":"CLAIM:","twr_frame2":"EVIDENCE:","twr_frame3":"REASONING:","twr_frame4":"REAL-WORLD:","et_tier1":"DOK1","et_tier2":"DOK2","et_tier3":"DOK3"},
-  "session2":{"title":"","scenario":"","key_concept":"","vocabulary":[{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""},{"en":"","es":"","definition":""}],"notice_prompt":"","wonder_prompt":"","twr_stem":"","guided_problem_1":"","guided_problem_2":"","collab_task":"","discussion_q1":"","discussion_q2":"","discussion_q3":"How does S2 build on S1?","ip_p1":"","ip_p2":"","ip_p3":"must reference both sessions","activities":[${actSchema},${actSchema}],"twr_frame1":"CLAIM:","twr_frame2":"EVIDENCE:","twr_frame3":"REASONING:","twr_frame4":"COMPARE S1 and S2:","et_tier1":"DOK1","et_tier2":"DOK2","et_tier3":"DOK3 — BOTH sessions"}
+  "lesson_title": "String", "detected_standard": "String",
+  "s1": { ${sessionSchema} },
+  "s2": { ${sessionSchema} }
 }`;
-}
 
-function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1).replace(/_/g,' '):''}
-
-function renderPreview(plan){
-  const panel=document.getElementById('preview-panel');
-  panel.classList.add('show');
-  document.getElementById('prev-title').textContent=plan.lesson_title||'Notebook Plan';
-  document.getElementById('prev-meta').innerHTML=
-    `<strong>Type:</strong> ${cap(plan.lesson_type)} &nbsp;·&nbsp; <strong>Standard:</strong> ${plan.detected_standard||'Grade 6'}<br>`+
-    `<strong>Targets:</strong> ${(plan.learning_targets||[]).join(' · ')}`;
-  ['s1','s2'].forEach(s=>{
-    const sd=plan[s==='s1'?'session1':'session2'];
-    const grid=document.getElementById(s+'-prev');
-    grid.innerHTML='';
-    const baseSlides=[
-      {n:1,t:'Cover',d:'Title · Objectives · Before/After'},
-      {n:2,t:'Notice & Wonder',d:'Stimulus · NOTICE/WONDER · TWR'},
-      {n:3,t:'Vocabulary',d:'4 terms · EN+ES · Frayer-style'},
-      {n:4,t:'Guided Practice',d:'2 scaffolded problems'},
-      {n:5,t:'Collaborative Practice',d:'Partner task · Discussion Qs'},
-      {n:6,t:'Independent Practice',d:'P1 · P2 · P3 (DOK 1→3)'},
-    ];
-    const activities=(sd?.activities||[]);
-    activities.forEach((a,i)=>{
-      baseSlides.push({n:7+i,t:a.title||cap(a.type),d:cap(a.type),isActivity:true});
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': AppState.getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] })
     });
-    const afterAct=7+activities.length;
-    baseSlides.push({n:afterAct,t:'TWR Frame',d:'4 reasoning frames'});
-    baseSlides.push({n:afterAct+1,t:'Exit Ticket',d:'3 tiers · DOK 1–3'});
-    baseSlides.push({n:afterAct+2,t:'Goal Tracker',d:'1–4 scale · reflection'});
-    document.getElementById(s+'-count').textContent=`· ${baseSlides.length} slides`;
-    baseSlides.forEach(sl=>{
-      const div=document.createElement('div');
-      div.className='sc'+(sl.isActivity?' activity':'');
-      div.innerHTML=`<div class="sc-n">Slide ${sl.n}</div><div class="sc-t">${sl.t}</div><div class="sc-d">${sl.d}</div>`;
-      grid.appendChild(div);
-    });
-  });
-}
-
-// ══ PPTX HELPERS ═══════════════════════════════════════════════════════════
-function ms(){return{type:'outer',color:'000000',opacity:0.07,blur:5,offset:2,angle:135};}
-function ms2(){return{type:'outer',color:'000000',opacity:0.13,blur:8,offset:3,angle:135};}
-
-function hdr(slide,pres,session,title,subtitle){
-  const ac=session==='s1'?NB.navy:NB.purple;
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:0.68,fill:{color:ac},line:{color:ac}});
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:0.28,h:0.68,fill:{color:NB.teal},line:{color:NB.teal}});
-  slide.addText(title,{x:0.44,y:0,w:8.1,h:0.68,fontSize:15,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-  const std=(AppState.getPlan()?.detected_standard||'Grade 6');
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:8.72,y:0.12,w:1.12,h:0.42,fill:{color:NB.teal},line:{color:NB.teal},rectRadius:0.05});
-  slide.addText(std,{x:8.72,y:0.12,w:1.12,h:0.42,fontSize:7.5,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-  if(subtitle) slide.addText(subtitle,{x:0.44,y:0.68,w:9.4,h:0.26,fontSize:9,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-}
-
-function ftr(slide,pres,n){
-  const std=AppState.getPlan()?.detected_standard||'Grade 6';
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:10,h:0.325,fill:{color:NB.navy,transparency:94},line:{color:NB.border}});
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:0.28,h:0.325,fill:{color:NB.teal,transparency:60},line:{color:NB.teal,transparency:60}});
-  slide.addText(`EduWonderLab © · ${std} · Neft.Alba`,{x:0.36,y:5.3,w:7.5,h:0.325,fontSize:7.5,color:NB.muted,fontFace:'Calibri',valign:'middle',margin:0});
-  slide.addText(String(n),{x:9.55,y:5.3,w:0.35,h:0.325,fontSize:7.5,color:NB.muted,fontFace:'Calibri',align:'right',valign:'middle',margin:0});
-}
-
-function wl(slide,pres,x,y,w,n,lh=0.27){
-  for(let i=0;i<n;i++) slide.addShape(pres.shapes.LINE,{x,y:y+i*lh,w,h:0,line:{color:NB.writeLine,width:0.9}});
-}
-
-function coloredCard(slide,pres,x,y,w,h,fill,lineColor,opts={}){
-  slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h,fill:{color:fill||NB.white},line:{color:lineColor||NB.border},shadow:opts.shadow!==false?ms():undefined});
-  if(opts.topBar) slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:opts.topBar,fill:{color:opts.topBarColor||NB.teal},line:{color:opts.topBarColor||NB.teal}});
-  if(opts.leftBar) slide.addShape(pres.shapes.RECTANGLE,{x,y,w:opts.leftBar,h,fill:{color:opts.leftBarColor||NB.teal},line:{color:opts.leftBarColor||NB.teal}});
-}
-
-function sectionLabel(slide,pres,x,y,label,color){
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x,y,w:label.length*0.085+0.24,h:0.24,fill:{color:color||NB.teal,transparency:85},line:{color:color||NB.teal,transparency:40},rectRadius:0.04});
-  slide.addText(label,{x:x+0.08,y,w:label.length*0.085+0.1,h:0.24,fontSize:7.5,bold:true,color:color||NB.teal,fontFace:'Calibri',valign:'middle',charSpacing:1,margin:0});
-}
-
-function numBadge(slide,pres,x,y,num,color){
-  slide.addShape(pres.shapes.OVAL,{x,y,w:0.32,h:0.32,fill:{color:color||NB.teal},line:{color:color||NB.teal}});
-  slide.addText(String(num),{x,y,w:0.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-}
-
-// ══ SLIDE 1: COVER ══════════════════════════════════════════════════════════
-function buildCover(pres,session,plan){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  const sLabel=session==='s1'?'Session 1':'Session 2';
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,`${plan.lesson_title||'Lesson'} · ${sLabel}`,sd.scenario||'');
-
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0.68,w:0.28,h:4.62,fill:{color:NB.teal,transparency:70},line:{color:NB.teal,transparency:70}});
-  slide.addText('Student Notebook',{x:0.48,y:0.82,w:7,h:0.48,fontSize:24,bold:true,color:ac,fontFace:'Calibri',margin:0});
-  slide.addText(sd.key_concept||'',{x:0.48,y:1.28,w:9.1,h:0.32,fontSize:11,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:7.6,y:0.82,w:2.1,h:0.72,fill:{color:ac,transparency:88},line:{color:ac},rectRadius:0.08});
-  slide.addText(sLabel,{x:7.6,y:0.82,w:2.1,h:0.36,fontSize:10,bold:true,color:ac,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-  slide.addText(plan.unit?`Unit ${plan.unit} · Lesson ${plan.lesson_number||''}`:plan.detected_standard||'',{x:7.6,y:1.18,w:2.1,h:0.36,fontSize:8.5,color:NB.muted,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-
-  coloredCard(slide,pres,0.48,1.7,3.5,0.58,NB.cardBlue,NB.border);
-  slide.addText([
-    {text:'☐',options:{color:NB.teal,bold:true,fontSize:12}},
-    {text:'  Before   ',options:{color:NB.muted,fontSize:10}},
-    {text:'☐',options:{color:NB.teal,bold:true,fontSize:12}},
-    {text:'  After',options:{color:NB.muted,fontSize:10}}
-  ],{x:0.64,y:1.7,w:3.2,h:0.58,valign:'middle',fontFace:'Calibri',margin:0});
-
-  coloredCard(slide,pres,0.48,2.38,9.2,1.56,NB.cardCream,NB.border,{topBar:0.32,topBarColor:ac});
-  slide.addShape(pres.shapes.RECTANGLE,{x:0.48,y:2.38,w:0.1,h:1.56,fill:{color:NB.teal},line:{color:NB.teal}});
-  slide.addText('LEARNING TARGETS',{x:0.68,y:2.38,w:8.8,h:0.32,fontSize:8,bold:true,color:NB.white,fontFace:'Calibri',charSpacing:2,valign:'middle',margin:0});
-  (plan.learning_targets||['I can...']).slice(0,3).forEach((t,i)=>{
-    slide.addShape(pres.shapes.OVAL,{x:0.68,y:2.74+i*0.36,w:0.22,h:0.22,fill:{color:NB.teal},line:{color:NB.teal}});
-    slide.addText(t,{x:1.0,y:2.72+i*0.36,w:8.5,h:0.32,fontSize:10,color:NB.body,fontFace:'Calibri',margin:0});
-  });
-
-  sectionLabel(slide,pres,0.48,4.06,"WHAT'S INSIDE",NB.muted);
-  const acts=(plan.session1?.activities||[]).map(a=>a.title||cap(a.type));
-  const secs=['Notice & Wonder','Vocabulary','Guided Practice','Collab Practice','Independent Practice',...acts,'TWR Frame','Exit Ticket','Goal Tracker'];
-  const iw=9.2/3;
-  secs.slice(0,9).forEach((sec,i)=>{
-    slide.addText([
-      {text:'▸ ',options:{color:NB.teal,bold:true,fontSize:8.5}},
-      {text:sec,options:{color:NB.body,fontSize:8.5}}
-    ],{x:0.48+(i%3)*iw,y:4.32+(Math.floor(i/3))*0.22,w:iw,h:0.22,fontFace:'Calibri',margin:0});
-  });
-
-  slide.addText('For classroom use only. Not for redistribution. © EduWonderLab',{x:0.48,y:4.98,w:9.2,h:0.2,fontSize:7,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-  ftr(slide,pres,1);
-}
-
-// ══ SLIDE 2: NOTICE & WONDER ═══════════════════════════════════════════════
-function buildNoticeWonder(pres,session,plan){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const s1d=plan.session1;
-  const isS2=session==='s2';
-  const ac=session==='s1'?NB.navy:NB.purple;
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Notice & Wonder',null);
-
-  const topY=0.8,cH=4.24;
-
-  coloredCard(slide,pres,0.2,topY,4.55,cH,isS2?NB.cardBlue:NB.cardGray,NB.border);
-  if(!isS2){
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY,w:4.55,h:0.3,fill:{color:NB.navy,transparency:85},line:{color:NB.border}});
-    slide.addText('📸  Lesson Image',{x:0.3,y:topY,w:4.35,h:0.3,fontSize:8.5,color:NB.navy,fontFace:'Calibri',bold:true,valign:'middle',margin:0});
-    slide.addText('[ Lesson Image / Stimulus ]',{x:0.2,y:topY+0.3,w:4.55,h:cH-0.62,fontSize:10,color:NB.muted,fontFace:'Calibri',align:'center',valign:'middle',italic:true,margin:0});
-    slide.addText('What do you notice? What do you wonder?',{x:0.28,y:topY+cH-0.3,w:4.38,h:0.26,fontSize:8,italic:true,color:NB.muted,fontFace:'Calibri',align:'center',margin:0});
-  } else {
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY,w:4.55,h:0.32,fill:{color:NB.purple},line:{color:NB.purple}});
-    slide.addText('📋  Session 1 — Reference',{x:0.32,y:topY,w:4.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:topY+0.32,w:4.55,h:0.04,fill:{color:NB.teal},line:{color:NB.teal}});
-    slide.addText(s1d.key_concept||'',{x:0.32,y:topY+0.42,w:4.3,h:0.38,fontSize:9.5,bold:true,italic:true,color:NB.teal,fontFace:'Calibri',margin:0});
-    slide.addText(s1d.scenario||'',{x:0.32,y:topY+0.84,w:4.3,h:0.52,fontSize:9,color:NB.body,fontFace:'Calibri',margin:0});
-    sectionLabel(slide,pres,0.32,topY+1.42,'KEY TERMS',NB.teal);
-    (s1d.vocabulary||[]).slice(0,3).forEach((v,i)=>{
-      slide.addShape(pres.shapes.OVAL,{x:0.32,y:topY+1.74+i*0.3,w:0.16,h:0.16,fill:{color:NB.teal},line:{color:NB.teal}});
-      slide.addText([{text:v.en+': ',options:{bold:true,color:NB.navy,fontSize:9}},{text:v.definition||'',options:{color:NB.body,fontSize:9}}],{x:0.56,y:topY+1.68+i*0.3,w:4.08,h:0.28,fontFace:'Calibri',margin:0});
-    });
-    wl(slide,pres,0.32,topY+2.7,4.28,5,0.3);
+    
+    if (!resp.ok) throw new Error(`API Error: ${resp.status} - Check API key`);
+    const data = await resp.json();
+    const textBlock = data.content?.find(c => c.type === 'text')?.text || '';
+    if (!textBlock) throw new Error("API returned no text content");
+    
+    const clean = textBlock.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+    try { return JSON.parse(clean); } catch(e) { throw new Error("Claude returned invalid JSON schema"); }
   }
+};
 
-  const rX=5.0,cardW=4.8,nH=(cH-0.14)/2;
-  coloredCard(slide,pres,rX,topY,cardW,nH,NB.white,NB.teal,{topBar:0.32,topBarColor:NB.teal});
-  slide.addText('👁  NOTICE',{x:rX+0.12,y:topY,w:cardW-0.18,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-  sectionLabel(slide,pres,rX+0.14,topY+0.38,'I NOTICE THAT...',NB.teal);
-  slide.addText(sd.notice_prompt||'I notice that ___ and ___.',{x:rX+0.14,y:topY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-  wl(slide,pres,rX+0.14,topY+1.12,cardW-0.24,3,0.25);
+// ══ 5. PPTX GENERATOR (NotebookExporter) ════════════════════════
+const NB = {
+  bg: 'F7F4EE', navy: '1C2E42', body: '242A30', teal: '387F84', gold: 'DCB15B',
+  sage: '89A373', rust: 'C0614A', cardBlue: 'EAF2F7', border: 'D6DBDF', white: 'FFFFFF',
+  muted: '5C656E', cardGray: 'E8EDF3', cardRust: 'F5EAE7'
+};
 
-  const wY=topY+nH+0.14;
-  coloredCard(slide,pres,rX,wY,cardW,nH,NB.white,ac,{topBar:0.32,topBarColor:ac});
-  slide.addText('💭  WONDER',{x:rX+0.12,y:wY,w:cardW-0.18,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-  sectionLabel(slide,pres,rX+0.14,wY+0.38,'I WONDER IF...',ac);
-  const wonderTxt=isS2?'I wonder how this connects to Session 1 because ___.':(sd.wonder_prompt||'I wonder if ___ because ___.');
-  slide.addText(wonderTxt,{x:rX+0.14,y:wY+0.64,w:cardW-0.24,h:0.42,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-  wl(slide,pres,rX+0.14,wY+1.12,cardW-0.24,3,0.25);
-
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.0,w:10,h:0.28,fill:{color:NB.cardCream},line:{color:NB.border}});
-  slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.0,w:0.28,h:0.28,fill:{color:NB.gold},line:{color:NB.gold}});
-  slide.addText([
-    {text:'✏ TWR: ',options:{bold:true,color:NB.gold,fontSize:8.5}},
-    {text:sd.twr_stem||'The ___ depends on ___ because ___.',options:{color:NB.body,fontSize:8.5,italic:true}}
-  ],{x:0.38,y:5.0,w:9.5,h:0.28,fontFace:'Calibri',valign:'middle',margin:0});
-
-  ftr(slide,pres,2);
-}
-
-// ══ SLIDE 3: VOCABULARY ════════════════════════════════════════════════════
-function buildVocab(pres,session,plan){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Vocabulary','Academic Language for This Lesson');
-
-  const vocab=(sd.vocabulary||[]).slice(0,4);
-  while(vocab.length<4) vocab.push({en:'—',es:'—',definition:'—'});
-
-  const fills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust];
-  const bars=[NB.teal,NB.gold,NB.sage,NB.rust];
-  const cW=4.52,cH=1.88,gX=0.24,sX=0.24,sY=0.9,gY=0.2;
-
-  vocab.forEach((t,i)=>{
-    const col=i%2,row=Math.floor(i/2);
-    const cx=sX+col*(cW+gX),cy=sY+row*(cH+gY);
-    coloredCard(slide,pres,cx,cy,cW,cH,fills[i],NB.border,{topBar:0.32,topBarColor:bars[i]});
-    slide.addShape(pres.shapes.OVAL,{x:cx+0.12,y:cy,w:0.32,h:0.32,fill:{color:NB.white,transparency:40},line:{color:NB.white}});
-    slide.addText(String(i+1),{x:cx+0.12,y:cy,w:0.32,h:0.32,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText(t.en||'',{x:cx+0.54,y:cy+0.04,w:cW-0.66,h:0.28,fontSize:12,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addText('🇪🇸 '+(t.es||''),{x:cx+0.14,y:cy+0.38,w:cW-0.24,h:0.22,fontSize:9.5,italic:true,color:NB.muted,fontFace:'Calibri',margin:0});
-    if(t.definition && t.definition!=='—'){
-      slide.addShape(pres.shapes.RECTANGLE,{x:cx+0.14,y:cy+0.62,w:cW-0.24,h:0.26,fill:{color:NB.white,transparency:50},line:{color:NB.border,transparency:40}});
-      slide.addText(t.definition,{x:cx+0.2,y:cy+0.62,w:cW-0.32,h:0.26,fontSize:9,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
-    } else {
-      sectionLabel(slide,pres,cx+0.14,cy+0.62,'DEFINITION',bars[i]);
+const Exporter = {
+  ms: () => ({ type: 'outer', color: '000000', opacity: 0.08, blur: 6, offset: 2, angle: 135 }),
+  
+  addWorkspaceLines: (slide, pres, x, y, w, numLines, lh=0.35) => {
+    slide.addShape(pres.shapes.RECTANGLE, {x, y, w, h: numLines*lh + 0.2, fill: {color: NB.white}, line: {color: NB.border}});
+    slide.addText('✎ Show your work', {x: x+0.1, y: y+0.05, w: w-0.2, h: 0.2, fontSize: 10, color: NB.muted, italic: true});
+    for(let i=1; i<=numLines; i++) {
+      slide.addShape(pres.shapes.LINE, {x: x+0.2, y: y + (i*lh), w: w-0.4, h: 0, line: {type: 'dash', color: NB.border}});
     }
-    wl(slide,pres,cx+0.14,cy+0.96,cW-0.24,3,0.29);
-  });
+  },
 
-  ftr(slide,pres,3);
-}
+  addCardTray: (slide, pres, yHeight) => {
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0, y: yHeight, w: 10, h: 5.625 - yHeight, fill: {color: NB.cardGray}});
+    slide.addText('Manipulative Tray: Move pieces into position', {x: 0.2, y: yHeight+0.05, w: 9.6, h: 0.3, fontSize: 11, color: NB.muted, bold: true});
+  },
 
-// ══ SLIDE 4: GUIDED PRACTICE ═══════════════════════════════════════════════
-function buildGuided(pres,session,plan){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Guided Practice','Work with your teacher · '+sd.scenario);
+  hdr: (slide, pres, session, title, subtitle) => {
+    const ac = session === 's1' ? NB.navy : NB.sage;
+    slide.addShape(pres.shapes.RECTANGLE, {x:0, y:0, w:10, h:0.75, fill: {color: ac}});
+    slide.addShape(pres.shapes.RECTANGLE, {x:0, y:0, w:0.28, h:0.75, fill: {color: NB.teal}});
+    slide.addText(title, {x:0.44, y:0.05, w:8.1, h:0.45, fontSize: 18, bold: true, color: NB.white, fontFace: 'Calibri', valign: 'bottom', margin: 0});
+    if (subtitle) slide.addText(subtitle, {x:0.44, y:0.5, w:9.4, h:0.25, fontSize: 11, color: NB.white, fontFace: 'Calibri', italic: true, margin: 0, transparency: 20});
+  },
 
-  coloredCard(slide,pres,0.2,0.86,9.6,0.58,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
-  sectionLabel(slide,pres,0.38,0.9,'SCENARIO',NB.teal);
-  slide.addText(sd.scenario||'',{x:1.24,y:0.86,w:8.42,h:0.58,fontSize:9.5,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
+  ftr: (slide, pres, n, plan) => {
+    const std = plan.detected_standard || 'Grade 6';
+    slide.addShape(pres.shapes.RECTANGLE, {x:0, y:5.3, w:10, h:0.325, fill: {color: NB.white}, line: {color: NB.border, width: 0.5}});
+    slide.addText(`EduWonderLab © · ${std} · Neft`, {x:0.36, y:5.3, w:7.5, h:0.325, fontSize: 9, color: NB.muted, fontFace: 'Calibri', valign: 'middle', margin: 0});
+    slide.addText(n, {x:9.0, y:5.3, w:0.8, h:0.325, fontSize: 9, color: NB.muted, fontFace: 'Calibri', align: 'right', valign: 'middle', margin: 0});
+  },
 
-  const p1Y=1.54;
-  coloredCard(slide,pres,0.2,p1Y,9.6,1.48,NB.white,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
-  numBadge(slide,pres,0.3,p1Y+0.1,1,NB.teal);
-  sectionLabel(slide,pres,0.74,p1Y+0.06,'WE DO',NB.teal);
-  slide.addText(sd.guided_problem_1||'',{x:0.38,y:p1Y+0.36,w:9.3,h:0.44,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-  slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:0.38,y:p1Y+0.84,w:3.5,h:0.56,fill:{color:NB.cardSage,transparency:30},line:{color:NB.sage,transparency:50},rectRadius:0.05});
-  slide.addText('💡 Think: ',{x:0.5,y:p1Y+0.88,w:3.26,h:0.22,fontSize:8.5,bold:true,color:NB.sage,fontFace:'Calibri',margin:0});
-  slide.addText('What information do I have? What am I finding?',{x:0.5,y:p1Y+1.08,w:3.26,h:0.22,fontSize:8,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-  wl(slide,pres,4.08,p1Y+0.88,5.6,2,0.28);
+  buildSessionFile: async (pres, sessionKey, plan) => {
+    const sd = plan[sessionKey]; const isS1 = sessionKey === 's1';
+    let sNum = 1; const n = () => `S${isS1?1:2} - ${sNum++}`;
+    const M = Utils.fmtMath;
 
-  const p2Y=3.1;
-  coloredCard(slide,pres,0.2,p2Y,9.6,1.52,NB.white,NB.border,{leftBar:0.08,leftBarColor:ac});
-  numBadge(slide,pres,0.3,p2Y+0.1,2,ac);
-  sectionLabel(slide,pres,0.74,p2Y+0.06,'TRY IT',ac);
-  slide.addText(sd.guided_problem_2||'',{x:0.38,y:p2Y+0.36,w:9.3,h:0.44,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-  wl(slide,pres,0.38,p2Y+0.86,9.3,2,0.3);
+    // 1. Cover
+    let slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, `${plan.lesson_title} · ${isS1?'Session 1':'Session 2'}`);
+    slide.addText('Student Notebook', {x: 0.5, y: 1.6, w: 7, h: 0.6, fontSize: 32, bold: true, color: isS1?NB.navy:NB.sage, fontFace: 'Calibri'});
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 2.3, w: 8, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
+    slide.addText('Today\'s Context:\n' + M(sd.scenario || 'Building mathematical mastery.'), {x: 0.7, y: 2.4, w: 7.6, h: 1.0, fontSize: 14, color: NB.body});
+    Exporter.ftr(slide, pres, n(), plan);
 
-  ftr(slide,pres,4);
-}
-
-// ══ SLIDE 5: COLLABORATIVE PRACTICE ════════════════════════════════════════
-function buildCollab(pres,session,plan){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Collaborative Practice','Work with a partner');
-
-  coloredCard(slide,pres,0.2,0.86,9.6,0.58,NB.cardSage,NB.border,{leftBar:0.08,leftBarColor:NB.sage});
-  sectionLabel(slide,pres,0.38,0.9,'PARTNER TASK',NB.sage);
-  slide.addText(sd.collab_task||'',{x:1.38,y:0.86,w:8.28,h:0.58,fontSize:9.5,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
-
-  const colors=[NB.teal,ac,NB.gold];
-  const fills=[NB.cardBlue,NB.cardCream,NB.cardRust];
-  const qs=[sd.discussion_q1,sd.discussion_q2,sd.discussion_q3||'How does this connect to what you already know?'];
-
-  slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.54,w:9.6,h:0.3,fill:{color:ac},line:{color:ac}});
-  slide.addText('💬  Discussion Questions',{x:0.36,y:1.54,w:9.3,h:0.3,fontSize:9.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-
-  qs.slice(0,3).forEach((q,i)=>{
-    const qY=1.92+i*1.0;
-    coloredCard(slide,pres,0.2,qY,9.6,0.9,fills[i],colors[i],{leftBar:0.08,leftBarColor:colors[i]});
-    numBadge(slide,pres,0.3,qY+0.08,i+1,colors[i]);
-    slide.addText(q||'',{x:0.74,y:qY+0.06,w:8.94,h:0.32,fontSize:9.5,bold:true,color:NB.body,fontFace:'Calibri',margin:0});
-    wl(slide,pres,0.74,qY+0.44,8.94,2,0.24);
-  });
-
-  ftr(slide,pres,5);
-}
-
-// ══ SLIDE 6: INDEPENDENT PRACTICE ══════════════════════════════════════════
-function buildIndependent(pres,session,plan){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  const isS2=session==='s2';
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Independent Practice','Show what you know · No help needed');
-
-  const problems=[
-    {num:'P1',label:'APPLY',text:sd.ip_p1||'',bar:NB.teal,fill:NB.cardBlue,dok:'DOK 1–2'},
-    {num:'P2',label:'EXPLAIN',text:sd.ip_p2||'',bar:ac,fill:NB.cardCream,dok:'DOK 2'},
-    {num:'P3',label:isS2?'CONNECT':'JUSTIFY',text:sd.ip_p3||'',bar:NB.gold,fill:NB.cardRust,dok:'DOK 2–3'}
-  ];
-
-  const pX=0.2,pW=9.6,pH=1.38,pG=0.1,pSY=0.86;
-  problems.forEach((p,i)=>{
-    const py=pSY+i*(pH+pG);
-    coloredCard(slide,pres,pX,py,pW,pH,p.fill,p.bar,{leftBar:0.08,leftBarColor:p.bar});
-    numBadge(slide,pres,pX+0.18,py+0.08,p.num,p.bar);
-    sectionLabel(slide,pres,pX+0.62,py+0.06,p.label,p.bar);
-    slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:pX+pW-1.1,y:py+0.06,w:0.9,h:0.22,fill:{color:p.bar,transparency:80},line:{color:p.bar,transparency:50},rectRadius:0.04});
-    slide.addText(p.dok,{x:pX+pW-1.1,y:py+0.06,w:0.9,h:0.22,fontSize:7,bold:true,color:p.bar,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText(p.text,{x:pX+0.38,y:py+0.36,w:pW-0.52,h:0.46,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-    wl(slide,pres,pX+0.24,py+0.88,pW-0.36,2,0.27);
-  });
-
-  ftr(slide,pres,6);
-}
-
-// ══ ACTIVITY SLIDES (adaptive, from library) ═══════════════════════════════
-function buildActivitySlide(pres,session,plan,activityData,slideNum){
-  const slide=pres.addSlide();
-  const ac=session==='s1'?NB.navy:NB.purple;
-  const sd=plan[session==='s1'?'session1':'session2'];
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,activityData.title||cap(activityData.type),'');
-
-  coloredCard(slide,pres,0.2,0.86,9.6,0.5,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.gold});
-  slide.addText([
-    {text:'📋 ',options:{fontSize:9.5}},
-    {text:activityData.instruction||'Complete the activity below.',options:{color:NB.body,fontSize:9.5,italic:true}}
-  ],{x:0.38,y:0.86,w:9.3,h:0.5,fontFace:'Calibri',valign:'middle',margin:0});
-
-  const at=activityData.type||'extend_apply';
-  const items=activityData.items||[];
-  const cats=activityData.categories||['Category A','Category B'];
-
-  if(['card_sort','drag_sort_categorization','true_false_sort','proportional_sort','equation_expression_sort','always_sometimes_never','increasing_decreasing_sort','term_classification_sort','problem_type_sort','strategy_sort','representation_sort'].includes(at)){
-
-    const hasThree=cats[2];
-    const colW=hasThree?3.0:4.6;
-    const colPositions=hasThree?[0.2,3.4,6.6]:[0.2,5.12];
-    const colColors=[NB.teal,ac,NB.gold];
-
-    colPositions.forEach((cx,i)=>{
-      coloredCard(slide,pres,cx,1.44,colW,2.8,NB.white,colColors[i],{topBar:0.34,topBarColor:colColors[i]});
-      slide.addText(cats[i]||`Category ${i+1}`,{x:cx+0.1,y:1.44,w:colW-0.16,h:0.34,fontSize:8.5,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:0.5,margin:0});
-      for(let r=0;r<4;r++){
-        slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:cx+0.14,y:1.86+r*0.54,w:colW-0.24,h:0.46,fill:{color:NB.cardGray,transparency:30},line:{color:NB.border,dashType:'dash'},rectRadius:0.04});
-      }
+    // 2. Objectives
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Learning Objectives');
+    (sd.objectives||[]).forEach((obj, i) => {
+      slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2+(i*1.5), w: 8.5, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
+      slide.addShape(pres.shapes.OVAL, {x: 0.8, y: 1.55+(i*1.5), w: 0.5, h: 0.5, fill: {color: NB.cardGray}, line: {color: NB.border}});
+      slide.addText(M(obj), {x: 1.5, y: 1.3+(i*1.5), w: 7.2, h: 1.0, fontSize: 16, color: NB.body, autoFit: true, valign: 'middle'});
     });
+    slide.addShape(pres.shapes.OVAL, {x: 9.2, y: 1.5, w: 0.4, h: 0.4, fill: {color: NB.teal}}); // Draggable check
+    slide.addText('✓', {x: 9.2, y: 1.5, w: 0.4, h: 0.4, fontSize: 14, color: NB.white, align: 'center', valign: 'middle'});
+    slide.addText('Drag to check when mastered', {x: 8.8, y: 2.0, w: 1.1, h: 0.4, fontSize: 9, color: NB.muted, align: 'center'});
+    Exporter.ftr(slide, pres, n(), plan);
 
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:4.32,w:9.6,h:0.22,fill:{color:NB.navy,transparency:92},line:{color:NB.border}});
-    slide.addText('✂  Cut out and sort these cards:',{x:0.32,y:4.32,w:9.4,h:0.22,fontSize:8,color:NB.muted,italic:true,fontFace:'Calibri',valign:'middle',margin:0});
-    const cFills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust,NB.cardBlue,NB.cardCream];
-    items.slice(0,6).forEach((item,i)=>{
-      const cx2=0.2+i*(1.58);if(cx2+1.5>9.82)return;
-      coloredCard(slide,pres,cx2,4.6,1.5,0.44,cFills[i],NB.border,{topBar:0.06,topBarColor:colColors[i%colColors.length]});
-      slide.addText(item,{x:cx2+0.06,y:4.6,w:1.38,h:0.44,fontSize:8.5,color:NB.body,fontFace:'Calibri',align:'center',valign:'middle',bold:true,margin:0});
+    // 3. Be Curious
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Be Curious');
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 4.5, h: 3.5, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
+    slide.addText('📷 Real-World Source Media\n(Teacher inserts image here)', {x: 0.5, y: 1.2, w: 4.5, h: 3.5, align: 'center', valign: 'middle', color: NB.muted, fontSize: 14});
+    slide.addShape(pres.shapes.RECTANGLE, {x: 5.3, y: 1.2, w: 4.2, h: 2.0, fill: {color: NB.white}, shadow: Exporter.ms()});
+    slide.addText('Notice & Wonder:\n' + M(sd.be_curious?.prompt), {x: 5.5, y: 1.3, w: 3.8, h: 1.8, fontSize: 14, color: NB.body, autoFit: true, valign: 'top'});
+    slide.addShape(pres.shapes.RECTANGLE, {x: 5.3, y: 3.5, w: 4.2, h: 1.2, fill: {color: NB.cardBlue}, line: {color: NB.teal}});
+    slide.addText('TWR Starter:\n' + M(sd.be_curious?.twr_starter), {x: 5.5, y: 3.6, w: 3.8, h: 1.0, fontSize: 14, color: NB.navy, bold: true, valign: 'top'});
+    Exporter.ftr(slide, pres, n(), plan);
+
+    // 4. I Do
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Guided Practice (I Do)');
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 9.0, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
+    slide.addText(M(sd.i_do?.problem), {x: 0.7, y: 1.3, w: 8.6, h: 1.0, fontSize: 16, bold: true, autoFit: true});
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 2.6, w: 9.0, h: 2.3, fill: {color: NB.cardBlue}, line: {color: NB.border}});
+    slide.addText('Teacher Model Steps:\n' + M((sd.i_do?.steps||[]).join('\n')), {x: 0.7, y: 2.7, w: 8.6, h: 2.1, fontSize: 14, bullet: true, autoFit: true});
+    Exporter.ftr(slide, pres, n(), plan);
+
+    // 5. We Do
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Guided Practice (We Do)');
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 5.5, h: 1.5, fill: {color: NB.white}, shadow: Exporter.ms()});
+    slide.addText(M(sd.we_do?.problem), {x: 0.7, y: 1.3, w: 5.1, h: 1.3, fontSize: 16, autoFit: true});
+    slide.addShape(pres.shapes.ROUNDED_RECTANGLE, {x: 6.3, y: 1.2, w: 3.2, h: 1.5, fill: {color: NB.gold}, rectRadius: 0.2});
+    slide.addText('🗣️ Turn and Talk:\nHow should we start?', {x: 6.4, y: 1.3, w: 3.0, h: 1.3, fontSize: 14, color: NB.navy, bold: true, align: 'center'});
+    Exporter.addWorkspaceLines(slide, pres, 0.5, 3.0, 9.0, 5, 0.4);
+    Exporter.ftr(slide, pres, n(), plan);
+
+    // 6. You Do
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Independent Practice (You Do)');
+    const yProbs = sd.you_do?.problems || [];
+    yProbs.forEach((prob, i) => {
+      let w = (9.0 / yProbs.length) - 0.2;
+      let x = 0.5 + (i * (w + 0.4));
+      slide.addShape(pres.shapes.RECTANGLE, {x, y: 1.2, w, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
+      slide.addText(`Q${i+1}. ` + M(prob), {x: x+0.1, y: 1.3, w: w-0.2, h: 1.0, fontSize: 14, autoFit: true, valign: 'top'});
+      Exporter.addWorkspaceLines(slide, pres, x, 2.6, w, 6, 0.35);
     });
+    Exporter.ftr(slide, pres, n(), plan);
 
-  } else if(['matching_pairs','graph_scenario_match','table_equation_match','definition_match','word_problem_equation_match','visual_vocab_match','scenario_equation_match','representation_matching','model_equation_match','rate_situation_match'].includes(at)){
-
-    const leftItems=items.slice(0,4);
-    const rightItems=activityData.category_a_items?.length?activityData.category_a_items.slice(0,4):items.slice(4,8).length?items.slice(4,8):['Match A','Match B','Match C','Match D'];
-    const rH=0.72,startY=1.44;
-
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.38,w:4.55,h:0.3,fill:{color:NB.teal},line:{color:NB.teal}});
-    slide.addText(cats[0]||'Column A',{x:0.3,y:1.38,w:4.35,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.05,y:1.38,w:4.75,h:0.3,fill:{color:ac},line:{color:ac}});
-    slide.addText(cats[1]||'Column B',{x:5.15,y:1.38,w:4.55,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-
-    leftItems.forEach((item,i)=>{
-      const iy=startY+0.3+i*(rH+0.1);
-      coloredCard(slide,pres,0.2,iy,4.55,rH,i%2===0?NB.cardBlue:NB.white,NB.teal,{leftBar:0.06,leftBarColor:NB.teal});
-      slide.addText(String.fromCharCode(65+i)+'.',{x:0.32,y:iy,w:0.3,h:rH,fontSize:11,bold:true,color:NB.teal,fontFace:'Calibri',valign:'middle',margin:0});
-      slide.addText(item,{x:0.64,y:iy+0.06,w:3.98,h:rH-0.1,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-      coloredCard(slide,pres,5.05,iy,4.75,rH,i%2===0?NB.cardCream:NB.white,NB.border,{leftBar:0.06,leftBarColor:NB.border});
-      slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:5.15,y:iy+0.15,w:0.38,h:0.38,fill:{color:NB.cardGray},line:{color:NB.border},rectRadius:0.04});
-      slide.addText(rightItems[i]||'',{x:5.6,y:iy+0.06,w:4.08,h:rH-0.1,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-    });
-
-  } else if(['frayer_model','t_chart','venn_diagram','four_corners','kwl_chart','reasoning_ladder'].includes(at)){
-
-    if(at==='frayer_model'){
-      const centerLabel=items[0]||sd.key_concept||'Concept';
-      coloredCard(slide,pres,3.5,2.0,3.0,1.2,NB.navy,NB.navy);
-      slide.addText(centerLabel,{x:3.5,y:2.0,w:3.0,h:1.2,fontSize:13,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      const boxes=[
-        {x:0.2,y:1.0,w:3.0,h:1.4,label:'DEFINITION',fill:NB.cardBlue,color:NB.teal},
-        {x:6.7,y:1.0,w:3.1,h:1.4,label:'CHARACTERISTICS',fill:NB.cardCream,color:NB.gold},
-        {x:0.2,y:2.78,w:3.0,h:1.4,label:'EXAMPLES',fill:NB.cardSage,color:NB.sage},
-        {x:6.7,y:2.78,w:3.1,h:1.4,label:'NON-EXAMPLES',fill:NB.cardRust,color:NB.rust}
-      ];
-      boxes.forEach(b=>{
-        coloredCard(slide,pres,b.x,b.y,b.w,b.h,b.fill,b.color,{topBar:0.28,topBarColor:b.color});
-        slide.addText(b.label,{x:b.x+0.1,y:b.y,w:b.w-0.16,h:0.28,fontSize:8,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:0.5,margin:0});
-        wl(slide,pres,b.x+0.14,b.y+0.36,b.w-0.24,3,0.33);
-      });
-    } else if(at==='t_chart'){
-      const col1=cats[0]||'Session 1';const col2=cats[1]||'Session 2';
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.38,w:4.65,h:0.34,fill:{color:NB.teal},line:{color:NB.teal}});
-      slide.addText(col1,{x:0.3,y:1.38,w:4.45,h:0.34,fontSize:10,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addShape(pres.shapes.RECTANGLE,{x:5.05,y:1.38,w:4.75,h:0.34,fill:{color:ac},line:{color:ac}});
-      slide.addText(col2,{x:5.15,y:1.38,w:4.55,h:0.34,fontSize:10,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      coloredCard(slide,pres,0.2,1.72,4.65,3.22,NB.cardBlue,NB.teal);
-      coloredCard(slide,pres,5.05,1.72,4.75,3.22,NB.cardCream,ac);
-      wl(slide,pres,0.36,2.0,4.32,8,0.3);
-      wl(slide,pres,5.2,2.0,4.44,8,0.3);
-    } else if(at==='reasoning_ladder'){
-      const steps=[
-        {label:'CLAIM',hint:'My claim is that...',color:NB.teal,fill:NB.cardBlue},
-        {label:'EVIDENCE',hint:'My evidence is... (from the lesson)',color:ac,fill:NB.cardCream},
-        {label:'REASONING',hint:'This evidence supports my claim because...',color:NB.gold,fill:NB.cardSage},
-        {label:'CONCLUSION',hint:'Therefore...',color:NB.rust,fill:NB.cardRust}
-      ];
-      steps.forEach((s,i)=>{
-        const sy=1.36+i*0.92;
-        coloredCard(slide,pres,0.2,sy,9.6,0.84,s.fill,s.color,{leftBar:0.08,leftBarColor:s.color});
-        sectionLabel(slide,pres,0.38,sy+0.06,s.label,s.color);
-        slide.addText(s.hint,{x:1.5,y:sy+0.04,w:8.0,h:0.26,fontSize:8.5,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-        wl(slide,pres,0.38,sy+0.4,9.3,2,0.26);
-      });
-    } else {
-      const quadrants=[
-        {x:0.2,y:1.36,label:cats[0]||'Quadrant 1',fill:NB.cardBlue,color:NB.teal},
-        {x:5.06,y:1.36,label:cats[1]||'Quadrant 2',fill:NB.cardCream,color:NB.gold},
-        {x:0.2,y:3.14,label:items[0]||'Quadrant 3',fill:NB.cardSage,color:NB.sage},
-        {x:5.06,y:3.14,label:items[1]||'Quadrant 4',fill:NB.cardRust,color:NB.rust}
-      ];
-      quadrants.forEach(q=>{
-        coloredCard(slide,pres,q.x,q.y,4.6,1.6,q.fill,q.color,{topBar:0.3,topBarColor:q.color});
-        slide.addText(q.label,{x:q.x+0.1,y:q.y,w:4.4,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-        wl(slide,pres,q.x+0.14,q.y+0.42,4.32,4,0.28);
+    // 7. Matching Activity
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Moveable Sort: ' + (sd.matching?.title||'Matching'));
+    if (sd.matching && sd.matching.pairs) {
+      sd.matching.pairs.forEach((pair, i) => {
+        let yBase = 1.0 + (i * 0.85);
+        slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: yBase, w: 4, h: 0.65, fill: {color: NB.white}, line: {color: NB.border}});
+        slide.addText(M(pair.target), {x: 0.6, y: yBase, w: 3.8, h: 0.65, fontSize: 14, autoFit: true, valign: 'middle'});
+        slide.addShape(pres.shapes.RECTANGLE, {x: 4.7, y: yBase, w: 4.8, h: 0.65, fill: {color: NB.bg}, line: {color: NB.border, dashType: 'dash'}});
+        
+        slide.addShape(pres.shapes.RECTANGLE, {x: 1.0+(i*2.1), y: 4.7, w: 2.0, h: 0.55, fill: {color: NB.gold}, shadow: Exporter.ms()});
+        slide.addText(M(pair.card), {x: 1.0+(i*2.1), y: 4.7, w: 2.0, h: 0.55, fontSize: 12, color: NB.navy, align: 'center', valign: 'middle', autoFit: true});
       });
     }
+    Exporter.addCardTray(slide, pres, 4.4);
+    Exporter.ftr(slide, pres, n(), plan);
 
-  } else if(['error_analysis','error_detective','missing_step_detective','peer_answer_check'].includes(at)){
-    const examples=items.slice(0,3);
-    while(examples.length<3) examples.push(`Student work ${examples.length+1}`);
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.2,y:1.38,w:9.6,h:0.28,fill:{color:NB.rust,transparency:85},line:{color:NB.rust}});
-    slide.addText('🔍  Find the error, explain it, and fix it.',{x:0.36,y:1.38,w:9.3,h:0.28,fontSize:8.5,color:NB.rust,fontFace:'Calibri',bold:true,valign:'middle',margin:0});
-    examples.forEach((ex,i)=>{
-      const ey=1.74+i*1.08;
-      coloredCard(slide,pres,0.2,ey,9.6,0.98,i%2===0?NB.cardBlue:NB.white,NB.border,{leftBar:0.08,leftBarColor:NB.rust});
-      slide.addShape(pres.shapes.ROUNDED_RECTANGLE,{x:0.3,y:ey+0.08,w:0.82,h:0.3,fill:{color:NB.rust,transparency:85},line:{color:NB.rust},rectRadius:0.04});
-      slide.addText(`Case ${i+1}`,{x:0.3,y:ey+0.08,w:0.82,h:0.3,fontSize:7.5,bold:true,color:NB.rust,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addText(ex,{x:1.24,y:ey+0.06,w:8.24,h:0.36,fontSize:9.5,color:NB.body,fontFace:'Calibri',margin:0});
-      slide.addText('My explanation: ',{x:0.38,y:ey+0.52,w:2.5,h:0.22,fontSize:8.5,bold:true,color:NB.muted,fontFace:'Calibri',margin:0});
-      wl(slide,pres,1.86,ey+0.54,7.76,1,0);
-      slide.addText('Correction: ',{x:0.38,y:ey+0.74,w:2,h:0.22,fontSize:8.5,bold:true,color:NB.muted,fontFace:'Calibri',margin:0});
-      wl(slide,pres,1.36,ey+0.76,8.26,1,0);
-    });
-
-  } else if(['scenario_analysis_cards','math_connections','real_world_scenario_match','build_a_story'].includes(at)){
-    const scenarios=items.slice(0,3);
-    while(scenarios.length<3) scenarios.push(`Scenario ${scenarios.length+1}`);
-    const sColors=[NB.teal,ac,NB.gold];
-    const sFills=[NB.cardBlue,NB.cardCream,NB.cardSage];
-    scenarios.forEach((sc,i)=>{
-      const sy=1.36+i*1.14;
-      coloredCard(slide,pres,0.2,sy,9.6,1.06,sFills[i],sColors[i],{leftBar:0.08,leftBarColor:sColors[i]});
-      numBadge(slide,pres,0.3,sy+0.08,i+1,sColors[i]);
-      sectionLabel(slide,pres,0.74,sy+0.06,`SITUATION ${i+1}`,sColors[i]);
-      slide.addText(sc,{x:0.38,y:sy+0.32,w:5.2,h:0.34,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-      slide.addText('The math here is: ',{x:5.68,y:sy+0.06,w:3.9,h:0.24,fontSize:8.5,bold:true,color:NB.muted,fontFace:'Calibri',margin:0});
-      wl(slide,pres,5.68,sy+0.34,3.9,2,0.28);
-    });
-
-  } else if(['would_you_rather','mathematical_debate','convince_me'].includes(at)){
-    const opt1=items[0]||'Option A';
-    const opt2=items[1]||'Option B';
-    coloredCard(slide,pres,0.2,1.36,4.65,2.8,NB.cardBlue,NB.teal,{topBar:0.34,topBarColor:NB.teal});
-    slide.addText('OPTION A',{x:0.3,y:1.36,w:4.45,h:0.34,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
-    slide.addText(opt1,{x:0.34,y:1.78,w:4.38,h:0.68,fontSize:10,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
-    sectionLabel(slide,pres,0.34,2.5,'MY REASONING',NB.teal);
-    wl(slide,pres,0.34,2.8,4.38,3,0.3);
-    coloredCard(slide,pres,5.1,1.36,4.7,2.8,NB.cardRust,ac,{topBar:0.34,topBarColor:ac});
-    slide.addText('OPTION B',{x:5.2,y:1.36,w:4.5,h:0.34,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
-    slide.addText(opt2,{x:5.24,y:1.78,w:4.38,h:0.68,fontSize:10,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
-    sectionLabel(slide,pres,5.24,2.5,'MY REASONING',ac);
-    wl(slide,pres,5.24,2.8,4.38,3,0.3);
-    coloredCard(slide,pres,0.2,4.24,9.6,0.7,NB.cardCream,NB.gold,{leftBar:0.08,leftBarColor:NB.gold});
-    slide.addText([{text:'⭐ I choose: ',options:{bold:true,color:NB.gold,fontSize:10}},{text:'Option ___ because ___.',options:{color:NB.body,fontSize:10,italic:true}}],{x:0.38,y:4.24,w:9.3,h:0.34,fontFace:'Calibri',valign:'middle',margin:0});
-    wl(slide,pres,0.38,4.62,9.3,1,0);
-
-  } else if(['equation_builder','build_the_table','input_output_machine','build_the_rule','pattern_continuation','build_a_model','step_reconstruction'].includes(at)){
-    const buildItems=items.slice(0,6);
-    sectionLabel(slide,pres,0.22,1.38,'COMPONENTS — arrange these to build your answer',NB.teal);
-    const bFills=[NB.cardBlue,NB.cardCream,NB.cardSage,NB.cardRust,NB.cardBlue,NB.cardCream];
-    buildItems.forEach((item,i)=>{
-      const row=Math.floor(i/3),col=i%3;
-      const bx=0.2+col*3.26,by=1.68+row*0.72;
-      coloredCard(slide,pres,bx,by,3.1,0.62,bFills[i],NB.border,{topBar:0.06,topBarColor:NB.teal});
-      slide.addText(item,{x:bx+0.14,y:by,w:2.82,h:0.62,fontSize:9.5,color:NB.body,fontFace:'Calibri',align:'center',valign:'middle',bold:true,margin:0});
-    });
-    coloredCard(slide,pres,0.2,3.2,9.6,1.62,NB.cardCream,NB.gold,{topBar:0.3,topBarColor:NB.gold});
-    slide.addText('MY ANSWER',{x:0.3,y:3.2,w:9.4,h:0.3,fontSize:9,bold:true,color:NB.white,fontFace:'Calibri',align:'center',valign:'middle',charSpacing:1,margin:0});
-    wl(slide,pres,0.34,3.6,9.28,4,0.28);
-
-  } else {
-    const extItems=items.slice(0,3);
-    const extColors=[NB.teal,ac,NB.gold];
-    const extFills=[NB.cardBlue,NB.cardCream,NB.cardSage];
-    extItems.forEach((item,i)=>{
-      const cy=1.36+i*1.14;
-      coloredCard(slide,pres,0.2,cy,9.6,1.06,extFills[i],extColors[i],{leftBar:0.08,leftBarColor:extColors[i]});
-      numBadge(slide,pres,0.3,cy+0.08,i+1,extColors[i]);
-      slide.addText(item,{x:0.74,y:cy+0.08,w:8.74,h:0.38,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-      wl(slide,pres,0.74,cy+0.54,8.74,2,0.26);
-    });
-  }
-
-  ftr(slide,pres,slideNum);
-}
-
-// ══ TWR FRAME ══════════════════════════════════════════════════════════════
-function buildTWR(pres,session,plan,slideNum){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  const isS2=session==='s2';
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Thinking · Writing · Reasoning','Use evidence from the lesson to support your thinking');
-
-  const frames=[
-    {label:'FRAME 1 — CLAIM',text:sd.twr_frame1||'My claim is that ___ because ___.',fill:NB.cardBlue,bar:NB.teal,icon:'💡'},
-    {label:'FRAME 2 — EVIDENCE',text:sd.twr_frame2||'My evidence is ___ which shows ___.',fill:NB.cardCream,bar:ac,icon:'📊'},
-    {label:'FRAME 3 — REASONING',text:sd.twr_frame3||'This makes sense because ___.',fill:NB.cardSage,bar:NB.sage,icon:'🔗'},
-    {label:isS2?'FRAME 4 — CONNECT SESSIONS ★':'FRAME 4 — REAL-WORLD',text:sd.twr_frame4||'This connects to real life because ___.',fill:NB.cardRust,bar:NB.gold,icon:'🌍'}
-  ];
-
-  const fW=4.52,fH=1.46,fG=0.12,sX=0.22,sY=0.88;
-  frames.forEach((f,i)=>{
-    const col=i%2,row=Math.floor(i/2);
-    const fx=sX+col*(fW+fG),fy=sY+row*(fH+fG);
-    coloredCard(slide,pres,fx,fy,fW,fH,f.fill,f.bar,{topBar:0.3,topBarColor:f.bar,leftBar:0.08,leftBarColor:f.bar});
-    slide.addText(f.icon+'  '+f.label,{x:fx+0.12,y:fy,w:fW-0.18,h:0.3,fontSize:8.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addText(f.text,{x:fx+0.14,y:fy+0.36,w:fW-0.22,h:0.52,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-    wl(slide,pres,fx+0.14,fy+0.96,fW-0.22,2,0.25);
-  });
-
-  ftr(slide,pres,slideNum);
-}
-
-// ══ EXIT TICKET ════════════════════════════════════════════════════════════
-function buildExitTicket(pres,session,plan,slideNum){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Exit Ticket','Choose your tier · Show your thinking · No help needed');
-
-  const tiers=[
-    {stars:'⭐',label:'Tier 1',sub:'DOK 1 — Recall & Identify',text:sd.et_tier1||'',bar:'4ade80',fill:NB.cardSage,lines:2},
-    {stars:'⭐⭐',label:'Tier 2',sub:'DOK 2 — Apply & Explain',text:sd.et_tier2||'',bar:NB.teal,fill:NB.cardBlue,lines:3},
-    {stars:'⭐⭐⭐',label:'Tier 3',sub:'DOK 3 — Justify & Transfer',text:sd.et_tier3||'',bar:ac,fill:NB.cardCream,lines:4}
-  ];
-
-  const tX=0.2,tW=9.6,tH=1.38,tG=0.08,tSY=0.88;
-  tiers.forEach((t,i)=>{
-    const ty=tSY+i*(tH+tG);
-    coloredCard(slide,pres,tX,ty,tW,tH,t.fill,t.bar,{leftBar:0.08,leftBarColor:t.bar});
-    slide.addText(t.stars,{x:tX+0.2,y:ty+0.04,w:1.4,h:0.28,fontSize:10,fontFace:'Calibri',margin:0});
-    slide.addText(t.label,{x:tX+0.2,y:ty+0.3,w:2.6,h:0.24,fontSize:10,bold:true,color:t.bar,fontFace:'Calibri',margin:0});
-    slide.addText(t.sub,{x:tX+0.2,y:ty+0.54,w:2.6,h:0.2,fontSize:7.5,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-    slide.addShape(pres.shapes.LINE,{x:tX+3.0,y:ty+0.1,w:0,h:tH-0.2,line:{color:NB.border,width:0.75}});
-    slide.addText(t.text,{x:tX+3.15,y:ty+0.05,w:tW-3.35,h:0.5,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-    wl(slide,pres,tX+3.15,ty+0.6,tW-3.32,t.lines,0.22);
-  });
-
-  ftr(slide,pres,slideNum);
-}
-
-// ══ GOAL TRACKER ═══════════════════════════════════════════════════════════
-function buildGoalTracker(pres,session,plan,slideNum){
-  const slide=pres.addSlide();
-  const sd=plan[session==='s1'?'session1':'session2'];
-  const ac=session==='s1'?NB.navy:NB.purple;
-  const isS2=session==='s2';
-  slide.background={color:NB.bg};
-  hdr(slide,pres,session,'Goal Tracker','Reflect on your learning today');
-
-  coloredCard(slide,pres,0.2,0.88,9.6,0.56,NB.cardCream,NB.border,{leftBar:0.08,leftBarColor:NB.teal});
-  sectionLabel(slide,pres,0.38,0.92,'LEARNING GOAL',NB.teal);
-  slide.addText((plan.learning_targets||['I can...'])[0],{x:1.44,y:0.88,w:8.24,h:0.56,fontSize:11,color:NB.body,fontFace:'Calibri',valign:'middle',margin:0});
-
-  const ratings=[
-    {num:'1',label:'Beginning',desc:'I need more help.',bar:'ef4444',fill:NB.cardRust},
-    {num:'2',label:'Developing',desc:'I understand a little.',bar:'f59e0b',fill:NB.cardCream},
-    {num:'3',label:'Meeting',desc:'I can do this.',bar:NB.teal,fill:NB.cardSage},
-    {num:'4',label:'Exceeding',desc:'I can teach others.',bar:ac,fill:NB.cardBlue}
-  ];
-  const rW=2.28,rH=1.62,rG=0.1,rY=1.54,rsX=0.2;
-  ratings.forEach((r,i)=>{
-    const rx=rsX+i*(rW+rG);
-    coloredCard(slide,pres,rx,rY,rW,rH,r.fill,r.bar,{topBar:0.5,topBarColor:r.bar});
-    slide.addText(r.num,{x:rx+0.1,y:rY,w:0.48,h:0.5,fontSize:22,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addText(r.label,{x:rx+0.6,y:rY+0.1,w:rW-0.66,h:0.3,fontSize:9.5,bold:true,color:NB.white,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addText(r.desc,{x:rx+0.12,y:rY+0.58,w:rW-0.2,h:0.38,fontSize:9,color:NB.muted,fontFace:'Calibri',italic:true,margin:0});
-    slide.addShape(pres.shapes.OVAL,{x:rx+rW/2-0.26,y:rY+1.06,w:0.52,h:0.52,fill:{color:NB.white},line:{color:r.bar}});
-    slide.addText('Circle me!',{x:rx,y:rY+1.56,w:rW,h:0.18,fontSize:6.5,color:NB.muted,fontFace:'Calibri',align:'center',italic:true,margin:0});
-  });
-
-  const refY=3.28;
-  sectionLabel(slide,pres,0.22,refY,'EXIT REFLECTION',ac);
-  const reflectText=isS2?
-    `Compare Session 1 and Session 2. What is similar? What is different? Use specific examples.`:
-    `One important thing I learned about ${sd.key_concept||"today's lesson"} is...`;
-  slide.addText(reflectText,{x:0.22,y:refY+0.28,w:9.6,h:0.32,fontSize:9.5,color:NB.body,fontFace:'Calibri',italic:true,margin:0});
-  wl(slide,pres,0.22,refY+0.66,9.6,4,0.28);
-
-  coloredCard(slide,pres,0.22,4.95,6.5,0.3,NB.cardBlue,NB.border,{shadow:false});
-  slide.addText([
-    {text:'☐ Before  ',options:{color:NB.teal,fontSize:10.5,bold:true}},
-    {text:' I could do this.     ',options:{color:NB.muted,fontSize:10}},
-    {text:'☐ After  ',options:{color:NB.teal,fontSize:10.5,bold:true}},
-    {text:' I can do this!',options:{color:NB.muted,fontSize:10}}
-  ],{x:0.36,y:4.95,w:6.22,h:0.3,fontFace:'Calibri',valign:'middle',margin:0});
-
-  ftr(slide,pres,slideNum);
-}
-
-// ══ BUILD SESSION ══════════════════════════════════════════════════════════
-async function buildSession(session){
-  const plan=AppState.getPlan();
-  if(!AppState.getPlan()){toast('Upload a PPTX first','error');return;}
-  setStatus('Initializing...',5);
-  document.querySelectorAll('.gbtn').forEach(b=>b.disabled=true);
-  try{
-    const pres=new PptxGenJS();
-    pres.layout='LAYOUT_16x9';
-    pres.author='EduWonderLab · Neft.Alba';
-    pres.title=`${plan.lesson_title||'Lesson'} — Session ${session[1]} Notebook`;
-
-    const sd=plan[session==='s1'?'session1':'session2'];
-    const activities=sd.activities||[];
-
-    const fixedSteps=[
-      ['Slide 1 — Cover',8,()=>buildCover(pres,session,plan)],
-      ['Slide 2 — Notice & Wonder',16,()=>buildNoticeWonder(pres,session,plan)],
-      ['Slide 3 — Vocabulary',24,()=>buildVocab(pres,session,plan)],
-      ['Slide 4 — Guided Practice',34,()=>buildGuided(pres,session,plan)],
-      ['Slide 5 — Collaborative Practice',44,()=>buildCollab(pres,session,plan)],
-      ['Slide 6 — Independent Practice',54,()=>buildIndependent(pres,session,plan)],
-    ];
-    for(const [label,pct,fn] of fixedSteps){
-      setStatus('Building '+label,pct);await tick();fn();
+    // 8. Drag & Drop Activity
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Student Manipulatives: ' + (sd.drag_drop?.title||'Categorize'));
+    if (sd.drag_drop) {
+      (sd.drag_drop.zones||[]).forEach((zone, i) => {
+        let w = (9.0 / sd.drag_drop.zones.length) - 0.2;
+        let x = 0.5 + (i * (w + 0.3));
+        slide.addShape(pres.shapes.RECTANGLE, {x, y: 1.1, w, h: 3.0, fill: {color: NB.white}, line: {color: NB.border}});
+        slide.addShape(pres.shapes.RECTANGLE, {x, y: 1.1, w, h: 0.45, fill: {color: NB.teal}});
+        slide.addText(M(zone), {x, y: 1.1, w, h: 0.45, color: NB.white, align: 'center', bold: true, fontSize: 14});
+      });
+      Exporter.addCardTray(slide, pres, 4.3);
+      (sd.drag_drop.cards||[]).forEach((card, i) => {
+        let w = 1.7; let x = 0.5 + (i * 1.85); if(x > 8.5) { x = 0.5 + ((i-5) * 1.85); }
+        let y = x > 8.5 && i > 4 ? 5.1 : 4.6; // Wrap cards safely
+        slide.addShape(pres.shapes.RECTANGLE, {x, y, w, h: 0.5, fill: {color: NB.cardBlue}, line: {color: NB.teal}, shadow: Exporter.ms()});
+        slide.addText(M(card), {x, y, w, h: 0.5, fontSize: 11, align: 'center', valign: 'middle', color: NB.navy, autoFit: true});
+      });
     }
+    Exporter.ftr(slide, pres, n(), plan);
 
-    let slideNum=7;
-    for(let i=0;i<activities.length;i++){
-      const a=activities[i];
-      const pct=54+Math.round((i+1)/(activities.length+3)*30);
-      setStatus(`Building Slide ${slideNum} — ${a.title||cap(a.type)}`,pct);
-      await tick();
-      buildActivitySlide(pres,session,plan,a,slideNum);
-      slideNum++;
-    }
+    // 9. Error Analysis
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Error Analysis');
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.1, w: 9.0, h: 0.6, fill: {color: NB.white}, shadow: Exporter.ms()});
+    slide.addText('Misconception Focus: ' + M(sd.error_analysis?.misconception||''), {x: 0.7, y: 1.15, w: 8.6, h: 0.5, fontSize: 14, color: NB.rust, bold: true});
+    
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.9, w: 4.3, h: 3.0, fill: {color: NB.cardRust}, line: {color: NB.rust}});
+    slide.addText('Flawed Work:\n\n' + M(sd.error_analysis?.flawed_work||''), {x: 0.7, y: 2.0, w: 3.9, h: 2.7, fontSize: 14, autoFit: true, valign: 'top'});
+    
+    slide.addShape(pres.shapes.RECTANGLE, {x: 5.2, y: 1.9, w: 4.3, h: 0.6, fill: {color: NB.teal}});
+    slide.addText('Fix It: ' + M(sd.error_analysis?.prompt||''), {x: 5.4, y: 1.9, w: 3.9, h: 0.6, fontSize: 14, color: NB.white, bold: true});
+    Exporter.addWorkspaceLines(slide, pres, 5.2, 2.5, 4.3, 6, 0.38);
+    Exporter.ftr(slide, pres, n(), plan);
 
-    setStatus(`Building Slide ${slideNum} — TWR Frame`,84);await tick();
-    buildTWR(pres,session,plan,slideNum);slideNum++;
-    setStatus(`Building Slide ${slideNum} — Exit Ticket`,91);await tick();
-    buildExitTicket(pres,session,plan,slideNum);slideNum++;
-    setStatus(`Building Slide ${slideNum} — Goal Tracker`,96);await tick();
-    buildGoalTracker(pres,session,plan,slideNum);
+    // 10. Vocabulary Page
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Vocabulary: ' + (sd.vocabulary?.term||''));
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.1, w: 4.3, h: 1.8, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
+    slide.addText('Definition:\n' + M(sd.vocabulary?.definition||''), {x: 0.7, y: 1.2, w: 3.9, h: 1.6, fontSize: 14, autoFit: true, valign: 'top'});
+    
+    slide.addShape(pres.shapes.RECTANGLE, {x: 5.2, y: 1.1, w: 4.3, h: 1.8, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
+    slide.addText('Example:\n' + M(sd.vocabulary?.example||''), {x: 5.4, y: 1.2, w: 3.9, h: 1.6, fontSize: 14, autoFit: true, valign: 'top'});
+    
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 3.1, w: 4.3, h: 1.8, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
+    slide.addText('Non-Example:\n' + M(sd.vocabulary?.non_example||''), {x: 0.7, y: 3.2, w: 3.9, h: 1.6, fontSize: 14, autoFit: true, valign: 'top'});
+    
+    slide.addShape(pres.shapes.RECTANGLE, {x: 5.2, y: 3.1, w: 4.3, h: 1.8, fill: {color: NB.cardBlue}, line: {color: NB.teal}, shadow: Exporter.ms()});
+    slide.addText('Sketch It (Visual Cue):\n' + M(sd.vocabulary?.visual_cue||''), {x: 5.4, y: 3.2, w: 3.9, h: 1.6, fontSize: 14, color: NB.navy, italic: true, autoFit: true, valign: 'top'});
+    Exporter.ftr(slide, pres, n(), plan);
 
-    setStatus('Writing file...',98);await tick();
-    const title=(plan.lesson_title||'Lesson').replace(/[^a-zA-Z0-9 ]/g,'').replace(/\s+/g,'_').slice(0,24);
-    await pres.writeFile({fileName:`${title}_S${session[1]}_Notebook.pptx`});
-    setStatus(`✓ Session ${session[1]} — ${slideNum} slides downloaded!`,100,'done');
-    toast(`S${session[1]} notebook ready · ${slideNum} slides ✓`);
-  }catch(err){
-    console.error(err);
-    setStatus('Error: '+err.message,0,'err');
-    toast(err.message.slice(0,70),'error');
-  }finally{
-    document.querySelectorAll('.gbtn').forEach(b=>b.disabled=!plan);
+    // 11. Exit Ticket
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Exit Ticket');
+    [
+      { label: 'Level 1', dok: sd.exit_ticket?.dok1, y: 1.1, fill: NB.white, line: NB.border },
+      { label: 'Level 2', dok: sd.exit_ticket?.dok2, y: 2.5, fill: NB.white, line: NB.border },
+      { label: 'Level 3 (Challenge)', dok: sd.exit_ticket?.dok3, y: 3.9, fill: NB.cardBlue, line: NB.teal }
+    ].forEach(t => {
+      slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: t.y, w: 9.0, h: 1.2, fill: {color: t.fill}, line: {color: t.line}, shadow: Exporter.ms()});
+      slide.addText(`${t.label}: ` + M(t.dok), {x: 0.7, y: t.y+0.1, w: 8.6, h: 1.0, fontSize: 14, bold: t.label.includes('3'), autoFit: true, valign: 'top'});
+    });
+    Exporter.ftr(slide, pres, n(), plan);
+
+    // 12. Reflection
+    slide = pres.addSlide(); slide.background = {color: NB.bg};
+    Exporter.hdr(slide, pres, sessionKey, 'Reflection & Goals');
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 9.0, h: 1.0, fill: {color: NB.white}, shadow: Exporter.ms()});
+    slide.addText(M(sd.reflection||''), {x: 0.7, y: 1.3, w: 8.6, h: 0.8, fontSize: 16, bold: true, autoFit: true, valign: 'middle'});
+    
+    const scales = ['1 - Still Learning', '2 - Getting There', '3 - Got It', '4 - Mastered'];
+    scales.forEach((lbl, i) => {
+      let x = 1.0 + (i * 2.2);
+      slide.addShape(pres.shapes.OVAL, {x: x+0.5, y: 2.5, w: 0.8, h: 0.8, fill: {color: NB.white}, line: {color: NB.border}});
+      slide.addText((i+1).toString(), {x: x+0.5, y: 2.5, w: 0.8, h: 0.8, fontSize: 18, align: 'center', valign: 'middle'});
+      slide.addText(lbl, {x: x, y: 3.4, w: 1.8, h: 0.4, fontSize: 12, align: 'center', color: NB.navy, bold: true});
+    });
+    
+    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 4.1, w: 9.0, h: 1.0, fill: {color: NB.cardBlue}, line: {color: NB.teal}});
+    slide.addText('Sentence Frame: "One thing I learned today was..."', {x: 0.7, y: 4.15, w: 8.6, h: 0.3, fontSize: 12, color: NB.navy, italic: true});
+    slide.addShape(pres.shapes.LINE, {x: 0.7, y: 4.65, w: 8.6, h: 0, line: {type: 'solid', color: NB.border}});
+    slide.addShape(pres.shapes.LINE, {x: 0.7, y: 4.95, w: 8.6, h: 0, line: {type: 'solid', color: NB.border}});
+    Exporter.ftr(slide, pres, n(), plan);
+
+    return pres;
+  },
+
+  buildSession: async (sessionKey) => {
+    if (AppState.isGenerating()) return; AppState.setGenerating(true);
+    const plan = AppState.getPlan();
+    UI.setStatus(`Generating ${sessionKey.toUpperCase()} Notebook...`, 30);
+    try {
+      const pres = new PptxGenJS(); pres.layout = 'LAYOUT_16x9';
+      await Exporter.buildSessionFile(pres, sessionKey, plan);
+      UI.setStatus('Compiling PPTX...', 80);
+      const safeName = Utils.sanitizeFilename(plan.lesson_title);
+      await pres.writeFile({ fileName: `Notebook_${safeName}_${sessionKey.toUpperCase()}.pptx` });
+      UI.setStatus('Complete', 100, 'done'); UI.toast(`${sessionKey.toUpperCase()} generated!`);
+    } catch(e) { UI.setStatus('Generation failed', 100, 'err'); UI.toast(e.message, 'error'); }
+    setTimeout(() => document.getElementById('status-box').classList.remove('show'), 3000);
+    AppState.setGenerating(false);
+  },
+
+  buildBoth: async () => {
+    if (AppState.isGenerating()) return; AppState.setGenerating(true);
+    const plan = AppState.getPlan();
+    UI.setStatus('Generating Master Notebook (S1 + S2)...', 20);
+    try {
+      const pres = new PptxGenJS(); pres.layout = 'LAYOUT_16x9';
+      UI.setStatus('Building Session 1...', 40); await Exporter.buildSessionFile(pres, 's1', plan);
+      UI.setStatus('Building Session 2...', 70); await Exporter.buildSessionFile(pres, 's2', plan);
+      UI.setStatus('Compiling PPTX...', 90);
+      const safeName = Utils.sanitizeFilename(plan.lesson_title);
+      await pres.writeFile({ fileName: `Master_Notebook_${safeName}.pptx` });
+      UI.setStatus('Complete', 100, 'done'); UI.toast('Master Notebook generated!');
+    } catch(e) { UI.setStatus('Generation failed', 100, 'err'); UI.toast(e.message, 'error'); }
+    setTimeout(() => document.getElementById('status-box').classList.remove('show'), 3000);
+    AppState.setGenerating(false);
   }
-}
+};
 
-async function buildBoth(){
-  await buildSession('s1');
-  await new Promise(r=>setTimeout(r,700));
-  await buildSession('s2');
-}
+// ══ 6. INITIALIZATION ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  ThemeService.init();
+  if (location.protocol === 'file:') document.getElementById('protocol-warn').style.display = 'block';
+  const plan = AppState.getPlan(); if (plan) UI.renderPreview(plan);
+});
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+  if (!localStorage.getItem('ewl_theme')) ThemeService.init();
+});
 </script>
 </body>
 </html>
