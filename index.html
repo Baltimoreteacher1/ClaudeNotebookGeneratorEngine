@@ -355,8 +355,8 @@ const UI={
     const sl=[];
     sl.push({name:'Objectives',desc:(s.objectives?.[0]||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.objectives?.[0]||'')});
     sl.push({name:'Be Curious',desc:(s.be_curious_notice||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.be_curious_notice||'')});
-    const terms=(s.vocab_terms||[]).filter(t=>!isG(t));
-    const nv=terms.length<=2?1:2;
+    const terms=(s.vocab_terms||[]);
+    const nv=terms.length?Math.min(Math.ceil(terms.length/2),3):1;
     for(let i=0;i<nv;i++)sl.push({name:`Vocabulary${nv>1?' ('+(i+1)+'/'+nv+')':''}`,desc:terms.slice(i*2,i*2+2).join(' · ')||'Key terms'});
     sl.push({name:'Guided Practice',desc:(s.guided_problem||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.guided_problem||'')});
     sl.push({name:'Collaborative Practice',desc:(s.collab_problem||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.collab_problem||'')});
@@ -1019,7 +1019,8 @@ const B={
     B.s_bc(pres,key,sd,plan,n++);
     // 3+. Vocab slides (2 terms per slide)
     const terms=(sd.vocab_terms||[]);
-    for(let i=0;i<terms.length;i+=2){
+    const maxVocabSlides=Math.min(Math.ceil(terms.length/2),3);
+    for(let i=0;i<terms.length&&Math.floor(i/2)<maxVocabSlides;i+=2){
       const pair=[terms[i]||null,terms[i+1]||null].filter(Boolean);
       if(pair.length)B.s_vocab(pres,key,sd,plan,n++,pair.length===1?[pair[0],null]:[pair[0],pair[1]]);
     }
@@ -1071,6 +1072,3 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(!loc
 </script>
 </body>
 </html>
-JSEOF
-echo "Final size: $(wc -c < /home/claude/ewl_v7_part1.html) bytes"
-echo "Line count: $(wc -l < /home/claude/ewl_v7_part1.html)"
