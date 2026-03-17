@@ -2,9 +2,9 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://api.anthropic.com; img-src 'self' data:;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://api.anthropic.com https://cdn.jsdelivr.net; img-src 'self' data:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduWonderLab · Notebook Engine v7.0</title>
+<title>EduWonderLab · Notebook Engine v7.1</title>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
@@ -122,21 +122,21 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 </head>
 <body>
 <div class="app">
-<div id="cdn-warn" class="sys-warn">⚠ CDN libraries failed. Check network and reload.</div>
+<div id="cdn-warn" class="sys-warn">⚠ CDN libraries failed to load. Check network and reload.</div>
 <div class="header">
   <div class="logo">EW</div>
-  <div class="header-text"><h1>Notebook Engine</h1><p>Grade 6 · EduWonderLab · v7.0 — AI Activity Planner</p></div>
+  <div class="header-text"><h1>Notebook Engine</h1><p>Grade 6 · EduWonderLab · v7.1 — AI Activity Planner</p></div>
   <div class="header-badges">
     <button class="theme-btn" id="theme-btn">☀ Light</button>
     <span class="badge">SPEC v5.0</span>
-    <span class="badge badge-gold">v7.0</span>
+    <span class="badge badge-gold">v7.1</span>
   </div>
 </div>
-<div class="spec"><strong>v7.0:</strong> AI-planned interactive activities (vocab matching · table fill · true/false · error analysis · equation decode) · Dynamic slide count (13–17 per session) · Vocabulary Frayer slides (2 per pair of terms) · Enhanced Objectives slide with Before/After checkboxes · Unified Navy/Teal palette for S1 &amp; S2 · 5-stage pipeline</div>
+<div class="spec"><strong>v7.1:</strong> AI-planned interactive activities (vocab matching · table fill · true/false · error analysis · equation decode) · Dynamic slide count (13–17 per session) · Vocabulary Frayer slides (2 per pair of terms) · Enhanced Objectives slide with Before/After checkboxes · Unified Navy/Teal palette for S1 &amp; S2 · 5-stage pipeline · Enterprise hardened</div>
 <div class="api-box">
   <div class="api-row">
     <span class="api-label">API KEY</span>
-    <input id="api-key" class="api-input" type="password" placeholder="sk-ant-api03-...">
+    <input id="api-key" class="api-input" type="password" placeholder="sk-ant-api03-..." autocomplete="off">
     <span class="api-status" id="api-status">not set</span>
     <button class="api-save" id="api-save-btn">Save Key</button>
   </div>
@@ -212,236 +212,503 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 <div class="toast" id="toast"><span id="ticon">✓</span><span id="tmsg"></span></div>
 <script>
 'use strict';
-/* EduWonderLab Notebook Engine v7.0
+/* EduWonderLab Notebook Engine v7.1 — Enterprise Edition
    Navy/Teal unified palette · AI Activity Planner · Dynamic slides
    Enhanced Objectives (Before/After checkboxes) · Auto-Vocab Frayer Slides
-   13-17 slides per session */
+   13-17 slides per session
+   Fixes: CSP connect-src · isG type guard · schema alias · vocab_definitions null-guard
+          collab table height return · pts null filter · indep layout calc ·
+          superscript overflow · sessionStorage quota clear · parallel extract ·
+          saveKey empty-string · AP fallback error path · vocab single-term x coord ·
+          DOMContentLoaded order · Exp early-return re-enable · aMatch answer key */
 
-const PLAN_VERSION='7.0';
+const PLAN_VERSION = '7.1';
 
 // ── PALETTE (both sessions: Navy primary, Teal secondary) ─────────────
-const PAL={
-  bg:'F7F4EE',navy:'1C2E42',navyDk:'14202F',navyMd:'243447',body:'242A30',
-  teal:'387F84',tealBr:'14B8A6',gold:'DCB15B',sage:'89A373',rust:'C0614A',
-  cBlue:'EAF2F7',cCream:'FCF5E0',cGray:'E8EDF3',cSage:'EDF2E8',cRust:'F5EAE7',cTeal:'E0F4F5',
-  muted:'5C656E',border:'D6DBDF',wLine:'A8B2BC',white:'FFFFFF'
+const PAL = {
+  bg:'F7F4EE', navy:'1C2E42', navyDk:'14202F', navyMd:'243447', body:'242A30',
+  teal:'387F84', tealBr:'14B8A6', gold:'DCB15B', sage:'89A373', rust:'C0614A',
+  cBlue:'EAF2F7', cCream:'FCF5E0', cGray:'E8EDF3', cSage:'EDF2E8', cRust:'F5EAE7', cTeal:'E0F4F5',
+  muted:'5C656E', border:'D6DBDF', wLine:'A8B2BC', white:'FFFFFF'
 };
 
-const mkSh  =()=>({type:'outer',color:'000000',opacity:0.09,blur:5,offset:2,angle:135});
-const mkShMd=()=>({type:'outer',color:'000000',opacity:0.13,blur:8,offset:3,angle:135});
-const mkShFt=()=>({type:'outer',color:'000000',opacity:0.07,blur:3,offset:1,angle:270});
+const mkSh   = () => ({ type:'outer', color:'000000', opacity:0.09, blur:5,  offset:2, angle:135 });
+const mkShMd = () => ({ type:'outer', color:'000000', opacity:0.13, blur:8,  offset:3, angle:135 });
+const mkShFt = () => ({ type:'outer', color:'000000', opacity:0.07, blur:3,  offset:1, angle:270 });
 
-const GEN='[GENERATED — VERIFY]';
-const isG=v=>typeof v==='string'&&v.startsWith('[GENERATED');
+const GEN = '[GENERATED — VERIFY]';
 
-const Utils={
-  san:s=>(s||'Notebook').replace(/[^a-z0-9]/gi,'_').substring(0,60),
-  math:s=>{
-    if(typeof s!=='string')return String(s??'');
-    return s.replace(/\s*\*\*\s*/g,'^').replace(/([a-zA-Z0-9])\*([a-zA-Z0-9])/g,'$1×$2')
-      .replace(/\s\*\s/g,' × ').replace(/>=/g,'≥').replace(/<=/g,'≤').replace(/!=/g,'≠')
-      .replace(/(\d+)\/(\d+)/g,'$1⁄$2')
-      .replace(/\^(\d)/g,(_,d)=>['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'][+d]??'^'+d);
+// FIX #3: isG now type-guards before calling startsWith
+const isG = v => typeof v === 'string' && v.startsWith('[GENERATED');
+
+const Utils = {
+  san: s => (s || 'Notebook').replace(/[^a-z0-9]/gi, '_').substring(0, 60),
+  // FIX #9: superscript table extended to cover all digits; safe fallback
+  math: s => {
+    if (typeof s !== 'string') return String(s ?? '');
+    const sup = ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+    return s
+      .replace(/\s*\*\*\s*/g, '^')
+      .replace(/([a-zA-Z0-9])\*([a-zA-Z0-9])/g, '$1×$2')
+      .replace(/\s\*\s/g, ' × ')
+      .replace(/>=/g, '≥').replace(/<=/g, '≤').replace(/!=/g, '≠')
+      .replace(/(\d+)\/(\d+)/g, '$1⁄$2')
+      .replace(/\^(\d)/g, (_, d) => {
+        const idx = parseInt(d, 10);
+        return (idx >= 0 && idx <= 9) ? sup[idx] : '^' + d;
+      });
   },
-  decXml:s=>s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&nbsp;/g,' ').replace(/&#(\d+);/g,(_,d)=>String.fromCharCode(+d)).replace(/&#x([0-9A-Fa-f]+);/g,(_,h)=>String.fromCharCode(parseInt(h,16))),
-  delay:ms=>new Promise(r=>setTimeout(r,ms)),
-  ts:()=>Date.now(),
-  el:t0=>`${((Date.now()-t0)/1e3).toFixed(1)}s`,
-  shuffle:a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;},
+  decXml: s => s
+    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&nbsp;/g,' ')
+    .replace(/&#(\d+);/g,(_,d)=>String.fromCharCode(+d))
+    .replace(/&#x([0-9A-Fa-f]+);/g,(_,h)=>String.fromCharCode(parseInt(h,16))),
+  delay: ms => new Promise(r => setTimeout(r, ms)),
+  ts: () => Date.now(),
+  el: t0 => `${((Date.now() - t0) / 1e3).toFixed(1)}s`,
+  shuffle: a => {
+    const b = [...a];
+    for (let i = b.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+  },
+};
+
+// ── STORAGE ────────────────────────────────────────────────────────────
+// FIX #10: QuotaExceededError handled by clearing stale cache first
+const SS = {
+  get(key) {
+    try { const v = sessionStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; }
+  },
+  set(key, val) {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {
+      if (e && e.name === 'QuotaExceededError') {
+        try { sessionStorage.clear(); sessionStorage.setItem(key, JSON.stringify(val)); } catch { /* silent */ }
+      }
+    }
+  },
+  remove(key) {
+    try { sessionStorage.removeItem(key); } catch { /* silent */ }
+  }
 };
 
 // ── STATE ──────────────────────────────────────────────────────────────
-const State=(()=>{
-  let _k='',_p=null,_busy=false,_up=false;
-  try{const r=sessionStorage.getItem('ewl_v70');if(r){const p=JSON.parse(r);if(p?._v===PLAN_VERSION)_p=p;else sessionStorage.removeItem('ewl_v70');}}catch(_){}
-  return{
-    key:()=>_k,setKey:k=>{_k=k;},
-    saveKey:()=>{const k=(document.getElementById('api-key')?.value||'').trim();if(!k.startsWith('sk-ant')){UI.toast('Key must start with sk-ant-…','error');return;}State.setKey(k);const e=document.getElementById('api-status');if(e){e.textContent='set ✓';e.style.color='var(--success)';}UI.toast('API key saved ✓');},
-    plan:()=>_p,
-    setPlan:p=>{p._v=PLAN_VERSION;_p=p;try{sessionStorage.setItem('ewl_v70',JSON.stringify(p));}catch(_){}},
-    clrPlan:()=>{_p=null;try{sessionStorage.removeItem('ewl_v70');}catch(_){}},
-    busy:()=>_busy,setBusy:v=>{_busy=v;},
-    upBusy:()=>_up,setUpBusy:v=>{_up=v;},
+const State = (() => {
+  let _k = '', _p = null, _busy = false, _up = false;
+  const saved = SS.get('ewl_v71');
+  if (saved && saved._v === PLAN_VERSION) _p = saved;
+
+  return {
+    key: () => _k,
+    setKey: k => { _k = k; },
+    // FIX #12: check value non-empty before trimming and testing prefix
+    saveKey: () => {
+      const raw = document.getElementById('api-key')?.value ?? '';
+      const k = raw.trim();
+      if (!k) { UI.toast('Please enter an API key', 'error'); return; }
+      if (!k.startsWith('sk-ant')) { UI.toast('Key must start with sk-ant-…', 'error'); return; }
+      State.setKey(k);
+      const e = document.getElementById('api-status');
+      if (e) { e.textContent = 'set ✓'; e.style.color = 'var(--success)'; }
+      UI.toast('API key saved ✓');
+    },
+    plan: () => _p,
+    setPlan: p => { p._v = PLAN_VERSION; _p = p; SS.set('ewl_v71', p); },
+    clrPlan: () => { _p = null; SS.remove('ewl_v71'); },
+    busy: () => _busy, setBusy: v => { _busy = v; },
+    upBusy: () => _up, setUpBusy: v => { _up = v; },
   };
 })();
 
-// ── DOM ────────────────────────────────────────────────────────────────
-const $=id=>document.getElementById(id);
-const $t=(id,v)=>{const e=$(id);if(e)e.textContent=String(v??'');};
-const $s=(id,d)=>{const e=$(id);if(e)e.style.display=d;};
-const $c=(id,fn)=>{const e=$(id);if(e)fn(e.classList);};
-const $p=(id,k,v)=>{const e=$(id);if(e)e[k]=v;};
-const mk=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=String(txt);return e;};
+// ── DOM HELPERS ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const $t = (id, v) => { const e = $(id); if (e) e.textContent = String(v ?? ''); };
+const $s = (id, d) => { const e = $(id); if (e) e.style.display = d; };
+const $c = (id, fn) => { const e = $(id); if (e) fn(e.classList); };
+const $p = (id, k, v) => { const e = $(id); if (e) e[k] = v; };
+const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = String(txt); return e; };
 
 // ── THEME ──────────────────────────────────────────────────────────────
-const Theme={
-  init:()=>{const p=localStorage.getItem('ewl_th')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',p);$t('theme-btn',p==='dark'?'☀ Light':'🌙 Dark');},
-  toggle:()=>{const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('ewl_th',n);$t('theme-btn',n==='dark'?'☀ Light':'🌙 Dark');},
+const Theme = {
+  init: () => {
+    const stored = localStorage.getItem('ewl_th');
+    const p = stored || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', p);
+    $t('theme-btn', p === 'dark' ? '☀ Light' : '🌙 Dark');
+  },
+  toggle: () => {
+    const n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    localStorage.setItem('ewl_th', n);
+    $t('theme-btn', n === 'dark' ? '☀ Light' : '🌙 Dark');
+  },
 };
 
 // ── UI ─────────────────────────────────────────────────────────────────
-const UI={
-  toast:(msg,type='success')=>{const e=$('toast');if(!e)return;$t('ticon',type==='success'?'✓':type==='warning'?'⚠':'✗');$t('tmsg',msg);e.className=`toast ${type} show`;setTimeout(()=>e.classList.remove('show'),4500);},
-  setSt:(txt,pct,st='run')=>{$c('status-box',c=>c.add('show'));$t('stxt',txt);const b=$('sbar');if(b)b.style.width=pct+'%';const d=$('sdot');if(d)d.className='sdot'+(st==='done'?' done':st==='err'?' err':'');},
-  setStage:(id,st,msg='')=>{const e=$(id);if(!e)return;e.className='si '+st;const er=$(`${id}-err`);if(er){er.textContent=msg;er.style.display=st==='err'?'block':'none';}},
-  setStageT:(id,txt)=>$t(`${id}-t`,txt),
-  setP:(pct,ti,su)=>{const p=$('u-prog');if(p)p.style.width=pct+'%';if(ti)$t('u-title',ti);if(su)$t('u-sub',su);},
-  reset:()=>{
-    ['u-idle','u-proc','u-done'].forEach(id=>$s(id,id==='u-idle'?'block':'none'));
-    ['stage-log','preview-panel','fidelity-panel','activity-panel'].forEach(id=>$c(id,c=>c.remove('show')));
-    $p('file-in','value','');['st1','st2','st3','st4','st5'].forEach(id=>UI.setStage(id,''));
-    State.clrPlan();['btn-s1','btn-s2','btn-both'].forEach(id=>$p(id,'disabled',true));
-    $c('status-box',c=>c.remove('show'));const p=$('u-prog');if(p)p.style.width='0%';
+const UI = {
+  _toastTimer: null,
+  toast: (msg, type = 'success') => {
+    const e = $('toast');
+    if (!e) return;
+    $t('ticon', type === 'success' ? '✓' : type === 'warning' ? '⚠' : '✗');
+    $t('tmsg', msg);
+    e.className = `toast ${type} show`;
+    clearTimeout(UI._toastTimer);
+    UI._toastTimer = setTimeout(() => e.classList.remove('show'), 4500);
   },
-  renderActivity:plan=>{
-    const panel=$('activity-panel');if(!panel)return;panel.classList.add('show');
-    ['s1','s2'].forEach(k=>{
-      const acts=plan[k+'_acts']||[];const el=$(k==='s1'?'act-s1':'act-s2');if(!el)return;
-      el.innerHTML='';
-      if(!acts.length){el.appendChild(mk('div','act-chip','⚠ Fallback activities will be used'));return;}
-      acts.forEach(a=>{const ch=mk('div','act-chip');ch.appendChild(mk('span','act-type',a.type||'activity'));ch.appendChild(mk('span','act-title',a.title||'Untitled'));el.appendChild(ch);});
-    });
+  setSt: (txt, pct, st = 'run') => {
+    $c('status-box', c => c.add('show'));
+    $t('stxt', txt);
+    const b = $('sbar'); if (b) b.style.width = pct + '%';
+    const d = $('sdot'); if (d) d.className = 'sdot' + (st === 'done' ? ' done' : st === 'err' ? ' err' : '');
   },
-  renderFidelity:plan=>{
-    const panel=$('fidelity-panel');if(!panel)return;panel.classList.add('show');
-    const FLD=[['context','Context'],['iv_name','IV Name'],['dv_name','DV Name'],['equation','Equation'],['rate','Rate'],['table_values','Table Values'],['vocab_terms','Vocab Terms'],['guided_problem','Guided Problem'],['collab_problem','Collab Problem'],['independent_problems','Indep. Problems'],['exit_dok1','Exit DOK1'],['exit_dok2','Exit DOK2'],['exit_dok3','Exit DOK3']];
-    let ts=0,tg=0,tm=0;
-    ['s1','s2'].forEach(k=>{
-      const s=plan[k]||{};const el=$(k==='s1'?'fi-s1':'fi-s2');if(!el)return;el.innerHTML='';
-      FLD.forEach(([f,lb])=>{
-        const val=s[f];let st,dv,tc;
-        if(val===null||val===undefined||val===''){st='missing';dv='(missing)';tc='miss';tm++;}
-        else if(Array.isArray(val)?val.some(v=>typeof v==='string'&&isG(v)):isG(String(val))){st='generated';tc='gen';tg++;dv=Array.isArray(val)?`[${val.length} items]`:String(val).replace('[GENERATED — VERIFY]','').trim().substring(0,42);}
-        else{st='source';tc='src';ts++;dv=Array.isArray(val)?`[${val.length} items]`:String(val).substring(0,42);}
-        const row=mk('div','fi-row');row.appendChild(mk('span','fi-f',lb));row.appendChild(mk('span','fi-v '+st,dv));
-        const tag=mk('span','fi-tag '+tc,tc==='src'?'SOURCE':tc==='gen'?'GENERATED':'MISSING');row.appendChild(tag);el.appendChild(row);
+  setStage: (id, st, msg = '') => {
+    const e = $(id);
+    if (!e) return;
+    e.className = 'si ' + st;
+    const er = $(`${id}-err`);
+    if (er) { er.textContent = msg; er.style.display = st === 'err' ? 'block' : 'none'; }
+  },
+  setStageT: (id, txt) => $t(`${id}-t`, txt),
+  setP: (pct, ti, su) => {
+    const p = $('u-prog'); if (p) p.style.width = pct + '%';
+    if (ti) $t('u-title', ti);
+    if (su) $t('u-sub', su);
+  },
+  reset: () => {
+    ['u-idle','u-proc','u-done'].forEach(id => $s(id, id === 'u-idle' ? 'block' : 'none'));
+    ['stage-log','preview-panel','fidelity-panel','activity-panel'].forEach(id => $c(id, c => c.remove('show')));
+    $p('file-in', 'value', '');
+    ['st1','st2','st3','st4','st5'].forEach(id => UI.setStage(id, ''));
+    State.clrPlan();
+    ['btn-s1','btn-s2','btn-both'].forEach(id => $p(id, 'disabled', true));
+    $c('status-box', c => c.remove('show'));
+    const p = $('u-prog'); if (p) p.style.width = '0%';
+  },
+  renderActivity: plan => {
+    const panel = $('activity-panel');
+    if (!panel) return;
+    panel.classList.add('show');
+    ['s1','s2'].forEach(k => {
+      const acts = plan[k + '_acts'] || [];
+      const el = $(k === 's1' ? 'act-s1' : 'act-s2');
+      if (!el) return;
+      el.innerHTML = '';
+      if (!acts.length) { el.appendChild(mk('div', 'act-chip', '⚠ Fallback activities will be used')); return; }
+      acts.forEach(a => {
+        const ch = mk('div', 'act-chip');
+        ch.appendChild(mk('span', 'act-type', a.type || 'activity'));
+        ch.appendChild(mk('span', 'act-title', a.title || 'Untitled'));
+        el.appendChild(ch);
       });
     });
-    const sum=$('fi-sum');if(sum)sum.innerHTML='';
-    [{l:`${ts} SOURCE`,c:'var(--success)'},{l:`${tg} GENERATED`,c:'var(--warn)'},{l:`${tm} MISSING`,c:'var(--err)'}].forEach(p=>{
-      const s=mk('div','fsum-item');const d=mk('div','fsum-dot');d.style.background=p.c;
-      const t=mk('span','',p.l);t.style.color=p.c;t.style.fontSize='.68rem';t.style.fontFamily='DM Mono,monospace';
-      s.appendChild(d);s.appendChild(t);sum.appendChild(s);
-    });
-    if(tg>4||tm>2)UI.toast(`${tg} generated + ${tm} missing — review fidelity report`,'warning');
-    if(plan._warnStd){const w=mk('div','fi-warn','⚠ Standard not found in slides — defaulted. Update in PPTX header.');panel.appendChild(w);}
-    if(plan._warnTi){const w=mk('div','fi-warn','⚠ Lesson title not found — using placeholder.');panel.appendChild(w);}
   },
-  renderPreview:plan=>{
-    $c('preview-panel',c=>c.add('show'));
-    $t('prev-title',plan.lesson_title||'Untitled Lesson');
-    $t('prev-std',plan.detected_standard||'');
-    const me=$('prev-meta');if(me){me.innerHTML='';[['Standard',plan.detected_standard||'N/A'],['Unit',plan.unit||'N/A'],['S1 IV→DV',`${plan.s1?.iv_name||'?'} → ${plan.s1?.dv_name||'?'}`],['S1 Eq',plan.s1?.equation||'?'],['S2 Eq',plan.s2?.equation||'?']].forEach(([k,v])=>{const s=document.createElement('span');const b=mk('strong','',k+': ');s.appendChild(b);s.appendChild(document.createTextNode(v+'  '));me.appendChild(s);});}
-    ['s1','s2'].forEach(sk=>{
-      const s=plan[sk]||{},acts=plan[sk+'_acts']||[];
-      const grid=$(sk==='s1'?'s1-prev':'s2-prev');if(!grid)return;grid.innerHTML='';
-      const slides=UI._slideList(s,acts,plan,sk);
-      slides.forEach((sl,i)=>{
-        const card=mk('div','sc'+(sl.act?' act':'')+(sl.gen?' hg':''));
-        card.appendChild(mk('div','sc-n','Slide '+(i+1)));
-        card.appendChild(mk('div','sc-t',sl.name));
-        const dd=mk('div','sc-d','');dd.appendChild(document.createTextNode(sl.desc.substring(0,44)||'—'));
-        if(sl.gen){const b=mk('span','gen-badge','GEN');dd.appendChild(b);}
-        card.appendChild(dd);grid.appendChild(card);
+  renderFidelity: plan => {
+    const panel = $('fidelity-panel');
+    if (!panel) return;
+    panel.classList.add('show');
+    const FLD = [
+      ['context','Context'],['iv_name','IV Name'],['dv_name','DV Name'],['equation','Equation'],
+      ['rate','Rate'],['table_values','Table Values'],['vocab_terms','Vocab Terms'],
+      ['guided_problem','Guided Problem'],['collab_problem','Collab Problem'],
+      ['independent_problems','Indep. Problems'],['exit_dok1','Exit DOK1'],
+      ['exit_dok2','Exit DOK2'],['exit_dok3','Exit DOK3']
+    ];
+    let ts = 0, tg = 0, tm = 0;
+    ['s1','s2'].forEach(k => {
+      const s = plan[k] || {};
+      const el = $(k === 's1' ? 'fi-s1' : 'fi-s2');
+      if (!el) return;
+      el.innerHTML = '';
+      FLD.forEach(([f, lb]) => {
+        const val = s[f];
+        let st, dv, tc;
+        if (val === null || val === undefined || val === '') {
+          st = 'missing'; dv = '(missing)'; tc = 'miss'; tm++;
+        } else if (Array.isArray(val)
+          ? val.some(v => isG(v))
+          : isG(String(val))) {
+          st = 'generated'; tc = 'gen'; tg++;
+          dv = Array.isArray(val)
+            ? `[${val.length} items]`
+            : String(val).replace('[GENERATED — VERIFY]','').trim().substring(0, 42);
+        } else {
+          st = 'source'; tc = 'src'; ts++;
+          dv = Array.isArray(val) ? `[${val.length} items]` : String(val).substring(0, 42);
+        }
+        const row = mk('div', 'fi-row');
+        row.appendChild(mk('span', 'fi-f', lb));
+        row.appendChild(mk('span', 'fi-v ' + st, dv));
+        const tag = mk('span', 'fi-tag ' + tc, tc === 'src' ? 'SOURCE' : tc === 'gen' ? 'GENERATED' : 'MISSING');
+        row.appendChild(tag);
+        el.appendChild(row);
       });
-      $t(sk==='s1'?'s1-cnt':'s2-cnt',`· ${slides.length} slides`);
-      $t(sk==='s1'?'s1-note':'s2-note',`↑ ${slides.length} slides dynamically generated`);
     });
-    ['u-idle','u-proc'].forEach(id=>$s(id,'none'));$s('u-done','block');
-    $t('u-done-msg',plan.lesson_title||'Plan bound');
-    ['btn-s1','btn-s2','btn-both'].forEach(id=>$p(id,'disabled',false));
+    const sum = $('fi-sum');
+    if (sum) sum.innerHTML = '';
+    [
+      { l:`${ts} SOURCE`,    c:'var(--success)' },
+      { l:`${tg} GENERATED`, c:'var(--warn)' },
+      { l:`${tm} MISSING`,   c:'var(--err)' }
+    ].forEach(p => {
+      const s = mk('div', 'fsum-item');
+      const d = mk('div', 'fsum-dot'); d.style.background = p.c;
+      const t = mk('span', '', p.l); t.style.color = p.c;
+      t.style.fontSize = '.68rem'; t.style.fontFamily = 'DM Mono,monospace';
+      s.appendChild(d); s.appendChild(t); sum.appendChild(s);
+    });
+    if (tg > 4 || tm > 2) UI.toast(`${tg} generated + ${tm} missing — review fidelity report`, 'warning');
+    if (plan._warnStd) {
+      const w = mk('div', 'fi-warn', '⚠ Standard not found in slides — defaulted. Update in PPTX header.');
+      panel.appendChild(w);
+    }
+    if (plan._warnTi) {
+      const w = mk('div', 'fi-warn', '⚠ Lesson title not found — using placeholder.');
+      panel.appendChild(w);
+    }
   },
-  _slideList:(s,acts,plan,sk)=>{
-    const sl=[];
-    sl.push({name:'Objectives',desc:(s.objectives?.[0]||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.objectives?.[0]||'')});
-    sl.push({name:'Be Curious',desc:(s.be_curious_notice||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.be_curious_notice||'')});
-    const terms=(s.vocab_terms||[]);
-    const nv=terms.length?Math.min(Math.ceil(terms.length/2),3):1;
-    for(let i=0;i<nv;i++)sl.push({name:`Vocabulary${nv>1?' ('+(i+1)+'/'+nv+')':''}`,desc:terms.slice(i*2,i*2+2).join(' · ')||'Key terms'});
-    sl.push({name:'Guided Practice',desc:(s.guided_problem||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.guided_problem||'')});
-    sl.push({name:'Collaborative Practice',desc:(s.collab_problem||'').replace('[GENERATED — VERIFY] ','').substring(0,44),gen:isG(s.collab_problem||'')});
-    const probs=s.independent_problems||[];const ng=Math.max(1,Math.ceil(probs.length/3));
-    for(let i=0;i<ng;i++)sl.push({name:'Independent Practice'+(ng>1?' ('+(i+1)+')':''),desc:`Problems ${i*3+1}–${Math.min((i+1)*3,probs.length||3)}`});
-    acts.forEach(a=>sl.push({name:a.title||'Interactive Activity',desc:a.type||'activity',act:true}));
-    if((s.cut_sort_items||[]).filter(it=>!isG(it.text||'')).length>0)sl.push({name:'Cut-and-Sort',desc:s.cut_sort_title||'Sorting activity',act:true});
-    sl.push({name:'TWR Frame',desc:`${(s.twr_frames||[]).length} sentence frames`});
-    sl.push({name:'Exit Ticket',desc:'DOK 1 · DOK 2 · DOK 3'});
-    sl.push({name:'Goal Tracker',desc:'Self-assessment · reflection'});
+  renderPreview: plan => {
+    $c('preview-panel', c => c.add('show'));
+    $t('prev-title', plan.lesson_title || 'Untitled Lesson');
+    $t('prev-std', plan.detected_standard || '');
+    const me = $('prev-meta');
+    if (me) {
+      me.innerHTML = '';
+      [
+        ['Standard', plan.detected_standard || 'N/A'],
+        ['Unit', plan.unit || 'N/A'],
+        ['S1 IV→DV', `${plan.s1?.iv_name || '?'} → ${plan.s1?.dv_name || '?'}`],
+        ['S1 Eq', plan.s1?.equation || '?'],
+        ['S2 Eq', plan.s2?.equation || '?']
+      ].forEach(([k, v]) => {
+        const s = document.createElement('span');
+        s.appendChild(mk('strong', '', k + ': '));
+        s.appendChild(document.createTextNode(v + '  '));
+        me.appendChild(s);
+      });
+    }
+    ['s1','s2'].forEach(sk => {
+      const s = plan[sk] || {}, acts = plan[sk + '_acts'] || [];
+      const grid = $(sk === 's1' ? 's1-prev' : 's2-prev');
+      if (!grid) return;
+      grid.innerHTML = '';
+      const slides = UI._slideList(s, acts, plan, sk);
+      slides.forEach((sl, i) => {
+        const card = mk('div', 'sc' + (sl.act ? ' act' : '') + (sl.gen ? ' hg' : ''));
+        card.appendChild(mk('div', 'sc-n', 'Slide ' + (i + 1)));
+        card.appendChild(mk('div', 'sc-t', sl.name));
+        const dd = mk('div', 'sc-d', '');
+        dd.appendChild(document.createTextNode(sl.desc.substring(0, 44) || '—'));
+        if (sl.gen) { const b = mk('span', 'gen-badge', 'GEN'); dd.appendChild(b); }
+        card.appendChild(dd);
+        grid.appendChild(card);
+      });
+      $t(sk === 's1' ? 's1-cnt' : 's2-cnt', `· ${slides.length} slides`);
+      $t(sk === 's1' ? 's1-note' : 's2-note', `↑ ${slides.length} slides dynamically generated`);
+    });
+    ['u-idle','u-proc'].forEach(id => $s(id, 'none'));
+    $s('u-done', 'block');
+    $t('u-done-msg', plan.lesson_title || 'Plan bound');
+    ['btn-s1','btn-s2','btn-both'].forEach(id => $p(id, 'disabled', false));
+  },
+  _slideList: (s, acts, plan, sk) => {
+    const sl = [];
+    sl.push({ name:'Objectives', desc:(s.objectives?.[0] || '').replace('[GENERATED — VERIFY] ','').substring(0,44), gen:isG(s.objectives?.[0] || '') });
+    sl.push({ name:'Be Curious', desc:(s.be_curious_notice || '').replace('[GENERATED — VERIFY] ','').substring(0,44), gen:isG(s.be_curious_notice || '') });
+    const terms = (s.vocab_terms || []);
+    const nv = terms.length ? Math.min(Math.ceil(terms.length / 2), 3) : 1;
+    for (let i = 0; i < nv; i++)
+      sl.push({ name:`Vocabulary${nv > 1 ? ' (' + (i+1) + '/' + nv + ')' : ''}`, desc:terms.slice(i*2, i*2+2).join(' · ') || 'Key terms' });
+    sl.push({ name:'Guided Practice',        desc:(s.guided_problem || '').replace('[GENERATED — VERIFY] ','').substring(0,44), gen:isG(s.guided_problem || '') });
+    sl.push({ name:'Collaborative Practice', desc:(s.collab_problem || '').replace('[GENERATED — VERIFY] ','').substring(0,44), gen:isG(s.collab_problem || '') });
+    const probs = s.independent_problems || [];
+    const ng = Math.max(1, Math.ceil(probs.length / 3));
+    for (let i = 0; i < ng; i++)
+      sl.push({ name:'Independent Practice' + (ng > 1 ? ' (' + (i+1) + ')' : ''), desc:`Problems ${i*3+1}–${Math.min((i+1)*3, probs.length || 3)}` });
+    acts.forEach(a => sl.push({ name:a.title || 'Interactive Activity', desc:a.type || 'activity', act:true }));
+    if ((s.cut_sort_items || []).filter(it => !isG(it.text || '')).length > 0)
+      sl.push({ name:'Cut-and-Sort', desc:s.cut_sort_title || 'Sorting activity', act:true });
+    sl.push({ name:'TWR Frame',    desc:`${(s.twr_frames || []).length} sentence frames` });
+    sl.push({ name:'Exit Ticket',  desc:'DOK 1 · DOK 2 · DOK 3' });
+    sl.push({ name:'Goal Tracker', desc:'Self-assessment · reflection' });
     return sl;
   },
 };
 
 // ── FILE HANDLER ───────────────────────────────────────────────────────
-const FH={
-  init:()=>{
-    const zone=$('upload-zone'),inp=$('file-in');
-    if(zone&&inp){
-      zone.addEventListener('click',()=>inp.click());
-      zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
-      zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
-      zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)FH.process(f);});
-      inp.addEventListener('change',e=>{const f=e.target.files[0];if(f)FH.process(f);});
+const FH = {
+  init: () => {
+    const zone = $('upload-zone'), inp = $('file-in');
+    if (zone && inp) {
+      zone.addEventListener('click', e => {
+        // Don't open picker when clicking reset button
+        if (e.target.closest('.reset-btn')) return;
+        inp.click();
+      });
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault(); zone.classList.remove('drag');
+        const f = e.dataTransfer.files[0];
+        if (f) FH.process(f);
+      });
+      inp.addEventListener('change', e => { const f = e.target.files[0]; if (f) FH.process(f); });
     }
-    const bind=(id,ev,fn)=>{const e=$(id);if(e)e.addEventListener(ev,fn);};
-    bind('reset-btn','click',e=>{e.stopPropagation();UI.reset();});
-    bind('api-save-btn','click',()=>State.saveKey());
-    bind('theme-btn','click',()=>Theme.toggle());
-    bind('btn-s1','click',()=>Exp.build('s1'));
-    bind('btn-s2','click',()=>Exp.build('s2'));
-    bind('btn-both','click',()=>Exp.buildBoth());
+    const bind = (id, ev, fn) => { const e = $(id); if (e) e.addEventListener(ev, fn); };
+    bind('reset-btn',    'click', e => { e.stopPropagation(); UI.reset(); });
+    bind('api-save-btn', 'click', () => State.saveKey());
+    bind('theme-btn',    'click', () => Theme.toggle());
+    bind('btn-s1',       'click', () => Exp.build('s1'));
+    bind('btn-s2',       'click', () => Exp.build('s2'));
+    bind('btn-both',     'click', () => Exp.buildBoth());
   },
-  process:async file=>{
-    if(State.upBusy()){UI.toast('Extraction in progress — please wait','warning');return;}
-    if(!file.name.toLowerCase().endsWith('.pptx')){UI.toast('Please upload a .pptx file','error');return;}
-    if(file.size>60*1024*1024){UI.toast('File too large (max 60 MB)','error');return;}
-    if(!State.key()){UI.toast('Paste your API key first','error');return;}
-    State.setUpBusy(true);$s('u-idle','none');$s('u-proc','block');$c('stage-log',c=>c.add('show'));
-    UI.setP(5,'Validating PPTX…','Checking package structure');UI.setStage('st1','run');
-    const t1=Utils.ts();let slideText='';
-    try{slideText=await FH.extract(file);UI.setStage('st1','done');UI.setStageT('st1',Utils.el(t1));}
-    catch(e){UI.setStage('st1','err',e.message);FH._fail(e.message);State.setUpBusy(false);return;}
-    UI.setP(28,'Binding scenario…','Claude: extracting from source slides');UI.setStage('st2','run');
-    const t2=Utils.ts();let raw;
-    try{raw=await FH.fetchPlan(slideText);UI.setStage('st2','done');UI.setStageT('st2',Utils.el(t2));}
-    catch(e){UI.setStage('st2','err',e.message);FH._fail(e.message);State.setUpBusy(false);return;}
-    UI.setP(58,'Normalizing…','Tagging generated fields');UI.setStage('st3','run');
-    const t3=Utils.ts();let plan;
-    try{plan=Schema.norm(raw);Schema.validate(plan);UI.setStage('st3','done');UI.setStageT('st3',Utils.el(t3));}
-    catch(e){UI.setStage('st3','err',e.message);FH._fail(e.message);State.setUpBusy(false);return;}
-    UI.setStage('st4','run');UI.setP(72,'Fidelity report…','Validating graph bounds + S2↔S1 links');
-    const t4=Utils.ts();await Utils.delay(200);UI.setStage('st4','done');UI.setStageT('st4',Utils.el(t4));
-    UI.setStage('st5','run');UI.setP(82,'AI Activity Planner…','Claude: designing interactive activities');
-    const t5=Utils.ts();
-    try{
-      const [a1,a2]=await Promise.all([AP.plan(plan,'s1'),AP.plan(plan,'s2')]);
-      plan.s1_acts=a1;plan.s2_acts=a2;
-      UI.setStage('st5','done');UI.setStageT('st5',Utils.el(t5));
-    }catch(e){UI.setStage('st5','err',e.message);plan.s1_acts=AP.fallback(plan.s1||{},'s1');plan.s2_acts=AP.fallback(plan.s2||{},'s2');UI.toast('Activity planner used fallback activities','warning');}
-    UI.setP(100,'Ready ✓','');State.setPlan(plan);
-    UI.renderPreview(plan);UI.renderFidelity(plan);UI.renderActivity(plan);State.setUpBusy(false);
-  },
-  _fail:msg=>{UI.setP(0);$s('u-proc','none');$s('u-idle','block');UI.toast(msg,'error');},
-  extract:async file=>{
-    const buf=await file.arrayBuffer();let zip;
-    try{zip=await JSZip.loadAsync(buf);}catch(e){throw new Error('Invalid PPTX — file may be corrupt.');}
-    if(!zip.files['[Content_Types].xml'])throw new Error('Missing [Content_Types].xml — not a valid PPTX.');
-    if(!Object.keys(zip.files).some(n=>n.match(/^ppt\/slides\/slide\d+\.xml$/)))throw new Error('No slide XML found.');
-    const sfs=Object.keys(zip.files).filter(n=>n.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a,b)=>parseInt(a.match(/\d+/)[0])-parseInt(b.match(/\d+/)[0]));
-    if(sfs.length>120)throw new Error('Deck too large (>120 slides). Trim first.');
-    let out='';
-    for(const sf of sfs){
-      const xml=await zip.files[sf].async('string');
-      const txt=xml.replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g,(_,t)=>t+' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-      const dec=Utils.decXml(txt);
-      if(dec.length>2)out+=`\n--- Slide ${sf.match(/slide(\d+)/)[1]} ---\n${dec}\n`;
+
+  process: async file => {
+    if (State.upBusy()) { UI.toast('Extraction in progress — please wait', 'warning'); return; }
+    if (!file.name.toLowerCase().endsWith('.pptx')) { UI.toast('Please upload a .pptx file', 'error'); return; }
+    if (file.size > 60 * 1024 * 1024) { UI.toast('File too large (max 60 MB)', 'error'); return; }
+    if (!State.key()) { UI.toast('Paste your API key first', 'error'); return; }
+
+    State.setUpBusy(true);
+    $s('u-idle', 'none'); $s('u-proc', 'block');
+    $c('stage-log', c => c.add('show'));
+
+    UI.setP(5, 'Validating PPTX…', 'Checking package structure');
+    UI.setStage('st1', 'run');
+    const t1 = Utils.ts();
+    let slideText = '';
+    try {
+      slideText = await FH.extract(file);
+      UI.setStage('st1', 'done');
+      UI.setStageT('st1', Utils.el(t1));
+    } catch (e) {
+      UI.setStage('st1', 'err', e.message);
+      FH._fail(e.message);
+      State.setUpBusy(false);
+      return;
     }
-    if(!out.trim())throw new Error('No text extracted. PPTX may use image-only content.');
-    return out.trim();
+
+    UI.setP(28, 'Binding scenario…', 'Claude: extracting from source slides');
+    UI.setStage('st2', 'run');
+    const t2 = Utils.ts();
+    let raw;
+    try {
+      raw = await FH.fetchPlan(slideText);
+      UI.setStage('st2', 'done');
+      UI.setStageT('st2', Utils.el(t2));
+    } catch (e) {
+      UI.setStage('st2', 'err', e.message);
+      FH._fail(e.message);
+      State.setUpBusy(false);
+      return;
+    }
+
+    UI.setP(58, 'Normalizing…', 'Tagging generated fields');
+    UI.setStage('st3', 'run');
+    const t3 = Utils.ts();
+    let plan;
+    try {
+      plan = Schema.norm(raw);
+      Schema.validate(plan);
+      UI.setStage('st3', 'done');
+      UI.setStageT('st3', Utils.el(t3));
+    } catch (e) {
+      UI.setStage('st3', 'err', e.message);
+      FH._fail(e.message);
+      State.setUpBusy(false);
+      return;
+    }
+
+    UI.setStage('st4', 'run');
+    UI.setP(72, 'Fidelity report…', 'Validating graph bounds + S2↔S1 links');
+    const t4 = Utils.ts();
+    await Utils.delay(200);
+    UI.setStage('st4', 'done');
+    UI.setStageT('st4', Utils.el(t4));
+
+    UI.setStage('st5', 'run');
+    UI.setP(82, 'AI Activity Planner…', 'Claude: designing interactive activities');
+    const t5 = Utils.ts();
+    try {
+      // FIX #13: AP.plan errors are caught per-session; fallback applied without rethrowing
+      const [a1, a2] = await Promise.all([
+        AP.plan(plan, 's1').catch(e => { console.warn('S1 activity planner:', e.message); return AP.fallback(plan.s1 || {}, 's1'); }),
+        AP.plan(plan, 's2').catch(e => { console.warn('S2 activity planner:', e.message); return AP.fallback(plan.s2 || {}, 's2'); }),
+      ]);
+      plan.s1_acts = a1;
+      plan.s2_acts = a2;
+      const usedFallback = (!plan.s1_acts.length || !plan.s2_acts.length);
+      UI.setStage('st5', 'done');
+      UI.setStageT('st5', Utils.el(t5));
+      if (usedFallback) UI.toast('Activity planner used fallback for one or more sessions', 'warning');
+    } catch (e) {
+      UI.setStage('st5', 'err', e.message);
+      plan.s1_acts = AP.fallback(plan.s1 || {}, 's1');
+      plan.s2_acts = AP.fallback(plan.s2 || {}, 's2');
+      UI.toast('Activity planner used fallback activities', 'warning');
+    }
+
+    UI.setP(100, 'Ready ✓', '');
+    State.setPlan(plan);
+    UI.renderPreview(plan);
+    UI.renderFidelity(plan);
+    UI.renderActivity(plan);
+    State.setUpBusy(false);
   },
-  _slice:(txt,max)=>{if(txt.length<=max)return txt;const b=txt.lastIndexOf('--- Slide',max);return b<1000?txt.substring(0,max)+'\n[NOTE: deck truncated]':txt.substring(0,b)+'\n[NOTE: remaining slides not included]';},
-  fetchPlan:async(slideText,attempt=1)=>{
-    const trunc=FH._slice(slideText,28000);
-    const prompt=`You are a senior Grade 6 Math curriculum analyst. Extract a SCENARIO_EXTRACT JSON from these Reveal Math lesson slides.
+
+  _fail: msg => {
+    UI.setP(0);
+    $s('u-proc', 'none');
+    $s('u-idle', 'block');
+    UI.toast(msg, 'error');
+  },
+
+  // FIX #11: Parallel slide extraction via Promise.all
+  extract: async file => {
+    const buf = await file.arrayBuffer();
+    let zip;
+    try { zip = await JSZip.loadAsync(buf); }
+    catch (e) { throw new Error('Invalid PPTX — file may be corrupt.'); }
+    if (!zip.files['[Content_Types].xml']) throw new Error('Missing [Content_Types].xml — not a valid PPTX.');
+    const sfs = Object.keys(zip.files)
+      .filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/))
+      .sort((a, b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+    if (!sfs.length) throw new Error('No slide XML found.');
+    if (sfs.length > 120) throw new Error('Deck too large (>120 slides). Trim first.');
+
+    const texts = await Promise.all(sfs.map(async sf => {
+      const xml = await zip.files[sf].async('string');
+      const txt = xml
+        .replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g, (_, t) => t + ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const dec = Utils.decXml(txt);
+      if (dec.length < 3) return '';
+      const num = sf.match(/slide(\d+)/)[1];
+      return `\n--- Slide ${num} ---\n${dec}\n`;
+    }));
+
+    const out = texts.join('').trim();
+    if (!out) throw new Error('No text extracted. PPTX may use image-only content.');
+    return out;
+  },
+
+  _slice: (txt, max) => {
+    if (txt.length <= max) return txt;
+    const b = txt.lastIndexOf('--- Slide', max);
+    return b < 1000
+      ? txt.substring(0, max) + '\n[NOTE: deck truncated]'
+      : txt.substring(0, b) + '\n[NOTE: remaining slides not included]';
+  },
+
+  fetchPlan: async (slideText, attempt = 1) => {
+    const trunc = FH._slice(slideText, 28000);
+    const prompt = `You are a senior Grade 6 Math curriculum analyst. Extract a SCENARIO_EXTRACT JSON from these Reveal Math lesson slides.
 
 CRITICAL: Every value must trace DIRECTLY to source slides. If NOT in slides, return null. Never invent. Return ONLY valid JSON — no markdown, no backticks.
 
@@ -456,88 +723,170 @@ ${trunc}
 
 Return ONLY this JSON (null for any field not found):
 {"lesson_title":null,"detected_standard":null,"unit":null,"s1":{"context":null,"iv_name":null,"dv_name":null,"iv_symbol":null,"dv_symbol":null,"rate":null,"initial_value":null,"equation":null,"table_values":null,"graph_xmax":null,"graph_ymax":null,"graph_xlabel":null,"graph_ylabel":null,"content_objective":null,"language_objective":null,"objectives_raw":null,"vocab_terms":null,"vocab_definitions":null,"be_curious_notice":null,"be_curious_wonder":null,"be_curious_twr":null,"guided_problem":null,"guided_steps":null,"collab_problem":null,"collab_discussion_prompt":null,"collab_table_values":null,"independent_problems":null,"cut_sort_title":null,"cut_sort_items":null,"twr_frames":null,"exit_dok1":null,"exit_dok2":null,"exit_dok3":null,"goal_tracker_objective":null},"s2":{"context":null,"iv_name":null,"dv_name":null,"iv_symbol":null,"dv_symbol":null,"rate":null,"initial_value":null,"equation":null,"table_values":null,"graph_xmax":null,"graph_ymax":null,"graph_xlabel":null,"graph_ylabel":null,"content_objective":null,"language_objective":null,"objectives_raw":null,"vocab_terms":null,"vocab_definitions":null,"be_curious_notice":null,"be_curious_wonder":null,"be_curious_twr":null,"be_curious_s1_ref_values":null,"be_curious_s1_label":null,"guided_problem":null,"guided_steps":null,"collab_problem":null,"collab_discussion_prompt":null,"collab_table_values":null,"independent_problems":null,"cut_sort_title":null,"cut_sort_items":null,"twr_frames":null,"exit_dok1":null,"exit_dok2":null,"exit_dok3":null,"goal_tracker_objective":null}}`;
-    const TO=50000;const toP=new Promise((_,r)=>setTimeout(()=>r(new Error('Request timed out (50s).')),TO));
+
+    const TO = 50000;
+    const toP = new Promise((_, r) => setTimeout(() => r(new Error('Request timed out (50s).')), TO));
     let resp;
-    try{resp=await Promise.race([fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':State.key(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})}),toP]);}
-    catch(e){if(e.message.includes('timed out'))throw e;if(attempt<2){UI.toast('Network error — retrying…','warning');await Utils.delay(2000);return FH.fetchPlan(slideText,2);}throw new Error(`Network error: ${e.message}`);}
-    if(!resp.ok){const body=await resp.text().catch(()=>'');if(resp.status===401)throw new Error('Invalid API key — re-enter sk-ant key.');if(resp.status===429)throw new Error('Rate limited. Wait 60s.');if(resp.status>=500){if(attempt<2){UI.toast('Server error — retrying…','warning');await Utils.delay(3000);return FH.fetchPlan(slideText,2);}throw new Error(`Anthropic server error (${resp.status}).`);}throw new Error(`API error ${resp.status}: ${body.substring(0,120)}`);}
-    const data=await resp.json();const txt=data.content?.find(c=>c.type==='text')?.text||'';if(!txt)throw new Error('Claude returned no content.');
-    const clean=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-    try{return JSON.parse(clean);}catch(e){throw new Error('Claude returned malformed JSON. Trim the deck and retry.');}
+    try {
+      resp = await Promise.race([
+        fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': State.key(),
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:8000, messages:[{ role:'user', content:prompt }] })
+        }),
+        toP
+      ]);
+    } catch (e) {
+      if (e.message.includes('timed out')) throw e;
+      if (attempt < 2) { UI.toast('Network error — retrying…', 'warning'); await Utils.delay(2000); return FH.fetchPlan(slideText, 2); }
+      throw new Error(`Network error: ${e.message}`);
+    }
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      if (resp.status === 401) throw new Error('Invalid API key — re-enter sk-ant key.');
+      if (resp.status === 429) throw new Error('Rate limited. Wait 60s.');
+      if (resp.status >= 500) {
+        if (attempt < 2) { UI.toast('Server error — retrying…', 'warning'); await Utils.delay(3000); return FH.fetchPlan(slideText, 2); }
+        throw new Error(`Anthropic server error (${resp.status}).`);
+      }
+      throw new Error(`API error ${resp.status}: ${body.substring(0, 120)}`);
+    }
+    const data = await resp.json();
+    const txt = data.content?.find(c => c.type === 'text')?.text || '';
+    if (!txt) throw new Error('Claude returned no content.');
+    const clean = txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    try { return JSON.parse(clean); }
+    catch (e) { throw new Error('Claude returned malformed JSON. Trim the deck and retry.'); }
   },
 };
 
 // ── SCHEMA ─────────────────────────────────────────────────────────────
-const Schema={
-  norm:raw=>{
-    const p=JSON.parse(JSON.stringify(raw));
-    if(p.session1&&!p.s1)p.s1=p.session1;if(p.session2&&!p.s2)p.s2=p.session2;
-    const G=suf=>`${GEN} ${suf}`;
-    ['s1','s2'].forEach(k=>{
-      const s=p[k];if(!s)return;
-      if(!Array.isArray(s.objectives)||!s.objectives.length){
-        const co=s.content_objective,lo=s.language_objective,ro=s.objectives_raw;
-        if(co&&lo)s.objectives=[co,lo];else if(co)s.objectives=[co,G('I will explain my reasoning using math vocabulary.')];
-        else if(ro?.length)s.objectives=ro;else s.objectives=[G('I can identify and analyze a two-variable relationship.'),G('I will explain my reasoning using math vocabulary.')];
+const Schema = {
+  norm: raw => {
+    // FIX #4: deep clone, then handle both session1/s1 alias shapes consistently
+    const p = JSON.parse(JSON.stringify(raw));
+    if (p.session1 && !p.s1) p.s1 = p.session1;
+    if (p.session2 && !p.s2) p.s2 = p.session2;
+    delete p.session1; delete p.session2; // prevent confusion
+
+    const G = suf => `${GEN} ${suf}`;
+    ['s1','s2'].forEach(k => {
+      if (!p[k]) p[k] = {};
+      const s = p[k];
+
+      // Objectives
+      if (!Array.isArray(s.objectives) || !s.objectives.length) {
+        const co = s.content_objective, lo = s.language_objective, ro = s.objectives_raw;
+        if (co && lo) s.objectives = [co, lo];
+        else if (co) s.objectives = [co, G('I will explain my reasoning using math vocabulary.')];
+        else if (Array.isArray(ro) && ro.length) s.objectives = ro;
+        else s.objectives = [G('I can identify and analyze a two-variable relationship.'), G('I will explain my reasoning using math vocabulary.')];
       }
-      s._oc=s.content_objective||(s.objectives[0]&&!isG(s.objectives[0])?s.objectives[0]:null);
-      s._ol=s.language_objective||(s.objectives[1]&&!isG(s.objectives[1])?s.objectives[1]:null);
-      if(!Array.isArray(s.vocab_terms)||!s.vocab_terms.length)s.vocab_terms=[G('independent variable'),G('dependent variable'),G('equation'),G('rate of change')];
-      if(!s.vocab_definitions||!Object.keys(s.vocab_definitions).length)s.vocab_definitions={};
-      (s.vocab_terms||[]).forEach(t=>{const key=t.replace('[GENERATED — VERIFY] ','').trim();if(!s.vocab_definitions[key])s.vocab_definitions[key]=G('Add definition from source PPTX');});
-      if(!Array.isArray(s.table_values)||s.table_values.length<2)s.table_values=[[1,null],[2,null],[3,null],[4,null],[5,null]];
-      if(!Array.isArray(s.collab_table_values)||!s.collab_table_values.length)s.collab_table_values=s.table_values.slice(0,3);
-      if(!Array.isArray(s.guided_steps)||!s.guided_steps.length)s.guided_steps=[G('Step 1: Identify the independent variable.'),G('Step 2: Find the rate of change.'),G('Step 3: Write the equation.'),G('Step 4: Use the equation to complete the table.')];
-      if(!Array.isArray(s.independent_problems)||!s.independent_problems.length)s.independent_problems=[G('Apply the equation to a new value.'),G('Modify the rate and write a new equation.'),G('Explain which variable is independent and why.')];
-      if(!Array.isArray(s.cut_sort_items)||!s.cut_sort_items.length)s.cut_sort_items=[{text:G('Variable A'),category:G('Independent')},{text:G('Variable B'),category:G('Dependent')}];
-      if(!s.cut_sort_title)s.cut_sort_title=G(k==='s1'?'Sort: Independent vs. Dependent':'Sort: Proportional vs. Non-Proportional');
-      if(!Array.isArray(s.twr_frames)||!s.twr_frames.length)s.twr_frames=[G('The ___ depends on ___ because ___.'),G('As ___ increases, ___ increases because ___.'),G('The equation ___ shows that ___.'),G('I know this is ___ because ___.')];
-      if(!s.be_curious_notice)s.be_curious_notice=G('I notice that ___ and ___.');
-      if(!s.be_curious_wonder)s.be_curious_wonder=G('I wonder if ___ because ___.');
-      if(!s.be_curious_twr)s.be_curious_twr=G('The ___ depends on ___ because ___.');
-      if(!s.collab_problem)s.collab_problem=G('Use the equation to complete the table and graph the relationship.');
-      if(!s.collab_discussion_prompt)s.collab_discussion_prompt=G('How do you know which variable is independent?');
-      if(!s.exit_dok1)s.exit_dok1=G('Identify the independent variable in this situation.');
-      if(!s.exit_dok2)s.exit_dok2=G('Write the equation and explain what each part means.');
-      if(!s.exit_dok3)s.exit_dok3=G('Compare this relationship to another. What is similar? What is different?');
-      if(!s.goal_tracker_objective)s.goal_tracker_objective=G((s.objectives?.[0]||'I can analyze a two-variable relationship.').replace('[GENERATED — VERIFY] ',''));
-      if(!s.guided_problem)s.guided_problem=G('Use the context to complete the table, write the equation, and graph the relationship.');
+      s._oc = s.content_objective || (s.objectives[0] && !isG(s.objectives[0]) ? s.objectives[0] : null);
+      s._ol = s.language_objective || (s.objectives[1] && !isG(s.objectives[1]) ? s.objectives[1] : null);
+
+      // Vocab — FIX #5: guard vocab_definitions before accessing
+      if (!Array.isArray(s.vocab_terms) || !s.vocab_terms.length)
+        s.vocab_terms = [G('independent variable'), G('dependent variable'), G('equation'), G('rate of change')];
+      if (!s.vocab_definitions || typeof s.vocab_definitions !== 'object' || Array.isArray(s.vocab_definitions))
+        s.vocab_definitions = {};
+      (s.vocab_terms || []).forEach(t => {
+        const key = (typeof t === 'string' ? t : String(t)).replace('[GENERATED — VERIFY] ','').trim();
+        if (key && !s.vocab_definitions[key])
+          s.vocab_definitions[key] = G('Add definition from source PPTX');
+      });
+
+      // Table values
+      if (!Array.isArray(s.table_values) || s.table_values.length < 2)
+        s.table_values = [[1,null],[2,null],[3,null],[4,null],[5,null]];
+      if (!Array.isArray(s.collab_table_values) || !s.collab_table_values.length)
+        s.collab_table_values = s.table_values.slice(0, 3);
+
+      // Guided steps
+      if (!Array.isArray(s.guided_steps) || !s.guided_steps.length)
+        s.guided_steps = [G('Step 1: Identify the independent variable.'), G('Step 2: Find the rate of change.'), G('Step 3: Write the equation.'), G('Step 4: Use the equation to complete the table.')];
+
+      // Independent problems
+      if (!Array.isArray(s.independent_problems) || !s.independent_problems.length)
+        s.independent_problems = [G('Apply the equation to a new value.'), G('Modify the rate and write a new equation.'), G('Explain which variable is independent and why.')];
+
+      // Cut-sort
+      if (!Array.isArray(s.cut_sort_items) || !s.cut_sort_items.length)
+        s.cut_sort_items = [{ text:G('Variable A'), category:G('Independent') }, { text:G('Variable B'), category:G('Dependent') }];
+      if (!s.cut_sort_title) s.cut_sort_title = G(k === 's1' ? 'Sort: Independent vs. Dependent' : 'Sort: Proportional vs. Non-Proportional');
+
+      // TWR
+      if (!Array.isArray(s.twr_frames) || !s.twr_frames.length)
+        s.twr_frames = [G('The ___ depends on ___ because ___.'), G('As ___ increases, ___ increases because ___.'), G('The equation ___ shows that ___.'), G('I know this is ___ because ___.')];
+
+      // Be Curious defaults
+      if (!s.be_curious_notice) s.be_curious_notice = G('I notice that ___ and ___.');
+      if (!s.be_curious_wonder) s.be_curious_wonder = G('I wonder if ___ because ___.');
+      if (!s.be_curious_twr)   s.be_curious_twr   = G('The ___ depends on ___ because ___.');
+
+      // Practice defaults
+      if (!s.collab_problem)          s.collab_problem          = G('Use the equation to complete the table and graph the relationship.');
+      if (!s.collab_discussion_prompt) s.collab_discussion_prompt = G('How do you know which variable is independent?');
+
+      // Exit ticket defaults
+      if (!s.exit_dok1) s.exit_dok1 = G('Identify the independent variable in this situation.');
+      if (!s.exit_dok2) s.exit_dok2 = G('Write the equation and explain what each part means.');
+      if (!s.exit_dok3) s.exit_dok3 = G('Compare this relationship to another. What is similar? What is different?');
+
+      // Goal tracker
+      if (!s.goal_tracker_objective)
+        s.goal_tracker_objective = G((s.objectives?.[0] || 'I can analyze a two-variable relationship.').replace('[GENERATED — VERIFY] ',''));
+
+      // Guided problem
+      if (!s.guided_problem)
+        s.guided_problem = G('Use the context to complete the table, write the equation, and graph the relationship.');
     });
     return p;
   },
-  validate:p=>{
-    if(!p.lesson_title){p.lesson_title=`${GEN} Untitled Lesson`;p._warnTi=true;}
-    if(!p.detected_standard){p.detected_standard=`${GEN} 6.EE.C.9`;p._warnStd=true;}
-    if(!p.s1)throw new Error('Session 1 data missing entirely.');
-    if(!p.s2)throw new Error('Session 2 data missing entirely.');
-    ['s1','s2'].forEach(k=>{
-      const s=p[k];
-      if(!Array.isArray(s.objectives)||s.objectives.length<1)throw new Error(`${k}.objectives empty.`);
-      if(!Array.isArray(s.table_values)||s.table_values.length<2){s.table_values=[[1,null],[2,null],[3,null]];s._warnTbl=true;}
+
+  validate: p => {
+    if (!p.lesson_title) { p.lesson_title = `${GEN} Untitled Lesson`; p._warnTi = true; }
+    if (!p.detected_standard) { p.detected_standard = `${GEN} 6.EE.C.9`; p._warnStd = true; }
+    if (!p.s1) throw new Error('Session 1 data missing entirely.');
+    if (!p.s2) throw new Error('Session 2 data missing entirely.');
+    ['s1','s2'].forEach(k => {
+      const s = p[k];
+      if (!Array.isArray(s.objectives) || s.objectives.length < 1) throw new Error(`${k}.objectives empty.`);
+      if (!Array.isArray(s.table_values) || s.table_values.length < 2) {
+        s.table_values = [[1,null],[2,null],[3,null]]; s._warnTbl = true;
+      }
     });
   },
 };
 
 // ── ACTIVITY PLANNER ───────────────────────────────────────────────────
-const AP={
-  plan:async(plan,sk)=>{
-    const sd=plan[sk];if(!sd)return AP.fallback({},'');
-    const vt=(sd.vocab_terms||[]).map(t=>t.replace('[GENERATED — VERIFY] ','')).filter(t=>!t.startsWith('['));
-    const eq=(sd.equation||'').replace('[GENERATED — VERIFY] ','');
-    const ctx=(sd.context||'').replace('[GENERATED — VERIFY] ','');
-    const iv=(sd.iv_name||'x').replace('[GENERATED — VERIFY] ','');
-    const dv=(sd.dv_name||'y').replace('[GENERATED — VERIFY] ','');
-    const isS2=sk==='s2';
-    const prompt=`You are a Grade 6 math curriculum specialist. Design exactly 2 printed interactive notebook activities for this lesson.
+const AP = {
+  plan: async (plan, sk) => {
+    const sd = plan[sk];
+    if (!sd) return AP.fallback({}, '');
+
+    const vt = (sd.vocab_terms || []).map(t => (typeof t === 'string' ? t : '').replace('[GENERATED — VERIFY] ','')).filter(t => t && !t.startsWith('['));
+    const eq  = (sd.equation || '').replace('[GENERATED — VERIFY] ','');
+    const ctx = (sd.context  || '').replace('[GENERATED — VERIFY] ','');
+    const iv  = (sd.iv_name  || 'x').replace('[GENERATED — VERIFY] ','');
+    const dv  = (sd.dv_name  || 'y').replace('[GENERATED — VERIFY] ','');
+    const isS2 = sk === 's2';
+
+    const prompt = `You are a Grade 6 math curriculum specialist. Design exactly 2 printed interactive notebook activities for this lesson.
 
 LESSON CONTEXT:
-- Scenario: ${ctx||'two-variable proportional relationship'}
+- Scenario: ${ctx || 'two-variable proportional relationship'}
 - Independent variable (x): ${iv}
 - Dependent variable (y): ${dv}
-- Equation: ${eq||'y = kx'}
-- Vocabulary terms: ${vt.join(', ')||'independent variable, dependent variable'}
-- Table values: ${JSON.stringify((sd.table_values||[]).slice(0,4))}
-${isS2?`- Session 1 equation for comparison: ${(plan.s1?.equation||'y = ?').replace('[GENERATED — VERIFY] ','')}`:''}
+- Equation: ${eq || 'y = kx'}
+- Vocabulary terms: ${vt.join(', ') || 'independent variable, dependent variable'}
+- Table values: ${JSON.stringify((sd.table_values || []).slice(0, 4))}
+${isS2 ? `- Session 1 equation for comparison: ${(plan.s1?.equation || 'y = ?').replace('[GENERATED — VERIFY] ','')}`:''}
 
 Return ONLY valid JSON (no markdown):
 {"activities":[{"type":"vocab_matching","title":"Match It: Key Terms","instructions":"Draw a line connecting each term to its definition.","data":{"pairs":[{"term":"independent variable","definition":"the variable you control"},{"term":"dependent variable","definition":"the variable that changes"}]}},{"type":"table_fill","title":"Complete the Table","instructions":"Use the equation to find the missing values. Show your work.","data":{"equation_display":"y = 12x","iv_label":"x (hours)","dv_label":"y (earnings)","rows":[{"x":1,"y":12,"given":true},{"x":2,"y":null,"given":false},{"x":3,"y":null,"given":false},{"x":5,"y":null,"given":false},{"x":10,"y":null,"given":false}]}}]}
@@ -550,24 +899,68 @@ CHOOSE the 2 best types for this content:
 - "equation_decode": identify what each variable/number in the equation represents in context
 
 All content must use REAL values from this lesson, not generic placeholders.`;
-    const TO=35000;const toP=new Promise((_,r)=>setTimeout(()=>r(new Error('Activity planner timed out.')),TO));
-    let resp;
-    try{resp=await Promise.race([fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':State.key(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2500,messages:[{role:'user',content:prompt}]})}),toP]);}
-    catch(e){throw e;}
-    if(!resp.ok)throw new Error(`Activity planner API error: ${resp.status}`);
-    const data=await resp.json();const txt=data.content?.find(c=>c.type==='text')?.text||'';
-    const clean=txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-    try{const pa=JSON.parse(clean);if(Array.isArray(pa.activities)&&pa.activities.length)return pa.activities;}catch(_){}
-    return AP.fallback(sd,sk);
+
+    const TO = 35000;
+    const toP = new Promise((_, r) => setTimeout(() => r(new Error('Activity planner timed out.')), TO));
+    const resp = await Promise.race([
+      fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': State.key(),
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:2500, messages:[{ role:'user', content:prompt }] })
+      }),
+      toP
+    ]);
+    if (!resp.ok) throw new Error(`Activity planner API error: ${resp.status}`);
+    const data = await resp.json();
+    const txt = data.content?.find(c => c.type === 'text')?.text || '';
+    const clean = txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    try {
+      const pa = JSON.parse(clean);
+      if (Array.isArray(pa.activities) && pa.activities.length) return pa.activities;
+    } catch (_) { /* fall through to fallback */ }
+    return AP.fallback(sd, sk);
   },
-  fallback:(sd,sk)=>{
-    const isS2=sk==='s2';
-    const vt=(sd.vocab_terms||[]).map(t=>t.replace('[GENERATED — VERIFY] ','')).filter(t=>!t.startsWith('[')).slice(0,4);
-    const tv=(sd.table_values||[[1,null],[2,null],[3,null],[4,null],[5,null]]).map((r,i)=>({x:r[0]??i+1,y:r[1],given:i===0}));
-    return[
-      {type:'vocab_matching',title:'Match It: Key Terms',instructions:'Draw a line to match each term to its definition.',data:{pairs:vt.length>=2?vt.map(t=>({term:t,definition:(sd.vocab_definitions||{})[t]||'See your notes'})):[{term:'independent variable',definition:'the variable you control; the x-axis'},{term:'dependent variable',definition:'the variable that changes; the y-axis'}]}},
-      {type:isS2?'true_false':'table_fill',title:isS2?'True or False?':'Complete the Table',instructions:isS2?'Circle T for True or F for False. Explain your reasoning.':'Use the equation to find each missing value.',
-        data:isS2?{statements:[{text:'The independent variable is always on the x-axis.',answer:'True'},{text:'In a proportional relationship, doubling x also doubles y.',answer:'True'},{text:'The graph of a proportional relationship passes through the origin.',answer:'True'},{text:'You can change the independent variable by changing the dependent variable.',answer:'False'},{text:'Every two-variable relationship is proportional.',answer:'False'}]}:{equation_display:(sd.equation||'y = kx').replace('[GENERATED — VERIFY] ',''),iv_label:`${(sd.iv_name||'x').replace('[GENERATED — VERIFY] ','')} (x)`,dv_label:`${(sd.dv_name||'y').replace('[GENERATED — VERIFY] ','')} (y)`,rows:tv},
+
+  fallback: (sd, sk) => {
+    const isS2 = sk === 's2';
+    // FIX #5: guard vocab_definitions safely
+    const defs = (sd && typeof sd.vocab_definitions === 'object' && !Array.isArray(sd.vocab_definitions)) ? sd.vocab_definitions : {};
+    const vt = (sd?.vocab_terms || []).map(t => (typeof t === 'string' ? t : '').replace('[GENERATED — VERIFY] ','')).filter(t => t && !t.startsWith('[')).slice(0, 4);
+    const tv = (sd?.table_values || [[1,null],[2,null],[3,null],[4,null],[5,null]]).map((r, i) => ({ x:r[0] ?? i+1, y:r[1], given:i === 0 }));
+    return [
+      {
+        type: 'vocab_matching',
+        title: 'Match It: Key Terms',
+        instructions: 'Draw a line to match each term to its definition.',
+        data: {
+          pairs: vt.length >= 2
+            ? vt.map(t => ({ term:t, definition:defs[t] || 'See your notes' }))
+            : [{ term:'independent variable', definition:'the variable you control; the x-axis' }, { term:'dependent variable', definition:'the variable that changes; the y-axis' }]
+        }
+      },
+      {
+        type: isS2 ? 'true_false' : 'table_fill',
+        title: isS2 ? 'True or False?' : 'Complete the Table',
+        instructions: isS2 ? 'Circle T for True or F for False. Explain your reasoning.' : 'Use the equation to find each missing value.',
+        data: isS2
+          ? { statements: [
+              { text:'The independent variable is always on the x-axis.', answer:'True' },
+              { text:'In a proportional relationship, doubling x also doubles y.', answer:'True' },
+              { text:'The graph of a proportional relationship passes through the origin.', answer:'True' },
+              { text:'You can change the independent variable by changing the dependent variable.', answer:'False' },
+              { text:'Every two-variable relationship is proportional.', answer:'False' }
+            ]}
+          : {
+              equation_display: (sd?.equation || 'y = kx').replace('[GENERATED — VERIFY] ',''),
+              iv_label: `${(sd?.iv_name || 'x').replace('[GENERATED — VERIFY] ','')} (x)`,
+              dv_label: `${(sd?.dv_name || 'y').replace('[GENERATED — VERIFY] ','')} (y)`,
+              rows: tv
+            },
       },
     ];
   },
@@ -578,497 +971,890 @@ All content must use REAL values from this lesson, not generic placeholders.`;
    SLIDE: 10" × 5.625"  LAYOUT_16x9
    Header: y=0–1.00  Content: y=1.08–5.24  Footer: y=5.30–5.625
 ═══════════════════════════════════════════════════════════════════════ */
-const B={
-  hdr:(slide,pres,key,title,sub)=>{
-    slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:0.72,fill:{color:PAL.navy}});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:0.24,h:0.72,fill:{color:PAL.teal}});
-    slide.addShape(pres.shapes.RECTANGLE,{x:9.24,y:0.08,w:0.66,h:0.56,fill:{color:PAL.teal}});
-    slide.addText(key==='s1'?'S1':'S2',{x:9.24,y:0.08,w:0.66,h:0.56,fontSize:12,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText(Utils.math(title),{x:0.38,y:0,w:8.74,h:0.72,fontSize:19,bold:true,color:PAL.white,fontFace:'Calibri',valign:'middle',margin:0});
-    if(sub){slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0.72,w:10,h:0.30,fill:{color:PAL.cBlue}});slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0.72,w:0.24,h:0.30,fill:{color:PAL.tealBr}});slide.addText(Utils.math(sub),{x:0.38,y:0.72,w:9.5,h:0.30,fontSize:10,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0,italic:true});}
-  },
-  ftr:(slide,pres,n,plan)=>{
-    const std=(plan.detected_standard||'Grade 6').replace('[GENERATED — VERIFY] ','');
-    slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.30,w:10,h:0.325,fill:{color:PAL.white},line:{color:PAL.border,width:0.75},shadow:mkShFt()});
-    slide.addText(`EduWonderLab © · Standard: ${std} · Neft.Alba`,{x:0.3,y:5.30,w:8.5,h:0.325,fontSize:8,color:PAL.muted,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:9.5,y:5.31,w:0.44,h:0.30,fill:{color:PAL.navy}});
-    slide.addText(String(n),{x:9.5,y:5.31,w:0.44,h:0.30,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-  },
-  wlines:(slide,pres,x,y,w,nl,lh=0.38)=>{
-    const th=nl*lh+0.22;slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:th,fill:{color:PAL.white},line:{color:PAL.border,width:0.75},shadow:mkSh()});
-    slide.addText('✎  Work Space',{x:x+0.1,y:y+0.04,w:w-0.2,h:0.2,fontSize:7.5,color:PAL.muted,italic:true,fontFace:'Calibri',margin:0});
-    for(let i=1;i<=nl;i++)slide.addShape(pres.shapes.LINE,{x:x+0.14,y:y+(i*lh)+0.04,w:w-0.28,h:0,line:{dashType:'dash',color:PAL.wLine,width:0.5}});
-  },
-  grid:(slide,pres,x,y,w,h,xMax,yMax,xLbl,yLbl,pts=[],ac)=>{
-    ac=ac||PAL.teal;
-    const xs=Math.max(1,Math.ceil(xMax/8)),ys=Math.max(1,Math.ceil(yMax/6));
-    const xc=Math.ceil(xMax/xs),yc=Math.ceil(yMax/ys);
-    const lp=0.70,bp=0.36,gw=w-lp,gh=h-bp,ox=x+lp,oy=y,cw=gw/xc,ch=gh/yc;
-    slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h,fill:{color:PAL.white},line:{color:PAL.border,width:0.5},shadow:mkSh()});
-    for(let i=0;i<=xc;i++)slide.addShape(pres.shapes.LINE,{x:ox+(i*cw),y:oy,w:0,h:gh,line:{color:'E8EDF3',width:i===0?0:0.4}});
-    for(let j=0;j<=yc;j++)slide.addShape(pres.shapes.LINE,{x:ox,y:oy+(j*ch),w:gw,h:0,line:{color:'E8EDF3',width:j===0||j===yc?0:0.4}});
-    slide.addShape(pres.shapes.LINE,{x:ox,y:oy,w:0,h:gh,line:{color:ac,width:1.8}});
-    slide.addShape(pres.shapes.LINE,{x:ox,y:oy+gh,w:gw,h:0,line:{color:ac,width:1.8}});
-    for(let i=0;i<=xc;i++)slide.addText(String(i*xs),{x:ox+(i*cw)-0.18,y:oy+gh+0.03,w:0.36,h:0.22,fontSize:7.5,color:PAL.muted,align:'center',fontFace:'Calibri',margin:0});
-    for(let j=0;j<=yc;j++){const tv=yMax-(j*ys);if(tv>=0)slide.addText(String(tv),{x:x,y:oy+(j*ch)-0.11,w:lp-0.06,h:0.22,fontSize:7.5,color:PAL.muted,align:'right',fontFace:'Calibri',margin:0});}
-    slide.addText(Utils.math(xLbl||''),{x:ox,y:oy+gh+0.28,w:gw,h:0.20,fontSize:8.5,bold:true,color:ac,align:'center',fontFace:'Calibri',margin:0});
-    slide.addText(Utils.math(yLbl||''),{x:x-0.1,y:oy+(gh/2)-0.7,w:0.6,h:1.4,fontSize:8.5,bold:true,color:ac,align:'center',fontFace:'Calibri',rotate:270,margin:0});
-    for(const[px,py]of pts){if(px==null||py==null)continue;const ex=ox+Math.min(Math.max(px/xMax,0),1)*gw-0.07;const ey=oy+(1-Math.min(Math.max(py/yMax,0),1))*gh-0.07;const oor=px>xMax||py>yMax||px<0||py<0;slide.addShape(pres.shapes.OVAL,{x:ex,y:ey,w:0.14,h:0.14,fill:{color:oor?PAL.rust:ac},line:{color:PAL.white,width:1}});}
-  },
-  tbl:(slide,pres,x,y,w,ivL,dvL,vals,ac)=>{
-    ac=ac||PAL.teal;const rh=0.36,cw=w/2;
-    slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:rh,fill:{color:ac}});
-    slide.addText(Utils.math(ivL||'x'),{x,y,w:cw,h:rh,fontSize:10.5,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
-    slide.addShape(pres.shapes.LINE,{x:x+cw,y,w:0,h:rh,line:{color:PAL.white,width:1}});
-    slide.addText(Utils.math(dvL||'y'),{x:x+cw,y,w:cw,h:rh,fontSize:10.5,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
-    vals.forEach(([iv,dv],i)=>{const ry=y+rh*(i+1);const bg=i%2===0?PAL.white:PAL.cGray;slide.addShape(pres.shapes.RECTANGLE,{x,y:ry,w,h:rh,fill:{color:bg},line:{color:PAL.border,width:0.5}});slide.addText(Utils.math(String(iv??'')),{x:x+0.05,y:ry,w:cw-0.1,h:rh,fontSize:11,color:PAL.body,align:'center',valign:'middle',fontFace:'Calibri',margin:0});slide.addShape(pres.shapes.LINE,{x:x+cw,y:ry,w:0,h:rh,line:{color:PAL.border,width:0.75}});if(i===0&&dv!=null)slide.addText(Utils.math(String(dv)),{x:x+cw+0.05,y:ry,w:cw-0.1,h:rh,fontSize:11,color:PAL.body,align:'center',valign:'middle',fontFace:'Calibri',margin:0});else slide.addShape(pres.shapes.LINE,{x:x+cw+0.10,y:ry+rh-0.10,w:cw-0.20,h:0,line:{color:PAL.wLine,width:0.5,dashType:'dash'}});});
-    const th=rh*(vals.length+1);slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:th,fill:{type:'none'},line:{color:ac,width:1.2}});return th;
+const B = {
+  hdr: (slide, pres, key, title, sub) => {
+    slide.addShape(pres.shapes.RECTANGLE, { x:0, y:0, w:10, h:0.72, fill:{color:PAL.navy} });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0, y:0, w:0.24, h:0.72, fill:{color:PAL.teal} });
+    slide.addShape(pres.shapes.RECTANGLE, { x:9.24, y:0.08, w:0.66, h:0.56, fill:{color:PAL.teal} });
+    slide.addText(key === 's1' ? 'S1' : 'S2', { x:9.24, y:0.08, w:0.66, h:0.56, fontSize:12, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addText(Utils.math(title), { x:0.38, y:0, w:8.74, h:0.72, fontSize:19, bold:true, color:PAL.white, fontFace:'Calibri', valign:'middle', margin:0 });
+    if (sub) {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0, y:0.72, w:10, h:0.30, fill:{color:PAL.cBlue} });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0, y:0.72, w:0.24, h:0.30, fill:{color:PAL.tealBr} });
+      slide.addText(Utils.math(sub), { x:0.38, y:0.72, w:9.5, h:0.30, fontSize:10, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0, italic:true });
+    }
   },
 
-  // ─── SLIDE 1: OBJECTIVES ──────────────────────────────────────────
-  s_obj:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    const std=(plan.detected_standard||'6.EE.C.9').replace('[GENERATED — VERIFY] ','');
-    B.hdr(slide,pres,key,(plan.lesson_title||'Untitled Lesson').replace('[GENERATED — VERIFY] ',''),`${std} · ${key==='s1'?'Session 1':'Session 2'} · Student Notebook`);
-    // Column header labels
-    slide.addText('LEARNING OBJECTIVES',{x:0.34,y:1.08,w:3.5,h:0.22,fontSize:8,bold:true,color:PAL.teal,fontFace:'Calibri',valign:'middle',margin:0,charSpacing:1});
-    slide.addText('BEFORE',{x:7.92,y:1.08,w:0.96,h:0.22,fontSize:8,bold:true,color:PAL.muted,fontFace:'Calibri',align:'center',margin:0});
-    slide.addText('AFTER',{x:8.96,y:1.08,w:0.94,h:0.22,fontSize:8,bold:true,color:PAL.muted,fontFace:'Calibri',align:'center',margin:0});
-    // Build objective list
-    const rawObjs=Array.isArray(sd.objectives_raw)&&sd.objectives_raw.length>0?sd.objectives_raw:null;
-    const objList=rawObjs
-      ?rawObjs.map((t,i)=>({lbl:i===0?'CONTENT':i===1?'LANGUAGE':`OBJ ${i+1}`,text:t,col:i===0?PAL.navy:i===1?PAL.teal:PAL.gold,bg:i===0?PAL.cBlue:i===1?PAL.cTeal:PAL.cCream}))
-      :[{lbl:'CONTENT OBJECTIVE',text:sd._oc||sd.objectives?.[0]||`${GEN} I can objective`,col:PAL.navy,bg:PAL.cBlue},{lbl:'LANGUAGE OBJECTIVE',text:sd._ol||sd.objectives?.[1]||`${GEN} I will objective`,col:PAL.teal,bg:PAL.cTeal}];
-    const disp=objList.slice(0,3);const TOP=1.34,BOT=4.72,gap=0.10;
-    const cH=Math.min(1.08,(BOT-TOP-(disp.length-1)*gap)/disp.length);
-    disp.forEach((obj,i)=>{
-      const yy=TOP+i*(cH+gap);const gt=isG(obj.text||'');const ot=Utils.math((obj.text||'').replace('[GENERATED — VERIFY] ',''));
-      // Card
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.34,y:yy,w:9.52,h:cH,fill:{color:gt?PAL.cRust:obj.bg},line:{color:gt?PAL.rust:obj.col,width:0.75},shadow:mkSh()});
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.34,y:yy,w:0.20,h:cH,fill:{color:gt?PAL.rust:obj.col}});
-      // Label chip
-      const cw=Math.min(obj.lbl.length*5.8/72+0.32,2.0);
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.64,y:yy+0.07,w:cw,h:0.24,fill:{color:gt?PAL.rust:obj.col}});
-      slide.addText(obj.lbl,{x:0.64,y:yy+0.07,w:cw,h:0.24,fontSize:7.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      if(gt)slide.addText('★ GENERATED — VERIFY',{x:5.5,y:yy+0.07,w:2.2,h:0.22,fontSize:7,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});
-      slide.addText(ot,{x:0.64,y:yy+0.36,w:7.0,h:cH-0.42,fontSize:12.5,color:gt?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true,margin:2});
-      // BEFORE box
-      slide.addShape(pres.shapes.RECTANGLE,{x:7.92,y:yy+0.10,w:0.96,h:cH-0.20,fill:{color:PAL.white},line:{color:obj.col,width:1},shadow:mkSh()});
-      slide.addShape(pres.shapes.RECTANGLE,{x:8.08,y:yy+0.20,w:0.64,h:Math.min(0.54,cH-0.36),fill:{color:PAL.white},line:{color:obj.col,width:1.2}});
-      slide.addText('☐',{x:8.08,y:yy+0.20,w:0.64,h:Math.min(0.54,cH-0.36),fontSize:20,color:obj.col,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      if(cH>0.78)slide.addText('Not Yet',{x:7.94,y:yy+cH-0.28,w:0.90,h:0.22,fontSize:6.5,color:PAL.muted,fontFace:'Calibri',align:'center',margin:0});
-      // AFTER box
-      slide.addShape(pres.shapes.RECTANGLE,{x:8.96,y:yy+0.10,w:0.94,h:cH-0.20,fill:{color:PAL.white},line:{color:PAL.tealBr,width:1},shadow:mkSh()});
-      slide.addShape(pres.shapes.RECTANGLE,{x:9.12,y:yy+0.20,w:0.62,h:Math.min(0.54,cH-0.36),fill:{color:PAL.white},line:{color:PAL.tealBr,width:1.2}});
-      slide.addText('☐',{x:9.12,y:yy+0.20,w:0.62,h:Math.min(0.54,cH-0.36),fontSize:20,color:PAL.tealBr,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      if(cH>0.78)slide.addText('Got It!',{x:8.98,y:yy+cH-0.28,w:0.90,h:0.22,fontSize:6.5,color:PAL.muted,fontFace:'Calibri',align:'center',margin:0});
+  ftr: (slide, pres, n, plan) => {
+    const std = (plan.detected_standard || 'Grade 6').replace('[GENERATED — VERIFY] ','');
+    slide.addShape(pres.shapes.RECTANGLE, { x:0, y:5.30, w:10, h:0.325, fill:{color:PAL.white}, line:{color:PAL.border, width:0.75}, shadow:mkShFt() });
+    slide.addText(`EduWonderLab © · Standard: ${std} · Neft.Alba`, { x:0.3, y:5.30, w:8.5, h:0.325, fontSize:8, color:PAL.muted, fontFace:'Calibri', valign:'middle', margin:0 });
+    slide.addShape(pres.shapes.RECTANGLE, { x:9.5, y:5.31, w:0.44, h:0.30, fill:{color:PAL.navy} });
+    slide.addText(String(n), { x:9.5, y:5.31, w:0.44, h:0.30, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+  },
+
+  wlines: (slide, pres, x, y, w, nl, lh = 0.38) => {
+    const th = nl * lh + 0.22;
+    slide.addShape(pres.shapes.RECTANGLE, { x, y, w, h:th, fill:{color:PAL.white}, line:{color:PAL.border, width:0.75}, shadow:mkSh() });
+    slide.addText('✎  Work Space', { x:x+0.1, y:y+0.04, w:w-0.2, h:0.2, fontSize:7.5, color:PAL.muted, italic:true, fontFace:'Calibri', margin:0 });
+    for (let i = 1; i <= nl; i++)
+      slide.addShape(pres.shapes.LINE, { x:x+0.14, y:y+(i*lh)+0.04, w:w-0.28, h:0, line:{dashType:'dash', color:PAL.wLine, width:0.5} });
+  },
+
+  // FIX #7: pts filter guards against null/undefined x or y
+  grid: (slide, pres, x, y, w, h, xMax, yMax, xLbl, yLbl, pts = [], ac) => {
+    ac = ac || PAL.teal;
+    const xs = Math.max(1, Math.ceil(xMax / 8)), ys = Math.max(1, Math.ceil(yMax / 6));
+    const xc = Math.ceil(xMax / xs), yc = Math.ceil(yMax / ys);
+    const lp = 0.70, bp = 0.36, gw = w - lp, gh = h - bp, ox = x + lp, oy = y;
+    const cw = gw / xc, ch = gh / yc;
+    slide.addShape(pres.shapes.RECTANGLE, { x, y, w, h, fill:{color:PAL.white}, line:{color:PAL.border, width:0.5}, shadow:mkSh() });
+    for (let i = 0; i <= xc; i++)
+      slide.addShape(pres.shapes.LINE, { x:ox+(i*cw), y:oy, w:0, h:gh, line:{color:'E8EDF3', width:i === 0 ? 0 : 0.4} });
+    for (let j = 0; j <= yc; j++)
+      slide.addShape(pres.shapes.LINE, { x:ox, y:oy+(j*ch), w:gw, h:0, line:{color:'E8EDF3', width:(j === 0 || j === yc) ? 0 : 0.4} });
+    slide.addShape(pres.shapes.LINE, { x:ox, y:oy, w:0, h:gh, line:{color:ac, width:1.8} });
+    slide.addShape(pres.shapes.LINE, { x:ox, y:oy+gh, w:gw, h:0, line:{color:ac, width:1.8} });
+    for (let i = 0; i <= xc; i++)
+      slide.addText(String(i * xs), { x:ox+(i*cw)-0.18, y:oy+gh+0.03, w:0.36, h:0.22, fontSize:7.5, color:PAL.muted, align:'center', fontFace:'Calibri', margin:0 });
+    for (let j = 0; j <= yc; j++) {
+      const tv = yMax - (j * ys);
+      if (tv >= 0) slide.addText(String(tv), { x, y:oy+(j*ch)-0.11, w:lp-0.06, h:0.22, fontSize:7.5, color:PAL.muted, align:'right', fontFace:'Calibri', margin:0 });
+    }
+    slide.addText(Utils.math(xLbl || ''), { x:ox, y:oy+gh+0.28, w:gw, h:0.20, fontSize:8.5, bold:true, color:ac, align:'center', fontFace:'Calibri', margin:0 });
+    slide.addText(Utils.math(yLbl || ''), { x:x-0.1, y:oy+(gh/2)-0.7, w:0.6, h:1.4, fontSize:8.5, bold:true, color:ac, align:'center', fontFace:'Calibri', rotate:270, margin:0 });
+    // FIX #7: guard each pt for null/undefined/NaN before plotting
+    for (const pt of pts) {
+      if (!Array.isArray(pt) || pt.length < 2) continue;
+      const [px, py] = pt;
+      if (px == null || py == null || isNaN(+px) || isNaN(+py)) continue;
+      const ex = ox + Math.min(Math.max(+px / xMax, 0), 1) * gw - 0.07;
+      const ey = oy + (1 - Math.min(Math.max(+py / yMax, 0), 1)) * gh - 0.07;
+      const oor = +px > xMax || +py > yMax || +px < 0 || +py < 0;
+      slide.addShape(pres.shapes.OVAL, { x:ex, y:ey, w:0.14, h:0.14, fill:{color:oor ? PAL.rust : ac}, line:{color:PAL.white, width:1} });
+    }
+  },
+
+  // FIX #6: tbl now RETURNS the total height so callers can use it
+  tbl: (slide, pres, x, y, w, ivL, dvL, vals, ac) => {
+    ac = ac || PAL.teal;
+    const rh = 0.36, cw = w / 2;
+    slide.addShape(pres.shapes.RECTANGLE, { x, y, w, h:rh, fill:{color:ac} });
+    slide.addText(Utils.math(ivL || 'x'), { x, y, w:cw, h:rh, fontSize:10.5, bold:true, color:PAL.white, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+    slide.addShape(pres.shapes.LINE, { x:x+cw, y, w:0, h:rh, line:{color:PAL.white, width:1} });
+    slide.addText(Utils.math(dvL || 'y'), { x:x+cw, y, w:cw, h:rh, fontSize:10.5, bold:true, color:PAL.white, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+    vals.forEach(([iv, dv], i) => {
+      const ry = y + rh * (i + 1);
+      const bg = i % 2 === 0 ? PAL.white : PAL.cGray;
+      slide.addShape(pres.shapes.RECTANGLE, { x, y:ry, w, h:rh, fill:{color:bg}, line:{color:PAL.border, width:0.5} });
+      slide.addText(Utils.math(String(iv ?? '')), { x:x+0.05, y:ry, w:cw-0.1, h:rh, fontSize:11, color:PAL.body, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+      slide.addShape(pres.shapes.LINE, { x:x+cw, y:ry, w:0, h:rh, line:{color:PAL.border, width:0.75} });
+      if (i === 0 && dv != null)
+        slide.addText(Utils.math(String(dv)), { x:x+cw+0.05, y:ry, w:cw-0.1, h:rh, fontSize:11, color:PAL.body, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+      else
+        slide.addShape(pres.shapes.LINE, { x:x+cw+0.10, y:ry+rh-0.10, w:cw-0.20, h:0, line:{color:PAL.wLine, width:0.5, dashType:'dash'} });
     });
+    const th = rh * (vals.length + 1);
+    slide.addShape(pres.shapes.RECTANGLE, { x, y, w, h:th, fill:{type:'none'}, line:{color:ac, width:1.2} });
+    return th; // ← returned for callers that need the height
+  },
+
+  // ─── SLIDE 1: OBJECTIVES ───────────────────────────────────────────
+  s_obj: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    const std = (plan.detected_standard || '6.EE.C.9').replace('[GENERATED — VERIFY] ','');
+    B.hdr(slide, pres, key, (plan.lesson_title || 'Untitled Lesson').replace('[GENERATED — VERIFY] ',''), `${std} · ${key === 's1' ? 'Session 1' : 'Session 2'} · Student Notebook`);
+    slide.addText('LEARNING OBJECTIVES', { x:0.34, y:1.08, w:3.5,  h:0.22, fontSize:8, bold:true, color:PAL.teal,  fontFace:'Calibri', valign:'middle', margin:0, charSpacing:1 });
+    slide.addText('BEFORE',             { x:7.92, y:1.08, w:0.96, h:0.22, fontSize:8, bold:true, color:PAL.muted, fontFace:'Calibri', align:'center', margin:0 });
+    slide.addText('AFTER',              { x:8.96, y:1.08, w:0.94, h:0.22, fontSize:8, bold:true, color:PAL.muted, fontFace:'Calibri', align:'center', margin:0 });
+
+    const rawObjs = Array.isArray(sd.objectives_raw) && sd.objectives_raw.length > 0 ? sd.objectives_raw : null;
+    const objList = rawObjs
+      ? rawObjs.map((t, i) => ({ lbl:i === 0 ? 'CONTENT' : i === 1 ? 'LANGUAGE' : `OBJ ${i+1}`, text:t, col:i === 0 ? PAL.navy : i === 1 ? PAL.teal : PAL.gold, bg:i === 0 ? PAL.cBlue : i === 1 ? PAL.cTeal : PAL.cCream }))
+      : [
+          { lbl:'CONTENT OBJECTIVE',  text:sd._oc || sd.objectives?.[0] || `${GEN} I can objective`,  col:PAL.navy, bg:PAL.cBlue },
+          { lbl:'LANGUAGE OBJECTIVE', text:sd._ol || sd.objectives?.[1] || `${GEN} I will objective`, col:PAL.teal, bg:PAL.cTeal },
+        ];
+
+    const disp = objList.slice(0, 3);
+    const TOP = 1.34, BOT = 4.72, gap = 0.10;
+    const cH = Math.min(1.08, (BOT - TOP - (disp.length - 1) * gap) / disp.length);
+
+    disp.forEach((obj, i) => {
+      const yy = TOP + i * (cH + gap);
+      const gt = isG(obj.text || '');
+      const ot = Utils.math((obj.text || '').replace('[GENERATED — VERIFY] ',''));
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.34, y:yy, w:9.52, h:cH, fill:{color:gt ? PAL.cRust : obj.bg}, line:{color:gt ? PAL.rust : obj.col, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.34, y:yy, w:0.20, h:cH, fill:{color:gt ? PAL.rust : obj.col} });
+      const cw = Math.min(obj.lbl.length * 5.8 / 72 + 0.32, 2.0);
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.64, y:yy+0.07, w:cw, h:0.24, fill:{color:gt ? PAL.rust : obj.col} });
+      slide.addText(obj.lbl, { x:0.64, y:yy+0.07, w:cw, h:0.24, fontSize:7.5, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      if (gt) slide.addText('★ GENERATED — VERIFY', { x:5.5, y:yy+0.07, w:2.2, h:0.22, fontSize:7, color:PAL.rust, fontFace:'Calibri', align:'right', margin:0 });
+      slide.addText(ot, { x:0.64, y:yy+0.36, w:7.0, h:cH-0.42, fontSize:12.5, color:gt ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true, margin:2 });
+      // BEFORE box
+      slide.addShape(pres.shapes.RECTANGLE, { x:7.92, y:yy+0.10, w:0.96, h:cH-0.20, fill:{color:PAL.white}, line:{color:obj.col, width:1}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:8.08, y:yy+0.20, w:0.64, h:Math.min(0.54, cH-0.36), fill:{color:PAL.white}, line:{color:obj.col, width:1.2} });
+      slide.addText('☐', { x:8.08, y:yy+0.20, w:0.64, h:Math.min(0.54, cH-0.36), fontSize:20, color:obj.col, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      if (cH > 0.78) slide.addText('Not Yet', { x:7.94, y:yy+cH-0.28, w:0.90, h:0.22, fontSize:6.5, color:PAL.muted, fontFace:'Calibri', align:'center', margin:0 });
+      // AFTER box
+      slide.addShape(pres.shapes.RECTANGLE, { x:8.96, y:yy+0.10, w:0.94, h:cH-0.20, fill:{color:PAL.white}, line:{color:PAL.tealBr, width:1}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:9.12, y:yy+0.20, w:0.62, h:Math.min(0.54, cH-0.36), fill:{color:PAL.white}, line:{color:PAL.tealBr, width:1.2} });
+      slide.addText('☐', { x:9.12, y:yy+0.20, w:0.62, h:Math.min(0.54, cH-0.36), fontSize:20, color:PAL.tealBr, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      if (cH > 0.78) slide.addText('Got It!', { x:8.98, y:yy+cH-0.28, w:0.90, h:0.22, fontSize:6.5, color:PAL.muted, fontFace:'Calibri', align:'center', margin:0 });
+    });
+
     // What's Inside strip
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.34,y:4.80,w:9.52,h:0.44,fill:{color:PAL.cCream},line:{color:PAL.gold,width:0.75}});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.34,y:4.80,w:0.18,h:0.44,fill:{color:PAL.gold}});
-    slide.addText('INSIDE: Be Curious · Vocabulary (Frayer Models) · Guided Practice · Collaborative Practice · Independent Practice · Interactive Activities · TWR Frame · Exit Ticket · Goal Tracker',{x:0.60,y:4.80,w:9.18,h:0.44,fontSize:8,color:PAL.body,fontFace:'Calibri',valign:'middle',margin:0});
-    B.ftr(slide,pres,n,plan);
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.34, y:4.80, w:9.52, h:0.44, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75} });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.34, y:4.80, w:0.18, h:0.44, fill:{color:PAL.gold} });
+    slide.addText('INSIDE: Be Curious · Vocabulary (Frayer Models) · Guided Practice · Collaborative Practice · Independent Practice · Interactive Activities · TWR Frame · Exit Ticket · Goal Tracker', { x:0.60, y:4.80, w:9.18, h:0.44, fontSize:8, color:PAL.body, fontFace:'Calibri', valign:'middle', margin:0 });
+    B.ftr(slide, pres, n, plan);
   },
 
   // ─── SLIDE 2: BE CURIOUS ──────────────────────────────────────────
-  s_bc:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Be Curious','What do you notice? What do you wonder?');
-    const topY=1.10,lH=3.96;
-    const notice=Utils.math((sd.be_curious_notice||'').replace('[GENERATED — VERIFY] ',''));
-    const wonder=Utils.math((sd.be_curious_wonder||'').replace('[GENERATED — VERIFY] ',''));
-    const twr=Utils.math((sd.be_curious_twr||'').replace('[GENERATED — VERIFY] ',''));
-    const ng=isG(sd.be_curious_notice||'');
-    // Left panel
-    if(key==='s1'){
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:4.80,h:lH,fill:{color:PAL.cGray},line:{color:PAL.border,width:0.75},shadow:mkSh()});
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:4.80,h:0.42,fill:{color:PAL.navy}});
-      slide.addText('📷  Lesson Image',{x:0.28,y:topY,w:4.80,h:0.42,fontSize:10.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addText('Insert lesson image here\n(right-click → Replace Image)',{x:0.38,y:topY+0.80,w:4.60,h:1.20,fontSize:11,color:PAL.muted,fontFace:'Calibri',align:'center',italic:true,valign:'middle'});
-      const ctx=(sd.context||'').replace('[GENERATED — VERIFY] ','');
-      if(ctx){slide.addShape(pres.shapes.RECTANGLE,{x:0.48,y:topY+2.10,w:4.36,h:0.52,fill:{color:PAL.white},line:{color:PAL.teal,width:0.75}});slide.addText('Context: '+Utils.math(ctx),{x:0.56,y:topY+2.10,w:4.20,h:0.52,fontSize:10,color:PAL.teal,fontFace:'Calibri',valign:'middle',italic:true,autoFit:true});}
-    }else{
-      const rv=sd.be_curious_s1_ref_values||plan.s1?.table_values?.slice(0,4)||[[1,0],[2,0],[3,0]];
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:4.80,h:lH,fill:{color:PAL.cCream},line:{color:PAL.gold,width:1.2},shadow:mkSh()});
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:4.80,h:0.42,fill:{color:PAL.gold}});
-      slide.addText('📊  '+(sd.be_curious_s1_label||'Session 1 Reference'),{x:0.28,y:topY,w:4.80,h:0.42,fontSize:10.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      B.tbl(slide,pres,0.48,topY+0.55,4.40,plan.s1?.iv_name||'x',plan.s1?.dv_name||'y',rv,PAL.gold);
-      slide.addText('S1: '+Utils.math((plan.s1?.equation||'y = ?').replace('[GENERATED — VERIFY] ','')),{x:0.38,y:topY+3.0,w:4.60,h:0.34,fontSize:11,bold:true,color:PAL.gold,fontFace:'Calibri',align:'center'});
+  s_bc: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Be Curious', 'What do you notice? What do you wonder?');
+    const topY = 1.10, lH = 3.96;
+    const notice = Utils.math((sd.be_curious_notice || '').replace('[GENERATED — VERIFY] ',''));
+    const wonder  = Utils.math((sd.be_curious_wonder  || '').replace('[GENERATED — VERIFY] ',''));
+    const twr     = Utils.math((sd.be_curious_twr     || '').replace('[GENERATED — VERIFY] ',''));
+    const ng = isG(sd.be_curious_notice || '');
+
+    if (key === 's1') {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:4.80, h:lH, fill:{color:PAL.cGray}, line:{color:PAL.border, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:4.80, h:0.42, fill:{color:PAL.navy} });
+      slide.addText('📷  Lesson Image', { x:0.28, y:topY, w:4.80, h:0.42, fontSize:10.5, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText('Insert lesson image here\n(right-click → Replace Image)', { x:0.38, y:topY+0.80, w:4.60, h:1.20, fontSize:11, color:PAL.muted, fontFace:'Calibri', align:'center', italic:true, valign:'middle' });
+      const ctx = (sd.context || '').replace('[GENERATED — VERIFY] ','');
+      if (ctx) {
+        slide.addShape(pres.shapes.RECTANGLE, { x:0.48, y:topY+2.10, w:4.36, h:0.52, fill:{color:PAL.white}, line:{color:PAL.teal, width:0.75} });
+        slide.addText('Context: ' + Utils.math(ctx), { x:0.56, y:topY+2.10, w:4.20, h:0.52, fontSize:10, color:PAL.teal, fontFace:'Calibri', valign:'middle', italic:true, autoFit:true });
+      }
+    } else {
+      const rv = sd.be_curious_s1_ref_values || plan.s1?.table_values?.slice(0, 4) || [[1,0],[2,0],[3,0]];
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:4.80, h:lH, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:1.2}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:4.80, h:0.42, fill:{color:PAL.gold} });
+      slide.addText('📊  ' + (sd.be_curious_s1_label || 'Session 1 Reference'), { x:0.28, y:topY, w:4.80, h:0.42, fontSize:10.5, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      B.tbl(slide, pres, 0.48, topY+0.55, 4.40, plan.s1?.iv_name || 'x', plan.s1?.dv_name || 'y', rv, PAL.gold);
+      slide.addText('S1: ' + Utils.math((plan.s1?.equation || 'y = ?').replace('[GENERATED — VERIFY] ','')), { x:0.38, y:topY+3.0, w:4.60, h:0.34, fontSize:11, bold:true, color:PAL.gold, fontFace:'Calibri', align:'center' });
     }
+
     // Notice box
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.34,y:topY,w:4.42,h:1.70,fill:{color:PAL.white},line:{color:ng?PAL.rust:PAL.navy,width:1.2},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.34,y:topY,w:4.42,h:0.33,fill:{color:PAL.navy}});
-    slide.addText('👁  NOTICE'+(ng?' ★GEN':''),{x:5.34,y:topY,w:4.42,h:0.33,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText(notice,{x:5.46,y:topY+0.37,w:4.18,h:0.52,fontSize:11.5,color:ng?PAL.rust:PAL.body,fontFace:'Calibri',margin:0,italic:ng});
-    slide.addShape(pres.shapes.LINE,{x:5.46,y:topY+1.08,w:4.18,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});
-    slide.addShape(pres.shapes.LINE,{x:5.46,y:topY+1.42,w:4.18,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.34, y:topY, w:4.42, h:1.70, fill:{color:PAL.white}, line:{color:ng ? PAL.rust : PAL.navy, width:1.2}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.34, y:topY, w:4.42, h:0.33, fill:{color:PAL.navy} });
+    slide.addText('👁  NOTICE' + (ng ? ' ★GEN' : ''), { x:5.34, y:topY, w:4.42, h:0.33, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addText(notice, { x:5.46, y:topY+0.37, w:4.18, h:0.52, fontSize:11.5, color:ng ? PAL.rust : PAL.body, fontFace:'Calibri', margin:0, italic:ng });
+    slide.addShape(pres.shapes.LINE, { x:5.46, y:topY+1.08, w:4.18, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+    slide.addShape(pres.shapes.LINE, { x:5.46, y:topY+1.42, w:4.18, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+
     // Wonder box
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.34,y:topY+1.80,w:4.42,h:1.70,fill:{color:PAL.white},line:{color:PAL.gold,width:1.2},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.34,y:topY+1.80,w:4.42,h:0.33,fill:{color:PAL.gold}});
-    slide.addText('💡  WONDER',{x:5.34,y:topY+1.80,w:4.42,h:0.33,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText(wonder,{x:5.46,y:topY+2.17,w:4.18,h:0.52,fontSize:11.5,color:PAL.body,fontFace:'Calibri',margin:0});
-    slide.addShape(pres.shapes.LINE,{x:5.46,y:topY+2.92,w:4.18,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});
-    slide.addShape(pres.shapes.LINE,{x:5.46,y:topY+3.28,w:4.18,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.34, y:topY+1.80, w:4.42, h:1.70, fill:{color:PAL.white}, line:{color:PAL.gold, width:1.2}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.34, y:topY+1.80, w:4.42, h:0.33, fill:{color:PAL.gold} });
+    slide.addText('💡  WONDER', { x:5.34, y:topY+1.80, w:4.42, h:0.33, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addText(wonder, { x:5.46, y:topY+2.17, w:4.18, h:0.52, fontSize:11.5, color:PAL.body, fontFace:'Calibri', margin:0 });
+    slide.addShape(pres.shapes.LINE, { x:5.46, y:topY+2.92, w:4.18, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+    slide.addShape(pres.shapes.LINE, { x:5.46, y:topY+3.28, w:4.18, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+
     // TWR strip
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+3.58,w:9.50,h:0.46,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75}});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+3.58,w:0.18,h:0.46,fill:{color:PAL.teal}});
-    slide.addText('TWR: '+twr,{x:0.56,y:topY+3.58,w:9.14,h:0.46,fontSize:11,bold:true,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0,italic:isG(sd.be_curious_twr||'')});
-    B.ftr(slide,pres,n,plan);
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+3.58, w:9.50, h:0.46, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75} });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+3.58, w:0.18, h:0.46, fill:{color:PAL.teal} });
+    slide.addText('TWR: ' + twr, { x:0.56, y:topY+3.58, w:9.14, h:0.46, fontSize:11, bold:true, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0, italic:isG(sd.be_curious_twr || '') });
+    B.ftr(slide, pres, n, plan);
   },
 
-  // ─── SLIDE 3/4: VOCABULARY (Frayer, 2 terms per slide) ────────────
-  s_vocab:(pres,key,sd,plan,n,termPair)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Vocabulary — Frayer Model',`Key terms · ${key==='s1'?'Session 1':'Session 2'}`);
-    const defs=sd.vocab_definitions||{};const topY=1.05;
-    const tc=termPair.filter(Boolean).length;
-    const pW=tc===1?9.44:4.54,pH=4.18,pXs=tc===1?[0.28]:[0.28,5.00];
-    termPair.forEach((rawT,pi)=>{
-      if(!rawT)return;
-      const term=rawT.replace('[GENERATED — VERIFY] ','').trim();const tG=isG(rawT);
-      const px=pXs[pi],pw=pW;
-      const defV=defs[term]||defs[term.toLowerCase()]||null;
-      const exV=defs['example']||null;const neV=defs['non_example']||defs['non-example']||null;
-      const dG=!defV||isG(String(defV)),eG=!exV||isG(String(exV)),nG=!neV||isG(String(neV));
-      // Outer card
-      slide.addShape(pres.shapes.RECTANGLE,{x:px,y:topY,w:pw,h:pH,fill:{color:PAL.white},line:{color:PAL.navy,width:1.0},shadow:mkShMd()});
-      // Center cross lines
-      const cX=px+pw/2,cY=topY+pH/2,tW=Math.min(pw*0.38,2.0),tH=0.52;
-      slide.addShape(pres.shapes.LINE,{x:px+0.04,y:cY,w:cX-tW/2-px-0.04,h:0,line:{color:PAL.border,width:0.75}});
-      slide.addShape(pres.shapes.LINE,{x:cX+tW/2,y:cY,w:px+pw-0.04-(cX+tW/2),h:0,line:{color:PAL.border,width:0.75}});
-      slide.addShape(pres.shapes.LINE,{x:cX,y:topY+0.04,w:0,h:cY-tH/2-topY-0.04,line:{color:PAL.border,width:0.75}});
-      slide.addShape(pres.shapes.LINE,{x:cX,y:cY+tH/2,w:0,h:topY+pH-0.04-(cY+tH/2),line:{color:PAL.border,width:0.75}});
+  // ─── SLIDE 3/4: VOCABULARY (Frayer, 2 terms per slide) ───────────
+  // FIX #14: single-term on right slot (pi=1) now correctly positions at center (pXs derived from tc count)
+  s_vocab: (pres, key, sd, plan, n, termPair) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Vocabulary — Frayer Model', `Key terms · ${key === 's1' ? 'Session 1' : 'Session 2'}`);
+    const defs = (sd.vocab_definitions && typeof sd.vocab_definitions === 'object') ? sd.vocab_definitions : {};
+    const topY = 1.05;
+    const validTerms = termPair.filter(Boolean);
+    const tc = validTerms.length;
+    const pW = tc === 1 ? 9.44 : 4.54;
+    const pH = 4.18;
+    // FIX #14: pXs always starts from left; a single term always renders at x=0.28
+    const pXs = tc === 1 ? [0.28] : [0.28, 5.00];
+
+    validTerms.forEach((rawT, pi) => {
+      const term = rawT.replace('[GENERATED — VERIFY] ','').trim();
+      const tG = isG(rawT);
+      const px = pXs[pi], pw = pW;
+      const defV = defs[term] || defs[term.toLowerCase()] || null;
+      const exV  = defs['example']     || null;
+      const neV  = defs['non_example'] || defs['non-example'] || null;
+      const dG = !defV || isG(String(defV));
+      const eG = !exV  || isG(String(exV));
+      const nG = !neV  || isG(String(neV));
+
+      slide.addShape(pres.shapes.RECTANGLE, { x:px, y:topY, w:pw, h:pH, fill:{color:PAL.white}, line:{color:PAL.navy, width:1.0}, shadow:mkShMd() });
+
+      // Center cross
+      const cX = px + pw / 2, cY = topY + pH / 2;
+      const tW = Math.min(pw * 0.38, 2.0), tH = 0.52;
+      slide.addShape(pres.shapes.LINE, { x:px+0.04,  y:cY,      w:cX-tW/2-px-0.04,                h:0, line:{color:PAL.border, width:0.75} });
+      slide.addShape(pres.shapes.LINE, { x:cX+tW/2,  y:cY,      w:px+pw-0.04-(cX+tW/2),           h:0, line:{color:PAL.border, width:0.75} });
+      slide.addShape(pres.shapes.LINE, { x:cX,        y:topY+0.04, w:0, h:cY-tH/2-topY-0.04,        line:{color:PAL.border, width:0.75} });
+      slide.addShape(pres.shapes.LINE, { x:cX,        y:cY+tH/2, w:0,  h:topY+pH-0.04-(cY+tH/2),  line:{color:PAL.border, width:0.75} });
+
       // Center term box
-      slide.addShape(pres.shapes.RECTANGLE,{x:cX-tW/2,y:cY-tH/2,w:tW,h:tH,fill:{color:tG?PAL.rust:PAL.navy},shadow:mkShMd()});
-      slide.addText(term+(tG?' ★':''),{x:cX-tW/2,y:cY-tH/2,w:tW,h:tH,fontSize:tc===1?14:12,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:2});
-      // 4 quadrants
-      const qFs=tc===1?9:8.5;
-      const qs=[
-        {lb:'📖 DEFINITION',fl:PAL.cBlue, lc:PAL.teal, x:px,      y:topY,      w:pw/2,h:pH/2,v:defV,g:dG},
-        {lb:'✅ EXAMPLE',   fl:PAL.cSage, lc:PAL.sage, x:px+pw/2, y:topY,      w:pw/2,h:pH/2,v:exV, g:eG},
-        {lb:'❌ NON-EXAMPLE',fl:PAL.cRust,lc:PAL.rust, x:px,      y:topY+pH/2, w:pw/2,h:pH/2,v:neV, g:nG},
-        {lb:'✏ YOUR WORDS', fl:PAL.cCream,lc:PAL.gold, x:px+pw/2, y:topY+pH/2, w:pw/2,h:pH/2,v:null,g:false},
+      slide.addShape(pres.shapes.RECTANGLE, { x:cX-tW/2, y:cY-tH/2, w:tW, h:tH, fill:{color:tG ? PAL.rust : PAL.navy}, shadow:mkShMd() });
+      slide.addText(term + (tG ? ' ★' : ''), { x:cX-tW/2, y:cY-tH/2, w:tW, h:tH, fontSize:tc === 1 ? 14 : 12, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:2 });
+
+      const qFs = tc === 1 ? 9 : 8.5;
+      const qs = [
+        { lb:'📖 DEFINITION', fl:PAL.cBlue,  lc:PAL.teal, x:px,      y:topY,      w:pw/2, h:pH/2, v:defV, g:dG },
+        { lb:'✅ EXAMPLE',    fl:PAL.cSage,  lc:PAL.sage, x:px+pw/2, y:topY,      w:pw/2, h:pH/2, v:exV,  g:eG },
+        { lb:'❌ NON-EXAMPLE', fl:PAL.cRust, lc:PAL.rust, x:px,      y:topY+pH/2, w:pw/2, h:pH/2, v:neV,  g:nG },
+        { lb:'✏ YOUR WORDS',  fl:PAL.cCream, lc:PAL.gold, x:px+pw/2, y:topY+pH/2, w:pw/2, h:pH/2, v:null, g:false },
       ];
-      qs.forEach(q=>{
-        slide.addShape(pres.shapes.RECTANGLE,{x:q.x+0.02,y:q.y+0.02,w:q.w-0.04,h:q.h-0.04,fill:{color:q.fl},line:{color:q.g?PAL.rust:q.lc,width:0}});
-        slide.addShape(pres.shapes.RECTANGLE,{x:q.x+0.04,y:q.y+0.04,w:q.w-0.08,h:0.28,fill:{color:q.g?PAL.rust:q.lc}});
-        slide.addText(q.lb+(q.g?' ★':''),{x:q.x+0.04,y:q.y+0.04,w:q.w-0.08,h:0.28,fontSize:qFs,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-        if(q.v&&!q.g){slide.addText(Utils.math(String(q.v).replace('[GENERATED — VERIFY] ','')),{x:q.x+0.12,y:q.y+0.38,w:q.w-0.24,h:q.h-0.56,fontSize:11,color:PAL.body,fontFace:'Calibri',valign:'top',autoFit:true});}
-        else if(q.g){slide.addText('Add from source PPTX',{x:q.x+0.12,y:q.y+0.38,w:q.w-0.24,h:0.40,fontSize:9.5,color:PAL.rust,fontFace:'Calibri',italic:true});for(let l=1;l<=3;l++)slide.addShape(pres.shapes.LINE,{x:q.x+0.14,y:q.y+0.82+(l*0.38),w:q.w-0.28,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});}
-        else{for(let l=1;l<=4;l++)slide.addShape(pres.shapes.LINE,{x:q.x+0.14,y:q.y+0.36+(l*0.42),w:q.w-0.28,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});}
+      qs.forEach(q => {
+        slide.addShape(pres.shapes.RECTANGLE, { x:q.x+0.02, y:q.y+0.02, w:q.w-0.04, h:q.h-0.04, fill:{color:q.fl}, line:{color:q.g ? PAL.rust : q.lc, width:0} });
+        slide.addShape(pres.shapes.RECTANGLE, { x:q.x+0.04, y:q.y+0.04, w:q.w-0.08, h:0.28, fill:{color:q.g ? PAL.rust : q.lc} });
+        slide.addText(q.lb + (q.g ? ' ★' : ''), { x:q.x+0.04, y:q.y+0.04, w:q.w-0.08, h:0.28, fontSize:qFs, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+        if (q.v && !q.g) {
+          slide.addText(Utils.math(String(q.v).replace('[GENERATED — VERIFY] ','')), { x:q.x+0.12, y:q.y+0.38, w:q.w-0.24, h:q.h-0.56, fontSize:11, color:PAL.body, fontFace:'Calibri', valign:'top', autoFit:true });
+        } else if (q.g) {
+          slide.addText('Add from source PPTX', { x:q.x+0.12, y:q.y+0.38, w:q.w-0.24, h:0.40, fontSize:9.5, color:PAL.rust, fontFace:'Calibri', italic:true });
+          for (let l = 1; l <= 3; l++)
+            slide.addShape(pres.shapes.LINE, { x:q.x+0.14, y:q.y+0.82+(l*0.38), w:q.w-0.28, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+        } else {
+          for (let l = 1; l <= 4; l++)
+            slide.addShape(pres.shapes.LINE, { x:q.x+0.14, y:q.y+0.36+(l*0.42), w:q.w-0.28, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+        }
       });
     });
-    B.ftr(slide,pres,n,plan);
+    B.ftr(slide, pres, n, plan);
   },
 
   // ─── SLIDE 5: GUIDED PRACTICE ────────────────────────────────────
-  s_guided:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Guided Practice — I Do','Watch: Teacher models the complete process');
-    const topY=1.08;const pt=Utils.math((sd.guided_problem||'').replace('[GENERATED — VERIFY] ',''));const pG=isG(sd.guided_problem||'');
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:9.44,h:0.86,fill:{color:PAL.white},line:{color:pG?PAL.rust:PAL.navy,width:1.2},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:0.22,h:0.86,fill:{color:pG?PAL.rust:PAL.navy}});
-    if(pG)slide.addText('★ GENERATED — VERIFY',{x:6.8,y:topY+0.04,w:2.8,h:0.22,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});
-    slide.addText(pt||'[Add problem from source slides]',{x:0.56,y:topY,w:9.06,h:0.86,fontSize:13.5,bold:true,color:pG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
-    const steps=sd.guided_steps||[];
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+1.0,w:4.38,h:2.68,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+1.0,w:4.38,h:0.32,fill:{color:PAL.teal}});
-    slide.addText('🔢  Model Steps',{x:0.28,y:topY+1.0,w:4.38,h:0.32,fontSize:9.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    steps.slice(0,4).forEach((s,i)=>{const st=Utils.math(String(s||'').replace('[GENERATED — VERIFY] ',''));const sy=topY+1.40+(i*0.56);const sg=isG(String(s||''));slide.addShape(pres.shapes.OVAL,{x:0.40,y:sy+0.07,w:0.26,h:0.26,fill:{color:sg?PAL.rust:PAL.teal}});slide.addText(String(i+1),{x:0.40,y:sy+0.07,w:0.26,h:0.26,fontSize:9,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});slide.addText(st,{x:0.74,y:sy,w:3.80,h:0.50,fontSize:10.5,color:sg?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});});
-    const eqT='Equation: '+Utils.math((sd.equation||`${GEN} y = ?`).replace('[GENERATED — VERIFY] ',''));
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+3.72,w:4.38,h:0.36,fill:{color:PAL.navy}});
-    slide.addText(eqT,{x:0.36,y:topY+3.72,w:4.22,h:0.36,fontSize:12,bold:true,color:PAL.white,fontFace:'Calibri',valign:'middle',margin:0,autoFit:true});
-    const tv=sd.table_values||[[1,null],[2,null],[3,null]];
-    B.tbl(slide,pres,4.84,topY+1.0,2.36,sd.iv_name||'x',sd.dv_name||'y',tv.slice(0,5),PAL.navy);
-    B.grid(slide,pres,7.32,topY+1.0,2.40,2.68,Math.min(sd.graph_xmax||12,20),Math.min(sd.graph_ymax||150,500),sd.graph_xlabel||'x',sd.graph_ylabel||'y',tv.slice(0,3),PAL.teal);
-    B.ftr(slide,pres,n,plan);
+  s_guided: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Guided Practice — I Do', 'Watch: Teacher models the complete process');
+    const topY = 1.08;
+    const pt = Utils.math((sd.guided_problem || '').replace('[GENERATED — VERIFY] ',''));
+    const pG = isG(sd.guided_problem || '');
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:9.44, h:0.86, fill:{color:PAL.white}, line:{color:pG ? PAL.rust : PAL.navy, width:1.2}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:0.22, h:0.86, fill:{color:pG ? PAL.rust : PAL.navy} });
+    if (pG) slide.addText('★ GENERATED — VERIFY', { x:6.8, y:topY+0.04, w:2.8, h:0.22, fontSize:7.5, color:PAL.rust, fontFace:'Calibri', align:'right', margin:0 });
+    slide.addText(pt || '[Add problem from source slides]', { x:0.56, y:topY, w:9.06, h:0.86, fontSize:13.5, bold:true, color:pG ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+
+    const steps = sd.guided_steps || [];
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+1.0, w:4.38, h:2.68, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+1.0, w:4.38, h:0.32, fill:{color:PAL.teal} });
+    slide.addText('🔢  Model Steps', { x:0.28, y:topY+1.0, w:4.38, h:0.32, fontSize:9.5, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    steps.slice(0, 4).forEach((s, i) => {
+      const st = Utils.math(String(s || '').replace('[GENERATED — VERIFY] ',''));
+      const sy = topY + 1.40 + (i * 0.56);
+      const sg = isG(String(s || ''));
+      slide.addShape(pres.shapes.OVAL, { x:0.40, y:sy+0.07, w:0.26, h:0.26, fill:{color:sg ? PAL.rust : PAL.teal} });
+      slide.addText(String(i + 1), { x:0.40, y:sy+0.07, w:0.26, h:0.26, fontSize:9, bold:true, color:PAL.white, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+      slide.addText(st, { x:0.74, y:sy, w:3.80, h:0.50, fontSize:10.5, color:sg ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+    });
+
+    const eqT = 'Equation: ' + Utils.math((sd.equation || `${GEN} y = ?`).replace('[GENERATED — VERIFY] ',''));
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+3.72, w:4.38, h:0.36, fill:{color:PAL.navy} });
+    slide.addText(eqT, { x:0.36, y:topY+3.72, w:4.22, h:0.36, fontSize:12, bold:true, color:PAL.white, fontFace:'Calibri', valign:'middle', margin:0, autoFit:true });
+
+    const tv = sd.table_values || [[1,null],[2,null],[3,null]];
+    B.tbl(slide, pres, 4.84, topY+1.0, 2.36, sd.iv_name || 'x', sd.dv_name || 'y', tv.slice(0, 5), PAL.navy);
+    B.grid(slide, pres, 7.32, topY+1.0, 2.40, 2.68, Math.min(sd.graph_xmax || 12, 20), Math.min(sd.graph_ymax || 150, 500), sd.graph_xlabel || 'x', sd.graph_ylabel || 'y', tv.slice(0, 3), PAL.teal);
+    B.ftr(slide, pres, n, plan);
   },
 
   // ─── SLIDE 6: COLLABORATIVE PRACTICE ─────────────────────────────
-  s_collab:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Collaborative Practice — We Do','Partner A explains · Partner B records · Switch + repeat');
-    const topY=1.08;const pt=Utils.math((sd.collab_problem||'').replace('[GENERATED — VERIFY] ',''));const pG=isG(sd.collab_problem||'');
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:9.44,h:0.80,fill:{color:PAL.white},line:{color:pG?PAL.rust:PAL.navy,width:1.2},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:0.22,h:0.80,fill:{color:pG?PAL.rust:PAL.gold}});
-    if(pG)slide.addText('★ GENERATED',{x:8.2,y:topY+0.04,w:1.4,h:0.22,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});
-    slide.addText(pt||'[Add problem from source slides]',{x:0.56,y:topY,w:9.06,h:0.80,fontSize:13.5,bold:true,color:pG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+0.90,w:2.06,h:0.36,fill:{color:PAL.gold}});
-    slide.addText('Partner A: Explain',{x:0.28,y:topY+0.90,w:2.06,h:0.36,fontSize:9.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:2.44,y:topY+0.90,w:2.06,h:0.36,fill:{color:PAL.sage}});
-    slide.addText('Partner B: Record',{x:2.44,y:topY+0.90,w:2.06,h:0.36,fontSize:9.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    const cv=sd.collab_table_values||(sd.table_values||[]).slice(0,3);
-    B.tbl(slide,pres,0.28,topY+1.38,3.06,sd.iv_name||'x',sd.dv_name||'y',cv.slice(0,5),PAL.navy);
-    B.grid(slide,pres,3.52,topY+1.38,3.94,2.54,Math.min(sd.graph_xmax||12,20),Math.min(sd.graph_ymax||150,500),sd.graph_xlabel||'x',sd.graph_ylabel||'y',[],PAL.teal);
-    const dR=sd.collab_discussion_prompt;const dG=!dR||isG(dR||'');
-    const dT=dR?Utils.math(dR.replace('[GENERATED — VERIFY] ','')):(key==='s2'?`How does this compare to S1 (${Utils.math((plan.s1?.equation||'y=?').replace('[GENERATED — VERIFY] ',''))})?`:'How do you know which variable is independent?');
-    slide.addShape(pres.shapes.RECTANGLE,{x:7.62,y:topY+1.38,w:2.10,h:2.54,fill:{color:PAL.cCream},line:{color:PAL.gold,width:0.75},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:7.62,y:topY+1.38,w:2.10,h:0.32,fill:{color:PAL.gold}});
-    slide.addText('💬 Discuss'+(dG?' ★':''),{x:7.62,y:topY+1.38,w:2.10,h:0.32,fontSize:9,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText(dT,{x:7.72,y:topY+1.74,w:1.90,h:2.10,fontSize:10,color:dG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'top',autoFit:true,italic:dG});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+3.22,w:4.54,h:0.32,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75}});
-    slide.addText('Our equation: y = ___________',{x:0.36,y:topY+3.22,w:4.38,h:0.32,fontSize:11.5,bold:true,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0});
-    B.ftr(slide,pres,n,plan);
+  // FIX #6: use returned table height to position grid correctly
+  s_collab: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Collaborative Practice — We Do', 'Partner A explains · Partner B records · Switch + repeat');
+    const topY = 1.08;
+    const pt = Utils.math((sd.collab_problem || '').replace('[GENERATED — VERIFY] ',''));
+    const pG = isG(sd.collab_problem || '');
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:9.44, h:0.80, fill:{color:PAL.white}, line:{color:pG ? PAL.rust : PAL.navy, width:1.2}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:0.22, h:0.80, fill:{color:pG ? PAL.rust : PAL.gold} });
+    if (pG) slide.addText('★ GENERATED', { x:8.2, y:topY+0.04, w:1.4, h:0.22, fontSize:7.5, color:PAL.rust, fontFace:'Calibri', align:'right', margin:0 });
+    slide.addText(pt || '[Add problem from source slides]', { x:0.56, y:topY, w:9.06, h:0.80, fontSize:13.5, bold:true, color:pG ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+0.90, w:2.06, h:0.36, fill:{color:PAL.gold} });
+    slide.addText('Partner A: Explain', { x:0.28, y:topY+0.90, w:2.06, h:0.36, fontSize:9.5, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addShape(pres.shapes.RECTANGLE, { x:2.44, y:topY+0.90, w:2.06, h:0.36, fill:{color:PAL.sage} });
+    slide.addText('Partner B: Record', { x:2.44, y:topY+0.90, w:2.06, h:0.36, fontSize:9.5, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+    const cv = sd.collab_table_values || (sd.table_values || []).slice(0, 3);
+    const tblH = B.tbl(slide, pres, 0.28, topY+1.38, 3.06, sd.iv_name || 'x', sd.dv_name || 'y', cv.slice(0, 5), PAL.navy);
+    const gridH = Math.max(tblH, 2.54); // grid matches table height, minimum 2.54"
+    B.grid(slide, pres, 3.52, topY+1.38, 3.94, gridH, Math.min(sd.graph_xmax || 12, 20), Math.min(sd.graph_ymax || 150, 500), sd.graph_xlabel || 'x', sd.graph_ylabel || 'y', [], PAL.teal);
+
+    const dR = sd.collab_discussion_prompt;
+    const dG = !dR || isG(dR || '');
+    const dT = dR
+      ? Utils.math(dR.replace('[GENERATED — VERIFY] ',''))
+      : (key === 's2'
+          ? `How does this compare to S1 (${Utils.math((plan.s1?.equation || 'y=?').replace('[GENERATED — VERIFY] ',''))})?`
+          : 'How do you know which variable is independent?');
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:7.62, y:topY+1.38, w:2.10, h:gridH, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:7.62, y:topY+1.38, w:2.10, h:0.32, fill:{color:PAL.gold} });
+    slide.addText('💬 Discuss' + (dG ? ' ★' : ''), { x:7.62, y:topY+1.38, w:2.10, h:0.32, fontSize:9, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addText(dT, { x:7.72, y:topY+1.74, w:1.90, h:gridH-0.42, fontSize:10, color:dG ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'top', autoFit:true, italic:dG });
+
+    const ourEqY = topY + 1.38 + gridH + 0.06;
+    if (ourEqY < 5.22) {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:ourEqY, w:4.54, h:0.32, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75} });
+      slide.addText('Our equation: y = ___________', { x:0.36, y:ourEqY, w:4.38, h:0.32, fontSize:11.5, bold:true, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0 });
+    }
+    B.ftr(slide, pres, n, plan);
   },
 
-  // ─── SLIDE 7+: INDEPENDENT PRACTICE (dynamic grouping) ───────────
-  s_indep:(pres,key,sd,plan,n,grp,gIdx)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    const tot=Math.ceil((sd.independent_problems||[]).length/3)||1;
-    const sub=tot>1?`Problems ${gIdx*3+1}–${gIdx*3+grp.length} · Work individually · Show all thinking`:'Work individually · Show all your thinking';
-    B.hdr(slide,pres,key,'Independent Practice — You Do',sub);
-    const fills=[PAL.cBlue,PAL.cSage,PAL.cCream],lines=[PAL.teal,PAL.sage,PAL.gold],lbs=['Apply','Extend','Explain'];
-    const BOT=5.24,topY=1.08;const nP=Math.max(grp.length,1);const cH=Math.min(1.22,(BOT-topY-(nP-1)*0.10)/nP);const wsW=2.26;
-    grp.forEach((prob,i)=>{
-      const yPos=topY+i*(cH+0.10);const pt=Utils.math(String(prob||'').replace('[GENERATED — VERIFY] ',''));const pG=isG(String(prob||''));
-      const lc=pG?PAL.rust:(lines[i%3]||PAL.teal);const fill=fills[i%3]||PAL.cBlue;const lb=lbs[i%3]||`P${gIdx*3+i+1}`;const lbW=1.18;const chH=Math.min(0.26,cH*0.24);const aIdx=gIdx*3+i+1;
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yPos,w:9.72-wsW,h:cH,fill:{color:fill},line:{color:lc,width:0.75},shadow:mkSh()});
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yPos,w:lbW,h:chH,fill:{color:lc}});
-      slide.addText(`P${aIdx} · ${lb}`+(pG?' ★':''),{x:0.28,y:yPos,w:lbW,h:chH,fontSize:8,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addText(pt||'[Add from source slides]',{x:0.38,y:yPos+chH+0.04,w:9.72-wsW-lbW+lbW-0.10,h:cH-chH-0.08,fontSize:12,color:pG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'top',autoFit:true});
-      B.wlines(slide,pres,9.72-wsW+0.06,yPos,wsW-0.06,Math.max(1,Math.floor(cH/0.40)),cH/Math.max(1,Math.floor(cH/0.40)));
+  // ─── SLIDE 7+: INDEPENDENT PRACTICE ──────────────────────────────
+  // FIX #8: layout uses fixed column widths; work space x computed correctly
+  s_indep: (pres, key, sd, plan, n, grp, gIdx) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    const tot = Math.ceil((sd.independent_problems || []).length / 3) || 1;
+    const sub = tot > 1
+      ? `Problems ${gIdx*3+1}–${gIdx*3+grp.length} · Work individually · Show all thinking`
+      : 'Work individually · Show all your thinking';
+    B.hdr(slide, pres, key, 'Independent Practice — You Do', sub);
+
+    const fills = [PAL.cBlue, PAL.cSage, PAL.cCream];
+    const lines  = [PAL.teal, PAL.sage,  PAL.gold];
+    const lbs    = ['Apply', 'Extend', 'Explain'];
+
+    const BOT = 5.22, topY = 1.08;
+    const nP = Math.max(grp.length, 1);
+    const cH = Math.min(1.22, (BOT - topY - (nP - 1) * 0.10) / nP);
+
+    // FIX #8: fixed layout — problem column 7.20" wide, work space 2.40" wide
+    const PROB_X = 0.28, PROB_W = 7.20;
+    const WS_X = 7.56, WS_W = 2.16; // small gap between problem + work space
+
+    grp.forEach((prob, i) => {
+      const yPos = topY + i * (cH + 0.10);
+      const pt   = Utils.math(String(prob || '').replace('[GENERATED — VERIFY] ',''));
+      const pG   = isG(String(prob || ''));
+      const lc   = pG ? PAL.rust : (lines[i % 3] || PAL.teal);
+      const fill = fills[i % 3] || PAL.cBlue;
+      const lb   = lbs[i % 3] || `P${gIdx*3+i+1}`;
+      const lbW  = 1.18, chH = Math.min(0.26, cH * 0.24);
+      const aIdx = gIdx * 3 + i + 1;
+
+      slide.addShape(pres.shapes.RECTANGLE, { x:PROB_X, y:yPos, w:PROB_W, h:cH, fill:{color:fill}, line:{color:lc, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:PROB_X, y:yPos, w:lbW,   h:chH, fill:{color:lc} });
+      slide.addText(`P${aIdx} · ${lb}` + (pG ? ' ★' : ''), { x:PROB_X, y:yPos, w:lbW, h:chH, fontSize:8, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(pt || '[Add from source slides]', { x:PROB_X+0.10, y:yPos+chH+0.04, w:PROB_W-0.20, h:cH-chH-0.08, fontSize:12, color:pG ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'top', autoFit:true });
+      B.wlines(slide, pres, WS_X, yPos, WS_W, Math.max(1, Math.floor(cH / 0.40)), cH / Math.max(1, Math.floor(cH / 0.40)));
     });
-    B.ftr(slide,pres,n,plan);
+    B.ftr(slide, pres, n, plan);
   },
 
   // ─── ACTIVITY ROUTER ──────────────────────────────────────────────
-  s_act:(pres,key,sd,plan,n,act)=>{
-    switch(act.type){
-      case 'vocab_matching': return B.aMatch(pres,key,sd,plan,n,act);
-      case 'table_fill':     return B.aTbl(pres,key,sd,plan,n,act);
-      case 'true_false':     return B.aTF(pres,key,sd,plan,n,act);
-      case 'error_analysis': return B.aErr(pres,key,sd,plan,n,act);
-      case 'equation_decode':return B.aEqDec(pres,key,sd,plan,n,act);
-      default:               return B.aTbl(pres,key,sd,plan,n,act);
+  s_act: (pres, key, sd, plan, n, act) => {
+    switch (act.type) {
+      case 'vocab_matching':  return B.aMatch(pres, key, sd, plan, n, act);
+      case 'table_fill':      return B.aTbl(pres, key, sd, plan, n, act);
+      case 'true_false':      return B.aTF(pres, key, sd, plan, n, act);
+      case 'error_analysis':  return B.aErr(pres, key, sd, plan, n, act);
+      case 'equation_decode': return B.aEqDec(pres, key, sd, plan, n, act);
+      default:                return B.aTbl(pres, key, sd, plan, n, act);
     }
   },
 
-  // ── VOCAB MATCHING ──────────────────────────────────────────────
-  aMatch:(pres,key,sd,plan,n,act)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,act.title||'Match It: Key Terms',act.instructions||'Draw a line to match each term to its definition.');
-    const pairs=(act.data?.pairs||[]).slice(0,6);if(!pairs.length){B.ftr(slide,pres,n,plan);return;}
-    const defns=Utils.shuffle([...pairs]);const topY=1.08;const rH=0.60;const cW=4.2;const lets='ABCDEFGHIJ'.split('');
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:cW,h:0.36,fill:{color:PAL.navy}});
-    slide.addText('TERMS',{x:0.28,y:topY,w:cW,h:0.36,fontSize:11,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.54,y:topY,w:cW,h:0.36,fill:{color:PAL.teal}});
-    slide.addText('DEFINITIONS (shuffled)',{x:5.54,y:topY,w:cW,h:0.36,fontSize:11,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:4.52,y:topY,w:0.98,h:0.36,fill:{color:PAL.cGray},line:{color:PAL.border,width:0.5}});
-    slide.addText('←→',{x:4.52,y:topY,w:0.98,h:0.36,fontSize:13,color:PAL.muted,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    pairs.forEach((pair,i)=>{
-      const ry=topY+0.42+(i*rH);const bg=i%2===0?PAL.white:PAL.cBlue;
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:ry,w:cW,h:rH-0.06,fill:{color:bg},line:{color:PAL.navy,width:0.75},shadow:mkSh()});
-      slide.addShape(pres.shapes.OVAL,{x:0.32,y:ry+0.11,w:0.34,h:0.34,fill:{color:PAL.navy}});
-      slide.addText(String(i+1),{x:0.32,y:ry+0.11,w:0.34,h:0.34,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addText(Utils.math(pair.term||''),{x:0.76,y:ry+0.04,w:3.62,h:rH-0.16,fontSize:11.5,color:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
-      slide.addShape(pres.shapes.RECTANGLE,{x:4.52,y:ry+0.09,w:0.98,h:0.38,fill:{color:PAL.white},line:{color:PAL.teal,width:1.2}});
-      slide.addText('  ___',{x:4.52,y:ry+0.09,w:0.98,h:0.38,fontSize:14,color:PAL.teal,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      const dp=defns[i];
-      slide.addShape(pres.shapes.RECTANGLE,{x:5.54,y:ry,w:cW,h:rH-0.06,fill:{color:bg},line:{color:PAL.teal,width:0.75},shadow:mkSh()});
-      slide.addShape(pres.shapes.OVAL,{x:5.58,y:ry+0.11,w:0.34,h:0.34,fill:{color:PAL.teal}});
-      slide.addText(lets[i],{x:5.58,y:ry+0.11,w:0.34,h:0.34,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addText(Utils.math(dp?.definition||''),{x:6.02,y:ry+0.04,w:3.44,h:rH-0.16,fontSize:10.5,color:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
+  // ── VOCAB MATCHING ─────────────────────────────────────────────────
+  // FIX #17: answer key strip at bottom so students can self-check
+  aMatch: (pres, key, sd, plan, n, act) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, act.title || 'Match It: Key Terms', act.instructions || 'Draw a line to match each term to its definition.');
+    const pairs   = (act.data?.pairs || []).slice(0, 6);
+    if (!pairs.length) { B.ftr(slide, pres, n, plan); return; }
+
+    // Shuffle definitions for display; preserve original order for answer key
+    const defns    = Utils.shuffle([...pairs]);
+    const topY     = 1.08;
+    const rH       = 0.60;
+    const cW       = 4.2;
+    const lets     = 'ABCDEFGHIJ'.split('');
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:cW,  h:0.36, fill:{color:PAL.navy} });
+    slide.addText('TERMS',                { x:0.28, y:topY, w:cW,  h:0.36, fontSize:11, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.54, y:topY, w:cW,  h:0.36, fill:{color:PAL.teal} });
+    slide.addText('DEFINITIONS (shuffled)', { x:5.54, y:topY, w:cW, h:0.36, fontSize:11, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addShape(pres.shapes.RECTANGLE, { x:4.52, y:topY, w:0.98, h:0.36, fill:{color:PAL.cGray}, line:{color:PAL.border, width:0.5} });
+    slide.addText('←→', { x:4.52, y:topY, w:0.98, h:0.36, fontSize:13, color:PAL.muted, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+    pairs.forEach((pair, i) => {
+      const ry = topY + 0.42 + (i * rH);
+      const bg = i % 2 === 0 ? PAL.white : PAL.cBlue;
+
+      // Term column
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:ry, w:cW, h:rH-0.06, fill:{color:bg}, line:{color:PAL.navy, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.OVAL,      { x:0.32, y:ry+0.11, w:0.34, h:0.34, fill:{color:PAL.navy} });
+      slide.addText(String(i + 1),           { x:0.32, y:ry+0.11, w:0.34, h:0.34, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(Utils.math(pair.term || ''), { x:0.76, y:ry+0.04, w:3.62, h:rH-0.16, fontSize:11.5, color:PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+
+      // Write-in box
+      slide.addShape(pres.shapes.RECTANGLE, { x:4.52, y:ry+0.09, w:0.98, h:0.38, fill:{color:PAL.white}, line:{color:PAL.teal, width:1.2} });
+      slide.addText('  ___', { x:4.52, y:ry+0.09, w:0.98, h:0.38, fontSize:14, color:PAL.teal, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+      // Definition column (shuffled)
+      const dp = defns[i];
+      slide.addShape(pres.shapes.RECTANGLE, { x:5.54, y:ry, w:cW, h:rH-0.06, fill:{color:bg}, line:{color:PAL.teal, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.OVAL,      { x:5.58, y:ry+0.11, w:0.34, h:0.34, fill:{color:PAL.teal} });
+      slide.addText(lets[i],                { x:5.58, y:ry+0.11, w:0.34, h:0.34, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(Utils.math(dp?.definition || ''), { x:6.02, y:ry+0.04, w:3.44, h:rH-0.16, fontSize:10.5, color:PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
     });
-    const noteY=topY+0.42+pairs.length*rH+0.06;
-    if(noteY<5.10){slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:noteY,w:9.44,h:0.30,fill:{color:PAL.cCream},line:{color:PAL.gold,width:0.75}});slide.addText('✏  Extension: Write the equation for today\'s lesson: y = ___________',{x:0.38,y:noteY,w:9.24,h:0.30,fontSize:10,color:PAL.body,fontFace:'Calibri',valign:'middle',margin:0});}
-    B.ftr(slide,pres,n,plan);
+
+    // FIX #17: Build answer key so students can self-check
+    // Map term → letter for the shuffled arrangement
+    const answerParts = pairs.map((pair, i) => {
+      const shuffledIdx = defns.findIndex(d => d.term === pair.term);
+      const letter = shuffledIdx >= 0 ? lets[shuffledIdx] : '?';
+      return `${i + 1}→${letter}`;
+    }).join('  ');
+
+    const keyY = topY + 0.42 + pairs.length * rH + 0.04;
+    if (keyY < 5.10) {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:keyY, w:9.44, h:0.26, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75} });
+      slide.addText('Answer Key (fold under before distributing): ' + answerParts, { x:0.38, y:keyY, w:9.24, h:0.26, fontSize:8.5, color:PAL.muted, fontFace:'Calibri', valign:'middle', italic:true });
+    }
+    const extY = keyY + 0.32;
+    if (extY < 5.10) {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:extY, w:9.44, h:0.30, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75} });
+      slide.addText('✏  Extension: Write the equation for today\'s lesson: y = ___________', { x:0.38, y:extY, w:9.24, h:0.30, fontSize:10, color:PAL.body, fontFace:'Calibri', valign:'middle', margin:0 });
+    }
+    B.ftr(slide, pres, n, plan);
   },
 
-  // ── TABLE FILL ─────────────────────────────────────────────────
-  aTbl:(pres,key,sd,plan,n,act)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,act.title||'Complete the Table',act.instructions||'Use the equation to find each missing value.');
-    const data=act.data||{};const rows=data.rows||(sd.table_values||[[1,null],[2,null],[3,null],[4,null],[5,null]]).map((r,i)=>({x:r[0],y:r[1],given:i===0}));
-    const ivL=data.iv_label||(sd.iv_name||'x')+' (x)';const dvL=data.dv_label||(sd.dv_name||'y')+' (y)';
-    const eqD=data.equation_display||(sd.equation||'y = kx').replace('[GENERATED — VERIFY] ','');const topY=1.10;
+  // ── TABLE FILL ──────────────────────────────────────────────────────
+  aTbl: (pres, key, sd, plan, n, act) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, act.title || 'Complete the Table', act.instructions || 'Use the equation to find each missing value.');
+    const data = act.data || {};
+    const rows = data.rows || (sd.table_values || [[1,null],[2,null],[3,null],[4,null],[5,null]]).map((r, i) => ({ x:r[0], y:r[1], given:i === 0 }));
+    const ivL = data.iv_label || (sd.iv_name || 'x') + ' (x)';
+    const dvL = data.dv_label || (sd.dv_name || 'y') + ' (y)';
+    const eqD = data.equation_display || (sd.equation || 'y = kx').replace('[GENERATED — VERIFY] ','');
+    const topY = 1.10;
+
     // Equation banner
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:9.44,h:0.60,fill:{color:PAL.cBlue},line:{color:PAL.navy,width:1.0},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:0.22,h:0.60,fill:{color:PAL.navy}});
-    slide.addText('Equation:',{x:0.60,y:topY,w:1.6,h:0.60,fontSize:12,bold:true,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:2.24,y:topY+0.08,w:3.80,h:0.44,fill:{color:PAL.white},line:{color:PAL.teal,width:1.5}});
-    slide.addText(Utils.math(eqD),{x:2.24,y:topY+0.08,w:3.80,h:0.44,fontSize:16,bold:true,color:PAL.navy,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addText('← Use this to complete the table!',{x:6.12,y:topY+0.14,w:3.50,h:0.32,fontSize:9,color:PAL.teal,fontFace:'Calibri',italic:true,valign:'middle'});
-    const tY=topY+0.76;const rH=0.42;const cW=4.0/2;
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:tY,w:4.0,h:rH,fill:{color:PAL.navy}});
-    slide.addText(Utils.math(ivL),{x:0.28,y:tY,w:cW,h:rH,fontSize:10.5,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
-    slide.addShape(pres.shapes.LINE,{x:0.28+cW,y:tY,w:0,h:rH,line:{color:PAL.white,width:1}});
-    slide.addText(Utils.math(dvL),{x:0.28+cW,y:tY,w:cW,h:rH,fontSize:10.5,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
-    rows.slice(0,8).forEach((row,i)=>{const ry=tY+rH*(i+1);const bg=i%2===0?PAL.white:PAL.cBlue;slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:ry,w:4.0,h:rH,fill:{color:bg},line:{color:PAL.border,width:0.5}});slide.addText(String(row.x??''),{x:0.32,y:ry,w:cW-0.08,h:rH,fontSize:12,color:PAL.body,align:'center',valign:'middle',fontFace:'Calibri',margin:0});slide.addShape(pres.shapes.LINE,{x:0.28+cW,y:ry,w:0,h:rH,line:{color:PAL.border,width:0.75}});if(row.given&&row.y!=null){slide.addShape(pres.shapes.RECTANGLE,{x:0.30+cW,y:ry+0.04,w:cW-0.04,h:rH-0.08,fill:{color:PAL.cSage},line:{color:PAL.sage,width:0.5}});slide.addText(String(row.y),{x:0.30+cW,y:ry+0.04,w:cW-0.04,h:rH-0.08,fontSize:12,bold:true,color:PAL.sage,align:'center',valign:'middle',fontFace:'Calibri',margin:0});}else slide.addShape(pres.shapes.LINE,{x:0.38+cW,y:ry+rH-0.10,w:cW-0.20,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.6}});});
-    const tH=rH*(Math.min(rows.length,8)+1);slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:tY,w:4.0,h:tH,fill:{type:'none'},line:{color:PAL.navy,width:1.2}});
-    const pts=rows.filter(r=>r.given&&r.y!=null).map(r=>[r.x,r.y]);
-    B.grid(slide,pres,4.56,tY,5.16,tH,Math.min(sd.graph_xmax||12,20),Math.min(sd.graph_ymax||150,500),Utils.math(ivL),Utils.math(dvL),pts,PAL.teal);
-    const extY=tY+tH+0.12;
-    if(extY<5.10){slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:extY,w:9.44,h:0.34,fill:{color:PAL.cCream},line:{color:PAL.gold,width:0.75}});slide.addText('🔢  Extension: When x = _____ , y = _____    Show your work →',{x:0.38,y:extY,w:9.24,h:0.34,fontSize:11,color:PAL.body,fontFace:'Calibri',valign:'middle',margin:0});}
-    B.ftr(slide,pres,n,plan);
-  },
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:9.44, h:0.60, fill:{color:PAL.cBlue}, line:{color:PAL.navy, width:1.0}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:0.22, h:0.60, fill:{color:PAL.navy} });
+    slide.addText('Equation:', { x:0.60, y:topY, w:1.6, h:0.60, fontSize:12, bold:true, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0 });
+    slide.addShape(pres.shapes.RECTANGLE, { x:2.24, y:topY+0.08, w:3.80, h:0.44, fill:{color:PAL.white}, line:{color:PAL.teal, width:1.5} });
+    slide.addText(Utils.math(eqD), { x:2.24, y:topY+0.08, w:3.80, h:0.44, fontSize:16, bold:true, color:PAL.navy, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    slide.addText('← Use this to complete the table!', { x:6.12, y:topY+0.14, w:3.50, h:0.32, fontSize:9, color:PAL.teal, fontFace:'Calibri', italic:true, valign:'middle' });
 
-  // ── TRUE / FALSE ───────────────────────────────────────────────
-  aTF:(pres,key,sd,plan,n,act)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,act.title||'True or False?',act.instructions||'Circle T for True or F for False. Explain your reasoning below.');
-    const stmts=(act.data?.statements||[]).slice(0,5);const topY=1.10;const BOT=5.22;const nS=Math.max(stmts.length,1);const cH=Math.min(0.80,(BOT-topY-(nS-1)*0.08)/nS);
-    stmts.forEach((s,i)=>{
-      const yy=topY+i*(cH+0.08);const txt=Utils.math(s.text||'');const bg=i%2===0?PAL.white:PAL.cBlue;
-      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yy,w:7.72,h:cH,fill:{color:bg},line:{color:PAL.navy,width:0.75},shadow:mkSh()});
-      slide.addShape(pres.shapes.OVAL,{x:0.34,y:yy+(cH-0.34)/2,w:0.34,h:0.34,fill:{color:PAL.navy}});
-      slide.addText(String(i+1),{x:0.34,y:yy+(cH-0.34)/2,w:0.34,h:0.34,fontSize:9,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addText(txt,{x:0.80,y:yy+0.06,w:7.08,h:cH-0.12,fontSize:12,color:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
-      const bS=0.50,bY=yy+(cH-bS)/2;
-      slide.addShape(pres.shapes.RECTANGLE,{x:8.10,y:bY,w:bS,h:bS,fill:{color:PAL.cSage},line:{color:PAL.sage,width:1.2}});slide.addText('T',{x:8.10,y:bY,w:bS,h:bS,fontSize:15,bold:true,color:PAL.sage,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-      slide.addShape(pres.shapes.RECTANGLE,{x:8.72,y:bY,w:bS,h:bS,fill:{color:PAL.cRust},line:{color:PAL.rust,width:1.2}});slide.addText('F',{x:8.72,y:bY,w:bS,h:bS,fontSize:15,bold:true,color:PAL.rust,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    const tY = topY + 0.76, rH = 0.42, cW = 4.0 / 2;
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:tY, w:4.0, h:rH, fill:{color:PAL.navy} });
+    slide.addText(Utils.math(ivL), { x:0.28, y:tY, w:cW, h:rH, fontSize:10.5, bold:true, color:PAL.white, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+    slide.addShape(pres.shapes.LINE, { x:0.28+cW, y:tY, w:0, h:rH, line:{color:PAL.white, width:1} });
+    slide.addText(Utils.math(dvL), { x:0.28+cW, y:tY, w:cW, h:rH, fontSize:10.5, bold:true, color:PAL.white, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+
+    rows.slice(0, 8).forEach((row, i) => {
+      const ry = tY + rH * (i + 1);
+      const bg = i % 2 === 0 ? PAL.white : PAL.cBlue;
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:ry, w:4.0, h:rH, fill:{color:bg}, line:{color:PAL.border, width:0.5} });
+      slide.addText(String(row.x ?? ''), { x:0.32, y:ry, w:cW-0.08, h:rH, fontSize:12, color:PAL.body, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+      slide.addShape(pres.shapes.LINE, { x:0.28+cW, y:ry, w:0, h:rH, line:{color:PAL.border, width:0.75} });
+      if (row.given && row.y != null) {
+        slide.addShape(pres.shapes.RECTANGLE, { x:0.30+cW, y:ry+0.04, w:cW-0.04, h:rH-0.08, fill:{color:PAL.cSage}, line:{color:PAL.sage, width:0.5} });
+        slide.addText(String(row.y), { x:0.30+cW, y:ry+0.04, w:cW-0.04, h:rH-0.08, fontSize:12, bold:true, color:PAL.sage, align:'center', valign:'middle', fontFace:'Calibri', margin:0 });
+      } else {
+        slide.addShape(pres.shapes.LINE, { x:0.38+cW, y:ry+rH-0.10, w:cW-0.20, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.6} });
+      }
     });
-    const expY=topY+nS*(cH+0.08)+0.04;
-    if(expY<5.10){const expH=BOT-expY;slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:expY,w:9.44,h:expH,fill:{color:PAL.cCream},line:{color:PAL.gold,width:0.75},shadow:mkSh()});slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:expY,w:0.18,h:expH,fill:{color:PAL.gold}});slide.addText('✏  Choose ONE. Explain using math evidence:',{x:0.54,y:expY+0.04,w:9.08,h:0.26,fontSize:9.5,color:PAL.body,fontFace:'Calibri',bold:true,valign:'middle'});const nl=Math.floor((expH-0.36)/0.38);for(let l=1;l<=nl;l++)slide.addShape(pres.shapes.LINE,{x:0.46,y:expY+0.30+(l*0.38),w:9.18,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});}
-    B.ftr(slide,pres,n,plan);
-  },
 
-  // ── ERROR ANALYSIS ─────────────────────────────────────────────
-  aErr:(pres,key,sd,plan,n,act)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,act.title||'Find the Error 🔍',act.instructions||'A student made a mistake. Find it and fix it.');
-    const data=act.data||{};const prob=(data.problem||(sd.collab_problem||'Use the context to write an equation.').replace('[GENERATED — VERIFY] ','')).substring(0,120);
-    const steps=data.student_work||[`${GEN} Step 1 — correct`,`${GEN} Step 2 — correct`,`${GEN} Step 3 — INCORRECT`,`${GEN} Step 4 — wrong result`];
-    const errIdx=typeof data.error_location==='number'?data.error_location:2;const topY=1.10;
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:9.44,h:0.68,fill:{color:PAL.cCream},line:{color:PAL.gold,width:1.0},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:0.20,h:0.68,fill:{color:PAL.gold}});
-    slide.addText('PROBLEM: '+Utils.math(prob),{x:0.56,y:topY,w:9.06,h:0.68,fontSize:12,bold:true,color:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+0.78,w:5.26,h:0.34,fill:{color:PAL.navy}});
-    slide.addText("📋  Student's Work — Find the Mistake:",{x:0.28,y:topY+0.78,w:5.26,h:0.34,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    steps.slice(0,4).forEach((s,i)=>{const st=String(s||'').replace('[GENERATED — VERIFY] ','');const isE=i===errIdx;const sy=topY+1.18+(i*0.64);const bg=isE?PAL.cRust:PAL.white;const lc=isE?PAL.rust:PAL.border;slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:sy,w:5.26,h:0.58,fill:{color:bg},line:{color:lc,width:isE?1.5:0.5},shadow:mkSh()});slide.addShape(pres.shapes.OVAL,{x:0.34,y:sy+0.12,w:0.34,h:0.34,fill:{color:isE?PAL.rust:PAL.navy}});slide.addText(String(i+1),{x:0.34,y:sy+0.12,w:0.34,h:0.34,fontSize:9,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});slide.addText(Utils.math(st),{x:0.76,y:sy+0.06,w:4.58,h:0.46,fontSize:isE?12:11.5,color:isE?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',bold:isE,autoFit:true});if(isE)slide.addText('← ERROR HERE',{x:5.34,y:sy+0.14,w:1.2,h:0.30,fontSize:9,bold:true,color:PAL.rust,fontFace:'Calibri',italic:true,valign:'middle'});});
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.80,y:topY+0.78,w:3.92,h:3.50,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75},shadow:mkSh()});
-    slide.addShape(pres.shapes.RECTANGLE,{x:5.80,y:topY+0.78,w:3.92,h:0.34,fill:{color:PAL.teal}});
-    slide.addText('✏  Your Turn — Fix It',{x:5.80,y:topY+0.78,w:3.92,h:0.34,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    const fixPs=['The error is in Step: ___','The mistake is:','','','Correct solution:','',''];
-    fixPs.forEach((p,i)=>{const fy=topY+1.22+(i*0.46);if(fy>topY+4.14)return;slide.addText(p,{x:5.90,y:fy,w:3.72,h:0.24,fontSize:10,color:i===0||i===4?PAL.navy:PAL.body,fontFace:'Calibri',bold:i===0||i===4,valign:'middle'});if(p==='')slide.addShape(pres.shapes.LINE,{x:5.90,y:fy+0.20,w:3.62,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});});
-    B.ftr(slide,pres,n,plan);
-  },
+    const tH = rH * (Math.min(rows.length, 8) + 1);
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:tY, w:4.0, h:tH, fill:{type:'none'}, line:{color:PAL.navy, width:1.2} });
 
-  // ── EQUATION DECODE ────────────────────────────────────────────
-  aEqDec:(pres,key,sd,plan,n,act)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,act.title||'Decode the Equation',act.instructions||'Identify what each part of the equation represents in this context.');
-    const data=act.data||{};const eq=Utils.math((data.equation||(sd.equation||'y = kx').replace('[GENERATED — VERIFY] ','')));
-    const comps=data.components||[{label:'y',role:'Dependent Variable',question:'y represents…'},{label:'k',role:'Rate / Coefficient',question:'k (the number in front of x) represents…'},{label:'x',role:'Independent Variable',question:'x represents…'}];
-    const ctx=(sd.context||'the relationship in this problem').replace('[GENERATED — VERIFY] ','');const topY=1.10;
-    slide.addShape(pres.shapes.RECTANGLE,{x:2.78,y:topY,w:4.44,h:0.90,fill:{color:PAL.navy},shadow:mkShMd()});slide.addShape(pres.shapes.RECTANGLE,{x:2.78,y:topY,w:0.22,h:0.90,fill:{color:PAL.teal}});
-    slide.addText(eq,{x:2.78,y:topY,w:4.44,h:0.90,fontSize:26,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+1.00,w:9.44,h:0.42,fill:{color:PAL.cCream},line:{color:PAL.gold,width:0.75}});
-    slide.addText('In this problem, we are studying: '+Utils.math(ctx),{x:0.38,y:topY+1.00,w:9.24,h:0.42,fontSize:11,color:PAL.body,fontFace:'Calibri',valign:'middle',italic:true,autoFit:true});
-    const bCs=[PAL.cBlue,PAL.cSage,PAL.cCream,PAL.cRust];const bLs=[PAL.navy,PAL.sage,PAL.gold,PAL.rust];const cH=0.78;
-    comps.slice(0,4).forEach((comp,i)=>{const cy=topY+1.54+(i*(cH+0.10));const bg=bCs[i%4];const lc=bLs[i%4];slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:cy,w:9.44,h:cH,fill:{color:bg},line:{color:lc,width:0.75},shadow:mkSh()});slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:cy,w:0.68,h:cH,fill:{color:lc}});slide.addText(comp.label||'?',{x:0.28,y:cy,w:0.68,h:cH,fontSize:18,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});const rW=Math.min(comp.role.length*5.8/72+0.3,2.0);slide.addShape(pres.shapes.RECTANGLE,{x:1.04,y:cy+0.06,w:rW,h:0.26,fill:{color:lc}});slide.addText(comp.role||'',{x:1.04,y:cy+0.06,w:rW,h:0.26,fontSize:8,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});slide.addText(comp.question||comp.label+' represents…',{x:1.04,y:cy+0.38,w:2.6,h:0.34,fontSize:10,color:PAL.body,fontFace:'Calibri',valign:'middle'});slide.addShape(pres.shapes.LINE,{x:3.70,y:cy+0.54,w:5.90,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.6}});slide.addText('In this problem →',{x:3.76,y:cy+0.12,w:1.8,h:0.30,fontSize:8.5,color:PAL.muted,fontFace:'Calibri',italic:true,valign:'middle'});});
-    B.ftr(slide,pres,n,plan);
-  },
+    const pts = rows.filter(r => r.given && r.y != null).map(r => [r.x, r.y]);
+    B.grid(slide, pres, 4.56, tY, 5.16, tH, Math.min(sd.graph_xmax || 12, 20), Math.min(sd.graph_ymax || 150, 500), Utils.math(ivL), Utils.math(dvL), pts, PAL.teal);
 
-  // ─── CUT-AND-SORT ─────────────────────────────────────────────────
-  s_sort:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    const title=(sd.cut_sort_title||'Sort Activity').replace('[GENERATED — VERIFY] ','');
-    B.hdr(slide,pres,key,'Cut-and-Sort: '+title,'Cut · sort into the correct column · glue when partner agrees');
-    const items=sd.cut_sort_items||[];const cats=[...new Set(items.map(it=>it.category).filter(Boolean).map(c=>c.replace('[GENERATED — VERIFY] ','')))];const nc=Math.max(cats.length,2);const cW=(9.0/nc)-0.15;const cCs=[PAL.navy,PAL.teal,PAL.gold,PAL.rust];const cLs=[PAL.cBlue,PAL.cTeal,PAL.cCream,PAL.cRust];
-    cats.forEach((cat,ci)=>{const cx=0.28+(ci*(cW+0.20));slide.addShape(pres.shapes.RECTANGLE,{x:cx,y:1.10,w:cW,h:3.58,fill:{color:cLs[ci]||PAL.cGray},line:{color:cCs[ci]||PAL.border,width:1.2},shadow:mkSh()});slide.addShape(pres.shapes.RECTANGLE,{x:cx,y:1.10,w:cW,h:0.38,fill:{color:cCs[ci]||PAL.teal}});slide.addText(cat,{x:cx,y:1.10,w:cW,h:0.38,fontSize:12,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});for(let l=1;l<=4;l++)slide.addShape(pres.shapes.LINE,{x:cx+0.14,y:1.10+0.38+(l*0.58)+0.08,w:cW-0.28,h:0,line:{color:cCs[ci]||PAL.border,dashType:'dash',width:0.5,transparency:60}});});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:4.76,w:9.44,h:0.18,fill:{color:PAL.border}});
-    slide.addText('✂  Cut here',{x:0.28,y:4.76,w:9.44,h:0.18,fontSize:8,color:PAL.muted,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
-    items.forEach((item,i)=>{const col=i%4;const row=Math.floor(i/4);const cx=0.44+(col*2.50);const cy=4.86+(row*0.50);if(cy+0.42>5.26)return;const txt=Utils.math((item.text||'').replace('[GENERATED — VERIFY] ',''));const g=isG(item.text||'');slide.addText(txt,{shape:pres.shapes.RECTANGLE,x:cx,y:cy,w:2.24,h:0.42,fill:{color:g?PAL.cRust:PAL.white},line:{color:g?PAL.rust:PAL.border,width:1.0},shadow:mkSh(),fontSize:10,color:g?PAL.rust:PAL.body,fontFace:'Calibri',align:'center',valign:'middle',wrap:true});});
-    B.ftr(slide,pres,n,plan);
-  },
-
-  // ─── TWR FRAME ────────────────────────────────────────────────────
-  s_twr:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Think · Write · Respond','Complete each frame using math vocabulary');
-    const frames=sd.twr_frames||[];const fCs=[PAL.cBlue,PAL.cSage,PAL.cCream,PAL.cBlue];const fBs=[PAL.teal,PAL.sage,PAL.gold,PAL.navy];const ks=['Because','But','So','And'];
-    frames.slice(0,4).forEach((fr,i)=>{const col=i%2,row=Math.floor(i/2);const fx=0.28+(col*4.86);const fy=1.08+(row*2.0);const ft=Utils.math(String(fr||'').replace('[GENERATED — VERIFY] ',''));const fG=isG(String(fr||''));slide.addShape(pres.shapes.RECTANGLE,{x:fx,y:fy,w:4.60,h:1.82,fill:{color:fCs[i]},line:{color:fG?PAL.rust:fBs[i],width:0.75},shadow:mkSh()});slide.addShape(pres.shapes.RECTANGLE,{x:fx,y:fy,w:4.60,h:0.30,fill:{color:fG?PAL.rust:fBs[i]}});slide.addText('Frame '+(i+1)+' — '+ks[i]+(fG?' ★GEN':''),{x:fx,y:fy,w:4.60,h:0.30,fontSize:9,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});slide.addText(ft,{x:fx+0.14,y:fy+0.34,w:4.32,h:0.52,fontSize:12,italic:true,color:fG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'top'});for(let l=1;l<=2;l++)slide.addShape(pres.shapes.LINE,{x:fx+0.18,y:fy+0.94+(l*0.38),w:4.24,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});});
-    if(key==='s2'){slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:4.96,w:9.44,h:0.26,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75}});slide.addText('★ Frame 3: Compare Session 2 to Session 1 — use: "Compared to '+Utils.math((plan.s1?.equation||'y = ?').replace('[GENERATED — VERIFY] ',''))+', this equation…"',{x:0.38,y:4.96,w:9.24,h:0.26,fontSize:9,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0});}
-    B.ftr(slide,pres,n,plan);
-  },
-
-  // ─── EXIT TICKET ──────────────────────────────────────────────────
-  s_exit:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Exit Ticket','Show what you know — choose your level');
-    const tiers=[
-      {lb:'Level 1 — Identify',  p:sd.exit_dok1,fl:PAL.cBlue, lc:PAL.teal, dk:'DOK 1: Recall'},
-      {lb:'Level 2 — Explain',   p:sd.exit_dok2,fl:PAL.cSage, lc:PAL.sage, dk:'DOK 2: Skill/Concept'},
-      {lb:'Level 3 — Transfer ★',p:sd.exit_dok3,fl:PAL.cCream,lc:PAL.gold, dk:'DOK 3: Strategic Thinking'},
-    ];
-    tiers.forEach((t,i)=>{const yP=1.08+(i*1.38);const pt=Utils.math((t.p||'').replace('[GENERATED — VERIFY] ',''));const pG=isG(t.p||'');slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yP,w:9.44,h:1.28,fill:{color:t.fl},line:{color:pG?PAL.rust:t.lc,width:0.75},shadow:mkSh()});slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yP,w:0.20,h:1.28,fill:{color:pG?PAL.rust:t.lc}});slide.addShape(pres.shapes.RECTANGLE,{x:0.56,y:yP+0.06,w:2.20,h:0.24,fill:{color:pG?PAL.rust:t.lc}});slide.addText(t.dk+(pG?' ★GEN':''),{x:0.56,y:yP+0.06,w:2.20,h:0.24,fontSize:8,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});slide.addText(t.lb,{x:2.90,y:yP+0.06,w:6.70,h:0.24,fontSize:9,bold:true,color:pG?PAL.rust:t.lc,fontFace:'Calibri',valign:'middle',margin:0});slide.addText(pt||'[Add from source slides]',{x:0.56,y:yP+0.34,w:8.60,h:0.88,fontSize:12.5,color:pG?PAL.rust:PAL.body,fontFace:'Calibri',autoFit:true,valign:'top'});slide.addShape(pres.shapes.LINE,{x:0.56,y:yP+1.16,w:8.60,h:0,line:{color:PAL.wLine,dashType:'dash',width:0.5}});});
-    if(key==='s2'){slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:4.96,w:9.44,h:0.26,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75}});slide.addText('Level 3 must synthesize BOTH sessions. Reference equations from S1 and S2 in your response.',{x:0.38,y:4.96,w:9.24,h:0.26,fontSize:8.5,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0});}
-    B.ftr(slide,pres,n,plan);
-  },
-
-  // ─── GOAL TRACKER ─────────────────────────────────────────────────
-  s_goal:(pres,key,sd,plan,n)=>{
-    const slide=pres.addSlide();slide.background={color:PAL.bg};
-    B.hdr(slide,pres,key,'Goal Tracker',"How well did I meet today's objective?");
-    const objR=sd.goal_tracker_objective||sd.objectives?.[0]||`${GEN} I can objective`;const oT=Utils.math(objR.replace('[GENERATED — VERIFY] ',''));const oG=isG(objR);
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:1.05,w:9.44,h:0.78,fill:{color:PAL.white},line:{color:oG?PAL.rust:PAL.navy,width:1.2},shadow:mkSh()});slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:1.05,w:0.20,h:0.78,fill:{color:oG?PAL.rust:PAL.navy}});if(oG)slide.addText('★ GENERATED',{x:7.5,y:1.08,w:2.1,h:0.22,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});slide.addText(oT,{x:0.54,y:1.05,w:9.12,h:0.78,fontSize:13,bold:true,color:oG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
-    const ratings=[{n:'1',lb:'Still Learning',sub:'I need more help.',fl:PAL.cRust,lc:PAL.rust},{n:'2',lb:'Getting There',sub:'I sort of get it.',fl:PAL.cCream,lc:PAL.gold},{n:'3',lb:'Got It',sub:'I can do this.',fl:PAL.cSage,lc:PAL.sage},{n:'4',lb:'Mastered',sub:'I can teach it!',fl:PAL.cBlue,lc:PAL.teal}];
-    ratings.forEach((r,i)=>{const rx=0.28+(i*2.38);slide.addShape(pres.shapes.RECTANGLE,{x:rx,y:2.00,w:2.22,h:2.10,fill:{color:r.fl},line:{color:r.lc,width:0.75},shadow:mkSh()});slide.addShape(pres.shapes.OVAL,{x:rx+0.72,y:2.10,w:0.78,h:0.78,fill:{color:r.lc},shadow:mkSh()});slide.addText(r.n,{x:rx+0.72,y:2.10,w:0.78,h:0.78,fontSize:20,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});slide.addText(r.lb,{x:rx+0.08,y:3.00,w:2.06,h:0.38,fontSize:11,bold:true,color:r.lc,fontFace:'Calibri',align:'center',valign:'middle'});slide.addText(r.sub,{x:rx+0.08,y:3.42,w:2.06,h:0.52,fontSize:10,color:PAL.muted,fontFace:'Calibri',align:'center',italic:true,valign:'top'});slide.addShape(pres.shapes.OVAL,{x:rx+0.78,y:3.98,w:0.66,h:0.66,fill:{color:PAL.white},line:{color:r.lc,width:1.2}});});
-    slide.addText('← Circle your rating above →',{x:0.28,y:4.72,w:9.44,h:0.28,fontSize:10,color:PAL.muted,fontFace:'Calibri',align:'center',italic:true});
-    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:5.04,w:9.44,h:0.24,fill:{color:PAL.cBlue},line:{color:PAL.teal,width:0.75}});slide.addText('One thing I learned today: _______________________________',{x:0.40,y:5.04,w:9.20,h:0.24,fontSize:9.5,color:PAL.navy,fontFace:'Calibri',valign:'middle',margin:0,italic:true});
-    B.ftr(slide,pres,n,plan);
-  },
-
-  // ─── BUILD SESSION (dynamic slide sequence) ───────────────────────
-  buildSession:async(pres,key,plan)=>{
-    const sd=plan[key];if(!sd)throw new Error(`No ${key} data in plan`);
-    const acts=plan[key+'_acts']||[];let n=1;
-    // 1. Objectives
-    B.s_obj(pres,key,sd,plan,n++);
-    // 2. Be Curious
-    B.s_bc(pres,key,sd,plan,n++);
-    // 3+. Vocab slides (2 terms per slide)
-    const terms=(sd.vocab_terms||[]);
-    const maxVocabSlides=Math.min(Math.ceil(terms.length/2),3);
-    for(let i=0;i<terms.length&&Math.floor(i/2)<maxVocabSlides;i+=2){
-      const pair=[terms[i]||null,terms[i+1]||null].filter(Boolean);
-      if(pair.length)B.s_vocab(pres,key,sd,plan,n++,pair.length===1?[pair[0],null]:[pair[0],pair[1]]);
+    const extY = tY + tH + 0.12;
+    if (extY < 5.10) {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:extY, w:9.44, h:0.34, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75} });
+      slide.addText('🔢  Extension: When x = _____ , y = _____    Show your work →', { x:0.38, y:extY, w:9.24, h:0.34, fontSize:11, color:PAL.body, fontFace:'Calibri', valign:'middle', margin:0 });
     }
-    // Guided
-    B.s_guided(pres,key,sd,plan,n++);
-    // Collaborative
-    B.s_collab(pres,key,sd,plan,n++);
-    // Independent (3 per slide)
-    const probs=sd.independent_problems||[];const numG=Math.max(1,Math.ceil(probs.length/3));
-    for(let i=0;i<numG;i++){const grp=probs.slice(i*3,(i+1)*3);if(grp.length)B.s_indep(pres,key,sd,plan,n++,grp,i);}
-    // Interactive Activities
-    for(const act of acts)B.s_act(pres,key,sd,plan,n++,act);
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ── TRUE / FALSE ────────────────────────────────────────────────────
+  aTF: (pres, key, sd, plan, n, act) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, act.title || 'True or False?', act.instructions || 'Circle T for True or F for False. Explain your reasoning below.');
+    const stmts = (act.data?.statements || []).slice(0, 5);
+    const topY  = 1.10, BOT = 5.22;
+    const nS    = Math.max(stmts.length, 1);
+    const cH    = Math.min(0.80, (BOT - topY - (nS - 1) * 0.08) / nS);
+
+    stmts.forEach((s, i) => {
+      const yy  = topY + i * (cH + 0.08);
+      const txt = Utils.math(s.text || '');
+      const bg  = i % 2 === 0 ? PAL.white : PAL.cBlue;
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:yy, w:7.72, h:cH, fill:{color:bg}, line:{color:PAL.navy, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.OVAL,      { x:0.34, y:yy+(cH-0.34)/2, w:0.34, h:0.34, fill:{color:PAL.navy} });
+      slide.addText(String(i + 1),          { x:0.34, y:yy+(cH-0.34)/2, w:0.34, h:0.34, fontSize:9, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(txt, { x:0.80, y:yy+0.06, w:7.08, h:cH-0.12, fontSize:12, color:PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+      const bS = 0.50, bY = yy + (cH - bS) / 2;
+      slide.addShape(pres.shapes.RECTANGLE, { x:8.10, y:bY, w:bS, h:bS, fill:{color:PAL.cSage}, line:{color:PAL.sage, width:1.2} });
+      slide.addText('T', { x:8.10, y:bY, w:bS, h:bS, fontSize:15, bold:true, color:PAL.sage, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addShape(pres.shapes.RECTANGLE, { x:8.72, y:bY, w:bS, h:bS, fill:{color:PAL.cRust}, line:{color:PAL.rust, width:1.2} });
+      slide.addText('F', { x:8.72, y:bY, w:bS, h:bS, fontSize:15, bold:true, color:PAL.rust, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+    });
+
+    const expY = topY + nS * (cH + 0.08) + 0.04;
+    if (expY < 5.10) {
+      const expH = Math.max(BOT - expY, 0.40);
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:expY, w:9.44, h:expH, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:expY, w:0.18, h:expH, fill:{color:PAL.gold} });
+      slide.addText('✏  Choose ONE. Explain using math evidence:', { x:0.54, y:expY+0.04, w:9.08, h:0.26, fontSize:9.5, color:PAL.body, fontFace:'Calibri', bold:true, valign:'middle' });
+      const nl = Math.max(1, Math.floor((expH - 0.36) / 0.38));
+      for (let l = 1; l <= nl; l++)
+        slide.addShape(pres.shapes.LINE, { x:0.46, y:expY+0.30+(l*0.38), w:9.18, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+    }
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ── ERROR ANALYSIS ──────────────────────────────────────────────────
+  aErr: (pres, key, sd, plan, n, act) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, act.title || 'Find the Error 🔍', act.instructions || 'A student made a mistake. Find it and fix it.');
+    const data = act.data || {};
+    const prob  = (data.problem || (sd.collab_problem || 'Use the context to write an equation.').replace('[GENERATED — VERIFY] ','')).substring(0, 120);
+    const steps = data.student_work || [`${GEN} Step 1 — correct`, `${GEN} Step 2 — correct`, `${GEN} Step 3 — INCORRECT`, `${GEN} Step 4 — wrong result`];
+    const errIdx = typeof data.error_location === 'number' ? data.error_location : 2;
+    const topY  = 1.10;
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:9.44, h:0.68, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:1.0}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY, w:0.20, h:0.68, fill:{color:PAL.gold} });
+    slide.addText('PROBLEM: ' + Utils.math(prob), { x:0.56, y:topY, w:9.06, h:0.68, fontSize:12, bold:true, color:PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+0.78, w:5.26, h:0.34, fill:{color:PAL.navy} });
+    slide.addText("📋  Student's Work — Find the Mistake:", { x:0.28, y:topY+0.78, w:5.26, h:0.34, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+    steps.slice(0, 4).forEach((s, i) => {
+      const st  = String(s || '').replace('[GENERATED — VERIFY] ','');
+      const isE = i === errIdx;
+      const sy  = topY + 1.18 + (i * 0.64);
+      const bg  = isE ? PAL.cRust : PAL.white;
+      const lc  = isE ? PAL.rust : PAL.border;
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:sy, w:5.26, h:0.58, fill:{color:bg}, line:{color:lc, width:isE ? 1.5 : 0.5}, shadow:mkSh() });
+      slide.addShape(pres.shapes.OVAL,      { x:0.34, y:sy+0.12, w:0.34, h:0.34, fill:{color:isE ? PAL.rust : PAL.navy} });
+      slide.addText(String(i + 1),          { x:0.34, y:sy+0.12, w:0.34, h:0.34, fontSize:9, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(Utils.math(st), { x:0.76, y:sy+0.06, w:4.58, h:0.46, fontSize:isE ? 12 : 11.5, color:isE ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'middle', bold:isE, autoFit:true });
+      if (isE) slide.addText('← ERROR HERE', { x:5.34, y:sy+0.14, w:1.2, h:0.30, fontSize:9, bold:true, color:PAL.rust, fontFace:'Calibri', italic:true, valign:'middle' });
+    });
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.80, y:topY+0.78, w:3.92, h:3.50, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:5.80, y:topY+0.78, w:3.92, h:0.34, fill:{color:PAL.teal} });
+    slide.addText('✏  Your Turn — Fix It', { x:5.80, y:topY+0.78, w:3.92, h:0.34, fontSize:10, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+    const fixPs = ['The error is in Step: ___', 'The mistake is:', '', '', 'Correct solution:', '', ''];
+    fixPs.forEach((p, i) => {
+      const fy = topY + 1.22 + (i * 0.46);
+      if (fy > topY + 4.14) return;
+      slide.addText(p, { x:5.90, y:fy, w:3.72, h:0.24, fontSize:10, color:(i === 0 || i === 4) ? PAL.navy : PAL.body, fontFace:'Calibri', bold:(i === 0 || i === 4), valign:'middle' });
+      if (p === '') slide.addShape(pres.shapes.LINE, { x:5.90, y:fy+0.20, w:3.62, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+    });
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ── EQUATION DECODE ─────────────────────────────────────────────────
+  aEqDec: (pres, key, sd, plan, n, act) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, act.title || 'Decode the Equation', act.instructions || 'Identify what each part of the equation represents in this context.');
+    const data  = act.data || {};
+    const eq    = Utils.math((data.equation || (sd.equation || 'y = kx').replace('[GENERATED — VERIFY] ','')));
+    const comps = data.components || [
+      { label:'y', role:'Dependent Variable',   question:'y represents…' },
+      { label:'k', role:'Rate / Coefficient',   question:'k (the number in front of x) represents…' },
+      { label:'x', role:'Independent Variable', question:'x represents…' },
+    ];
+    const ctx  = (sd.context || 'the relationship in this problem').replace('[GENERATED — VERIFY] ','');
+    const topY = 1.10;
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:2.78, y:topY, w:4.44, h:0.90, fill:{color:PAL.navy}, shadow:mkShMd() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:2.78, y:topY, w:0.22, h:0.90, fill:{color:PAL.teal} });
+    slide.addText(eq, { x:2.78, y:topY, w:4.44, h:0.90, fontSize:26, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:topY+1.00, w:9.44, h:0.42, fill:{color:PAL.cCream}, line:{color:PAL.gold, width:0.75} });
+    slide.addText('In this problem, we are studying: ' + Utils.math(ctx), { x:0.38, y:topY+1.00, w:9.24, h:0.42, fontSize:11, color:PAL.body, fontFace:'Calibri', valign:'middle', italic:true, autoFit:true });
+
+    const bCs = [PAL.cBlue, PAL.cSage, PAL.cCream, PAL.cRust];
+    const bLs = [PAL.navy, PAL.sage, PAL.gold, PAL.rust];
+    const cH  = 0.78;
+
+    comps.slice(0, 4).forEach((comp, i) => {
+      const cy = topY + 1.54 + (i * (cH + 0.10));
+      const bg = bCs[i % 4], lc = bLs[i % 4];
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:cy, w:9.44, h:cH, fill:{color:bg}, line:{color:lc, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:cy, w:0.68, h:cH, fill:{color:lc} });
+      slide.addText(comp.label || '?', { x:0.28, y:cy, w:0.68, h:cH, fontSize:18, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      const rW = Math.min((comp.role || '').length * 5.8 / 72 + 0.3, 2.0);
+      slide.addShape(pres.shapes.RECTANGLE, { x:1.04, y:cy+0.06, w:rW, h:0.26, fill:{color:lc} });
+      slide.addText(comp.role || '', { x:1.04, y:cy+0.06, w:rW, h:0.26, fontSize:8, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(comp.question || (comp.label + ' represents…'), { x:1.04, y:cy+0.38, w:2.6, h:0.34, fontSize:10, color:PAL.body, fontFace:'Calibri', valign:'middle' });
+      slide.addShape(pres.shapes.LINE, { x:3.70, y:cy+0.54, w:5.90, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.6} });
+      slide.addText('In this problem →', { x:3.76, y:cy+0.12, w:1.8, h:0.30, fontSize:8.5, color:PAL.muted, fontFace:'Calibri', italic:true, valign:'middle' });
+    });
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ─── CUT-AND-SORT ──────────────────────────────────────────────────
+  s_sort: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    const title = (sd.cut_sort_title || 'Sort Activity').replace('[GENERATED — VERIFY] ','');
+    B.hdr(slide, pres, key, 'Cut-and-Sort: ' + title, 'Cut · sort into the correct column · glue when partner agrees');
+    const items = sd.cut_sort_items || [];
+    const cats  = [...new Set(items.map(it => it.category).filter(Boolean).map(c => c.replace('[GENERATED — VERIFY] ','')))];
+    const nc    = Math.max(cats.length, 2);
+    const cW    = (9.0 / nc) - 0.15;
+    const cCs   = [PAL.navy, PAL.teal, PAL.gold, PAL.rust];
+    const cLs   = [PAL.cBlue, PAL.cTeal, PAL.cCream, PAL.cRust];
+
+    cats.forEach((cat, ci) => {
+      const cx = 0.28 + (ci * (cW + 0.20));
+      slide.addShape(pres.shapes.RECTANGLE, { x:cx, y:1.10, w:cW, h:3.58, fill:{color:cLs[ci] || PAL.cGray}, line:{color:cCs[ci] || PAL.border, width:1.2}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:cx, y:1.10, w:cW, h:0.38, fill:{color:cCs[ci] || PAL.teal} });
+      slide.addText(cat, { x:cx, y:1.10, w:cW, h:0.38, fontSize:12, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      for (let l = 1; l <= 4; l++)
+        slide.addShape(pres.shapes.LINE, { x:cx+0.14, y:1.10+0.38+(l*0.58)+0.08, w:cW-0.28, h:0, line:{color:cCs[ci] || PAL.border, dashType:'dash', width:0.5, transparency:60} });
+    });
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:4.76, w:9.44, h:0.18, fill:{color:PAL.border} });
+    slide.addText('✂  Cut here', { x:0.28, y:4.76, w:9.44, h:0.18, fontSize:8, color:PAL.muted, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+
+    items.forEach((item, i) => {
+      const col = i % 4, row = Math.floor(i / 4);
+      const cx  = 0.44 + (col * 2.50);
+      const cy  = 4.86 + (row * 0.50);
+      if (cy + 0.42 > 5.26) return;
+      const txt = Utils.math((item.text || '').replace('[GENERATED — VERIFY] ',''));
+      const g   = isG(item.text || '');
+      slide.addText(txt, { shape:pres.shapes.RECTANGLE, x:cx, y:cy, w:2.24, h:0.42, fill:{color:g ? PAL.cRust : PAL.white}, line:{color:g ? PAL.rust : PAL.border, width:1.0}, shadow:mkSh(), fontSize:10, color:g ? PAL.rust : PAL.body, fontFace:'Calibri', align:'center', valign:'middle', wrap:true });
+    });
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ─── TWR FRAME ─────────────────────────────────────────────────────
+  s_twr: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Think · Write · Respond', 'Complete each frame using math vocabulary');
+    const frames = sd.twr_frames || [];
+    const fCs    = [PAL.cBlue, PAL.cSage, PAL.cCream, PAL.cBlue];
+    const fBs    = [PAL.teal, PAL.sage, PAL.gold, PAL.navy];
+    const ks     = ['Because', 'But', 'So', 'And'];
+
+    frames.slice(0, 4).forEach((fr, i) => {
+      const col  = i % 2, row = Math.floor(i / 2);
+      const fx   = 0.28 + (col * 4.86);
+      const fy   = 1.08 + (row * 2.0);
+      const ft   = Utils.math(String(fr || '').replace('[GENERATED — VERIFY] ',''));
+      const fG   = isG(String(fr || ''));
+      slide.addShape(pres.shapes.RECTANGLE, { x:fx, y:fy, w:4.60, h:1.82, fill:{color:fCs[i]}, line:{color:fG ? PAL.rust : fBs[i], width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:fx, y:fy, w:4.60, h:0.30, fill:{color:fG ? PAL.rust : fBs[i]} });
+      slide.addText('Frame ' + (i + 1) + ' — ' + ks[i] + (fG ? ' ★GEN' : ''), { x:fx, y:fy, w:4.60, h:0.30, fontSize:9, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(ft, { x:fx+0.14, y:fy+0.34, w:4.32, h:0.52, fontSize:12, italic:true, color:fG ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'top' });
+      for (let l = 1; l <= 2; l++)
+        slide.addShape(pres.shapes.LINE, { x:fx+0.18, y:fy+0.94+(l*0.38), w:4.24, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+    });
+
+    if (key === 's2') {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:4.96, w:9.44, h:0.26, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75} });
+      slide.addText('★ Frame 3: Compare Session 2 to Session 1 — use: "Compared to ' + Utils.math((plan.s1?.equation || 'y = ?').replace('[GENERATED — VERIFY] ','')) + ', this equation…"', { x:0.38, y:4.96, w:9.24, h:0.26, fontSize:9, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0 });
+    }
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ─── EXIT TICKET ───────────────────────────────────────────────────
+  s_exit: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Exit Ticket', 'Show what you know — choose your level');
+    const tiers = [
+      { lb:'Level 1 — Identify',   p:sd.exit_dok1, fl:PAL.cBlue,  lc:PAL.teal, dk:'DOK 1: Recall' },
+      { lb:'Level 2 — Explain',    p:sd.exit_dok2, fl:PAL.cSage,  lc:PAL.sage, dk:'DOK 2: Skill/Concept' },
+      { lb:'Level 3 — Transfer ★', p:sd.exit_dok3, fl:PAL.cCream, lc:PAL.gold, dk:'DOK 3: Strategic Thinking' },
+    ];
+    tiers.forEach((t, i) => {
+      const yP = 1.08 + (i * 1.38);
+      const pt = Utils.math((t.p || '').replace('[GENERATED — VERIFY] ',''));
+      const pG = isG(t.p || '');
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:yP, w:9.44, h:1.28, fill:{color:t.fl}, line:{color:pG ? PAL.rust : t.lc, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:yP, w:0.20, h:1.28, fill:{color:pG ? PAL.rust : t.lc} });
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.56, y:yP+0.06, w:2.20, h:0.24, fill:{color:pG ? PAL.rust : t.lc} });
+      slide.addText(t.dk + (pG ? ' ★GEN' : ''), { x:0.56, y:yP+0.06, w:2.20, h:0.24, fontSize:8, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(t.lb, { x:2.90, y:yP+0.06, w:6.70, h:0.24, fontSize:9, bold:true, color:pG ? PAL.rust : t.lc, fontFace:'Calibri', valign:'middle', margin:0 });
+      slide.addText(pt || '[Add from source slides]', { x:0.56, y:yP+0.34, w:8.60, h:0.88, fontSize:12.5, color:pG ? PAL.rust : PAL.body, fontFace:'Calibri', autoFit:true, valign:'top' });
+      slide.addShape(pres.shapes.LINE, { x:0.56, y:yP+1.16, w:8.60, h:0, line:{color:PAL.wLine, dashType:'dash', width:0.5} });
+    });
+    if (key === 's2') {
+      slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:4.96, w:9.44, h:0.26, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75} });
+      slide.addText('Level 3 must synthesize BOTH sessions. Reference equations from S1 and S2 in your response.', { x:0.38, y:4.96, w:9.24, h:0.26, fontSize:8.5, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0 });
+    }
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ─── GOAL TRACKER ──────────────────────────────────────────────────
+  s_goal: (pres, key, sd, plan, n) => {
+    const slide = pres.addSlide(); slide.background = { color:PAL.bg };
+    B.hdr(slide, pres, key, 'Goal Tracker', "How well did I meet today's objective?");
+    const objR = sd.goal_tracker_objective || sd.objectives?.[0] || `${GEN} I can objective`;
+    const oT   = Utils.math(objR.replace('[GENERATED — VERIFY] ',''));
+    const oG   = isG(objR);
+
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:1.05, w:9.44, h:0.78, fill:{color:PAL.white}, line:{color:oG ? PAL.rust : PAL.navy, width:1.2}, shadow:mkSh() });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:1.05, w:0.20, h:0.78, fill:{color:oG ? PAL.rust : PAL.navy} });
+    if (oG) slide.addText('★ GENERATED', { x:7.5, y:1.08, w:2.1, h:0.22, fontSize:7.5, color:PAL.rust, fontFace:'Calibri', align:'right', margin:0 });
+    slide.addText(oT, { x:0.54, y:1.05, w:9.12, h:0.78, fontSize:13, bold:true, color:oG ? PAL.rust : PAL.body, fontFace:'Calibri', valign:'middle', autoFit:true });
+
+    const ratings = [
+      { n:'1', lb:'Still Learning', sub:'I need more help.',  fl:PAL.cRust,  lc:PAL.rust },
+      { n:'2', lb:'Getting There',  sub:'I sort of get it.',  fl:PAL.cCream, lc:PAL.gold },
+      { n:'3', lb:'Got It',         sub:'I can do this.',     fl:PAL.cSage,  lc:PAL.sage },
+      { n:'4', lb:'Mastered',       sub:'I can teach it!',    fl:PAL.cBlue,  lc:PAL.teal },
+    ];
+    ratings.forEach((r, i) => {
+      const rx = 0.28 + (i * 2.38);
+      slide.addShape(pres.shapes.RECTANGLE, { x:rx, y:2.00, w:2.22, h:2.10, fill:{color:r.fl}, line:{color:r.lc, width:0.75}, shadow:mkSh() });
+      slide.addShape(pres.shapes.OVAL,      { x:rx+0.72, y:2.10, w:0.78, h:0.78, fill:{color:r.lc}, shadow:mkSh() });
+      slide.addText(r.n, { x:rx+0.72, y:2.10, w:0.78, h:0.78, fontSize:20, bold:true, color:PAL.white, fontFace:'Calibri', align:'center', valign:'middle', margin:0 });
+      slide.addText(r.lb,  { x:rx+0.08, y:3.00, w:2.06, h:0.38, fontSize:11, bold:true, color:r.lc, fontFace:'Calibri', align:'center', valign:'middle' });
+      slide.addText(r.sub, { x:rx+0.08, y:3.42, w:2.06, h:0.52, fontSize:10, color:PAL.muted, fontFace:'Calibri', align:'center', italic:true, valign:'top' });
+      slide.addShape(pres.shapes.OVAL, { x:rx+0.78, y:3.98, w:0.66, h:0.66, fill:{color:PAL.white}, line:{color:r.lc, width:1.2} });
+    });
+    slide.addText('← Circle your rating above →', { x:0.28, y:4.72, w:9.44, h:0.28, fontSize:10, color:PAL.muted, fontFace:'Calibri', align:'center', italic:true });
+    slide.addShape(pres.shapes.RECTANGLE, { x:0.28, y:5.04, w:9.44, h:0.24, fill:{color:PAL.cBlue}, line:{color:PAL.teal, width:0.75} });
+    slide.addText('One thing I learned today: _______________________________', { x:0.40, y:5.04, w:9.20, h:0.24, fontSize:9.5, color:PAL.navy, fontFace:'Calibri', valign:'middle', margin:0, italic:true });
+    B.ftr(slide, pres, n, plan);
+  },
+
+  // ─── BUILD SESSION (dynamic slide sequence) ─────────────────────────
+  buildSession: async (pres, key, plan) => {
+    const sd   = plan[key];
+    if (!sd) throw new Error(`No ${key} data in plan`);
+    const acts = plan[key + '_acts'] || [];
+    let n = 1;
+
+    // 1. Objectives
+    B.s_obj(pres, key, sd, plan, n++);
+
+    // 2. Be Curious
+    B.s_bc(pres, key, sd, plan, n++);
+
+    // 3+. Vocab slides — 2 terms per slide, max 3 slides
+    const terms = (sd.vocab_terms || []);
+    const maxVocabSlides = Math.min(Math.ceil(terms.length / 2), 3);
+    for (let i = 0; i < terms.length && Math.floor(i / 2) < maxVocabSlides; i += 2) {
+      const pair = [terms[i] || null, terms[i+1] || null].filter(Boolean);
+      if (pair.length) {
+        // Always pass two slots; if only one term, pass [term, null] — null filtered in s_vocab
+        B.s_vocab(pres, key, sd, plan, n++, pair.length === 1 ? [pair[0], null] : [pair[0], pair[1]]);
+      }
+    }
+
+    // 4. Guided
+    B.s_guided(pres, key, sd, plan, n++);
+
+    // 5. Collaborative
+    B.s_collab(pres, key, sd, plan, n++);
+
+    // 6+. Independent (3 per slide)
+    const probs = sd.independent_problems || [];
+    const numG  = Math.max(1, Math.ceil(probs.length / 3));
+    for (let i = 0; i < numG; i++) {
+      const grp = probs.slice(i * 3, (i + 1) * 3);
+      if (grp.length) B.s_indep(pres, key, sd, plan, n++, grp, i);
+    }
+
+    // Interactive Activities (AI-planned)
+    for (const act of acts) B.s_act(pres, key, sd, plan, n++, act);
+
     // Cut-and-Sort (only if has real items)
-    if((sd.cut_sort_items||[]).some(it=>!isG(it.text||'')))B.s_sort(pres,key,sd,plan,n++);
+    if ((sd.cut_sort_items || []).some(it => !isG(it.text || '')))
+      B.s_sort(pres, key, sd, plan, n++);
+
     // TWR
-    B.s_twr(pres,key,sd,plan,n++);
+    B.s_twr(pres, key, sd, plan, n++);
+
     // Exit Ticket
-    B.s_exit(pres,key,sd,plan,n++);
+    B.s_exit(pres, key, sd, plan, n++);
+
     // Goal Tracker
-    B.s_goal(pres,key,sd,plan,n++);
+    B.s_goal(pres, key, sd, plan, n++);
   },
 };
 
 // ── EXPORTER ───────────────────────────────────────────────────────────
-const Exp={
-  _run:async(label,buildFn)=>{
-    if(State.busy())return;const plan=State.plan();if(!plan){UI.toast('No plan — upload a PPTX first','error');return;}
-    State.setBusy(true);['btn-s1','btn-s2','btn-both'].forEach(id=>$p(id,'disabled',true));
-    UI.setSt(`Building ${label}…`,20);
-    try{
-      const pres=new PptxGenJS();pres.layout='LAYOUT_16x9';pres.author='EduWonderLab · Neft.Alba';pres.title=`${(plan.lesson_title||'Notebook').replace('[GENERATED — VERIFY] ','')} — ${label}`;
-      await buildFn(pres,plan);UI.setSt('Compiling PPTX…',88);
-      const fn=`EWL_Notebook_${Utils.san(plan.lesson_title)}_${label.replace(/\s+/g,'_')}.pptx`;
-      await pres.writeFile({fileName:fn});UI.setSt('Done ✓',100,'done');UI.toast(`${label} generated ✓`);
-    }catch(e){console.error(e);UI.setSt('Build failed',100,'err');UI.toast(e.message,'error');}
-    setTimeout(()=>$c('status-box',c=>c.remove('show')),3500);
-    State.setBusy(false);['btn-s1','btn-s2','btn-both'].forEach(id=>$p(id,'disabled',false));
+const Exp = {
+  _btns: ['btn-s1','btn-s2','btn-both'],
+  _setDisabled: v => Exp._btns.forEach(id => $p(id, 'disabled', v)),
+
+  _run: async (label, buildFn) => {
+    if (State.busy()) return;
+
+    // FIX #16: guard — re-enable buttons even on early return
+    const plan = State.plan();
+    if (!plan) { UI.toast('No plan — upload a PPTX first', 'error'); return; }
+
+    State.setBusy(true);
+    Exp._setDisabled(true);
+    UI.setSt(`Building ${label}…`, 20);
+    try {
+      const pres = new PptxGenJS();
+      pres.layout  = 'LAYOUT_16x9';
+      pres.author  = 'EduWonderLab · Neft.Alba';
+      pres.title   = `${(plan.lesson_title || 'Notebook').replace('[GENERATED — VERIFY] ','')} — ${label}`;
+      await buildFn(pres, plan);
+      UI.setSt('Compiling PPTX…', 88);
+      const fn = `EWL_Notebook_${Utils.san(plan.lesson_title)}_${label.replace(/\s+/g,'_')}.pptx`;
+      await pres.writeFile({ fileName:fn });
+      UI.setSt('Done ✓', 100, 'done');
+      UI.toast(`${label} generated ✓`);
+    } catch (e) {
+      console.error(e);
+      UI.setSt('Build failed', 100, 'err');
+      UI.toast(e.message || 'Build failed — check console', 'error');
+    }
+    setTimeout(() => $c('status-box', c => c.remove('show')), 3500);
+    State.setBusy(false);
+    Exp._setDisabled(false);
   },
-  build:key=>Exp._run(key==='s1'?'Session_1':'Session_2',async(pres,plan)=>{UI.setSt('Rendering slides…',50);await B.buildSession(pres,key,plan);}),
-  buildBoth:()=>Exp._run('Master',async(pres,plan)=>{UI.setSt('Building S1…',35);await B.buildSession(pres,'s1',plan);UI.setSt('Building S2…',70);await B.buildSession(pres,'s2',plan);}),
+
+  build: key => Exp._run(
+    key === 's1' ? 'Session_1' : 'Session_2',
+    async (pres, plan) => { UI.setSt('Rendering slides…', 50); await B.buildSession(pres, key, plan); }
+  ),
+  buildBoth: () => Exp._run('Master', async (pres, plan) => {
+    UI.setSt('Building S1…', 35); await B.buildSession(pres, 's1', plan);
+    UI.setSt('Building S2…', 70); await B.buildSession(pres, 's2', plan);
+  }),
 };
 
 // ── INIT ───────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{
-  if(typeof PptxGenJS==='undefined'||typeof JSZip==='undefined'){const w=$('cdn-warn');if(w)w.style.display='block';return;}
-  Theme.init();FH.init();const plan=State.plan();if(plan){UI.renderPreview(plan);UI.renderFidelity(plan);UI.renderActivity(plan);}
+// FIX #15: single DOMContentLoaded handler guarantees correct init order
+document.addEventListener('DOMContentLoaded', () => {
+  // CDN check first
+  if (typeof PptxGenJS === 'undefined' || typeof JSZip === 'undefined') {
+    const w = $('cdn-warn'); if (w) w.style.display = 'block';
+    console.error('CDN libraries failed to load. Check network.');
+    return;
+  }
+
+  Theme.init();   // theme before anything renders
+  FH.init();      // event listeners after DOM confirmed ready
+
+  // Restore cached plan if available
+  const plan = State.plan();
+  if (plan) {
+    UI.renderPreview(plan);
+    UI.renderFidelity(plan);
+    UI.renderActivity(plan);
+  }
 });
-matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(!localStorage.getItem('ewl_th'))Theme.init();});
+
+// Respect system preference changes when user hasn't overridden
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => {
+  if (!localStorage.getItem('ewl_th')) Theme.init();
+});
 </script>
 </body>
 </html>
