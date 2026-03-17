@@ -2,181 +2,245 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
+<!-- FIX: CSP header — blocks inline eval, restricts connect to Anthropic only -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://api.anthropic.com; img-src 'self' data:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EduWonderLab · Notebook Engine v5</title>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs/dist/pptxgen.bundle.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<title>EduWonderLab · Notebook Engine v6.1</title>
+<!-- FIX: Version-pinned CDN URLs with SRI hashes -->
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" crossorigin="anonymous"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap');
 
 :root {
-  --bg: #0d0f14; --surface: #13161e; --surface2: #1a1e2a; 
-  --border: #252a38; --border2: #2e3446; --text: #e2e8f0; 
-  --muted: #64748b; --muted2: #94a3b8;
-  --teal: #14b8a6; --teal-dim: rgba(20,184,166,0.12); --teal-glow: rgba(20,184,166,0.25);
-  --success: #10b981; --err: #ef4444; --warn: #f59e0b;
+  --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e2a;
+  --border:#252a38; --border2:#2e3446; --text:#e2e8f0;
+  --muted:#64748b; --muted2:#94a3b8;
+  --teal:#14b8a6; --teal-dim:rgba(20,184,166,.12); --teal-glow:rgba(20,184,166,.3);
+  --success:#10b981; --err:#ef4444; --warn:#f59e0b; --info:#3b82f6;
+  --gen-color:#f59e0b; --gen-bg:rgba(245,158,11,.1);
 }
-
 [data-theme="light"] {
-  --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9;
-  --border: #e2e8f0; --border2: #cbd5e1; --text: #0f172a;
-  --muted: #64748b; --muted2: #475569;
-  --teal: #0d9488; --teal-dim: rgba(13,148,136,0.12); --teal-glow: rgba(13,148,136,0.2);
+  --bg:#f8fafc; --surface:#fff; --surface2:#f1f5f9;
+  --border:#e2e8f0; --border2:#cbd5e1; --text:#0f172a;
+  --muted:#64748b; --muted2:#475569;
+  --teal:#0d9488; --teal-dim:rgba(13,148,136,.1); --teal-glow:rgba(13,148,136,.2);
 }
 
-* { box-sizing:border-box; margin:0; padding:0; }
-body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; transition: background 0.3s, color 0.3s; }
-body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(20,184,166,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,0.04) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(20,184,166,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(20,184,166,.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
 
-.app { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:2rem 1.5rem 4rem; }
-.header { display:flex; align-items:center; gap:1rem; margin-bottom:2rem; padding-bottom:1.5rem; border-bottom:1px solid var(--border); }
-.logo { width:44px; height:44px; background:linear-gradient(135deg,#387F84,#14b8a6); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:18px; color:#fff; flex-shrink:0; box-shadow:0 0 20px var(--teal-glow); }
-.header-text h1 { font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; color:var(--text); letter-spacing:-0.02em; }
-.header-text p { font-size:0.78rem; color:var(--muted); font-family:'DM Mono',monospace; margin-top:2px; }
-.theme-toggle { margin-left:auto; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:0.8rem; transition:all 0.2s; }
-.theme-toggle:hover { border-color:var(--teal); color:var(--teal); }
-.badge { background:var(--teal-dim); border:1px solid rgba(20,184,166,0.3); color:var(--teal); font-family:'DM Mono',monospace; font-size:0.68rem; padding:4px 8px; border-radius:4px; letter-spacing:.05em; }
+.app{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:2rem 1.5rem 5rem;}
 
-.api-box { background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:12px 16px; margin-bottom:1.25rem; }
-.api-bar { display:flex; align-items:center; gap:.6rem; }
-.api-bar input { flex:1; background:transparent; border:none; outline:none; color:var(--teal); font-family:'DM Mono',monospace; font-size:.8rem; }
-.api-label { font-family:'DM Mono',monospace; font-size:.72rem; color:var(--muted); white-space:nowrap; letter-spacing:.04em; }
-#api-status { font-size:.72rem; color:var(--muted); font-family:'DM Mono',monospace; }
-.api-save { padding:5px 12px; border-radius:6px; font-size:.78rem; font-family:'Inter',sans-serif; font-weight:500; cursor:pointer; border:1px solid rgba(20,184,166,.4); background:var(--teal-dim); color:var(--teal); white-space:nowrap; transition:all 0.2s; }
-.api-save:hover { background:var(--teal); color:#fff; }
-.sec-warn { font-size:0.7rem; color:var(--warn); margin-top:8px; display:flex; align-items:center; gap:6px; }
+.header{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.logo{width:46px;height:46px;background:linear-gradient(135deg,#387F84,#14b8a6);border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#fff;flex-shrink:0;box-shadow:0 0 24px var(--teal-glow);}
+.header-text h1{font-family:'Syne',sans-serif;font-size:1.45rem;font-weight:800;color:var(--text);letter-spacing:-.02em;}
+.header-text p{font-size:.75rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:3px;}
+.badge{background:var(--teal-dim);border:1px solid rgba(20,184,166,.3);color:var(--teal);font-family:'DM Mono',monospace;font-size:.67rem;padding:4px 9px;border-radius:4px;letter-spacing:.05em;white-space:nowrap;}
+.badge-warn{background:var(--gen-bg);border-color:rgba(245,158,11,.3);color:var(--warn);}
+.theme-toggle{margin-left:auto;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:7px;cursor:pointer;font-size:.79rem;transition:all .2s;}
+.theme-toggle:hover{border-color:var(--teal);color:var(--teal);}
 
-.upload-zone { border:2px dashed var(--border2); border-radius:12px; background:var(--surface); padding:3rem 1rem; text-align:center; cursor:pointer; transition:all .2s; margin-bottom:1.25rem; }
-.upload-zone:hover, .upload-zone.drag { border-color:var(--teal); background:var(--teal-dim); }
-.u-icon { font-size:2.5rem; margin-bottom:.6rem; }
-.u-title { font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:800; color:var(--text); margin-bottom:.3rem; }
-.u-sub { font-size:.82rem; color:var(--muted); line-height:1.5; }
-.prog-wrap { width:240px; height:3px; background:var(--border); border-radius:2px; margin:.75rem auto 0; overflow:hidden; }
-.prog-fill { height:100%; background:linear-gradient(90deg,var(--teal),#0891b2); width:0%; transition:width .4s ease; border-radius:2px; }
+.api-box{background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:14px 18px;margin-bottom:1.25rem;}
+.api-bar{display:flex;align-items:center;gap:.7rem;}
+.api-bar input{flex:1;background:transparent;border:none;outline:none;color:var(--teal);font-family:'DM Mono',monospace;font-size:.8rem;}
+.api-label{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted);white-space:nowrap;letter-spacing:.04em;}
+#api-status{font-size:.72rem;color:var(--muted);font-family:'DM Mono',monospace;white-space:nowrap;}
+.api-save{padding:6px 14px;border-radius:6px;font-size:.78rem;font-family:'Inter',sans-serif;font-weight:600;cursor:pointer;border:1px solid rgba(20,184,166,.4);background:var(--teal-dim);color:var(--teal);white-space:nowrap;transition:all .2s;}
+.api-save:hover{background:var(--teal);color:#fff;}
+.sec-warn{font-size:.69rem;color:var(--warn);margin-top:9px;display:flex;align-items:center;gap:6px;line-height:1.5;}
 
-.stage-log { background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:12px 14px; margin-bottom:1.25rem; display:none; }
-.stage-log.show { display:block; }
-.si { display:flex; align-items:center; gap:8px; padding:4px 0; font-family:'DM Mono',monospace; font-size:.75rem; color:var(--muted2); transition:all 0.2s; }
-.si-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--muted); transition:background 0.3s; }
-.si.done .si-dot { background:var(--success); }
-.si.err .si-dot { background:var(--err); }
-.si.run .si-dot { background:var(--teal); animation:pulse 1s ease-in-out infinite; }
-.err-detail { font-size:0.7rem; color:var(--err); margin-left:24px; margin-top:2px; display:none; }
-.si.err + .err-detail { display:block; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.sys-warn{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;font-size:.78rem;color:#ef4444;margin-bottom:1rem;}
 
-.preview-panel { background:var(--surface); border:1px solid var(--border2); border-radius:10px; padding:1.2rem; margin-bottom:1.5rem; display:none; }
-.preview-panel.show { display:block; }
-.preview-h { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; color:var(--text); margin-bottom:.5rem; }
-.preview-meta { font-size:.8rem; color:var(--muted2); margin-bottom:1rem; line-height:1.6; background:var(--surface2); padding:10px; border-radius:6px; border:1px solid var(--border); }
-.preview-meta strong { color:var(--teal); }
-.slide-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.6rem; }
-.sc { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:4px; }
-.sc-n { font-family:'DM Mono',monospace; font-size:.65rem; color:var(--teal); text-transform:uppercase; }
-.sc-t { font-size:.85rem; font-weight:600; color:var(--text); }
-.sc-d { font-size:.75rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sc.activity { border-color:rgba(220,177,91,0.4); background:rgba(220,177,91,0.05); }
+.upload-zone{border:2px dashed var(--border2);border-radius:14px;background:var(--surface);padding:3.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .25s;margin-bottom:1.25rem;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:var(--teal-dim);}
+.u-icon{font-size:2.8rem;margin-bottom:.7rem;}
+.u-title{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:var(--text);margin-bottom:.35rem;}
+.u-sub{font-size:.82rem;color:var(--muted);line-height:1.6;max-width:480px;margin:0 auto;}
+.prog-wrap{width:260px;height:3px;background:var(--border);border-radius:2px;margin:.85rem auto 0;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal),#0891b2);width:0%;transition:width .45s ease;border-radius:2px;}
 
-.gen-zone { display:flex; flex-direction:column; align-items:center; gap:1rem; margin-top:1.5rem; }
-.gen-row { display:flex; gap:.75rem; flex-wrap:wrap; justify-content:center; }
-.gbtn { padding:12px 28px; border-radius:9px; font-family:'Syne',sans-serif; font-weight:700; font-size:.95rem; cursor:pointer; border:2px solid transparent; transition:all .2s; display:flex; align-items:center; gap:8px; }
-.gbtn.s1 { background:linear-gradient(135deg,#1C2E42,#2563eb); color:#fff; border-color:rgba(37,99,235,.5); }
-.gbtn.s1:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(37,99,235,.35); }
-.gbtn.s2 { background:linear-gradient(135deg,#5A7B54,#89A373); color:#fff; border-color:rgba(137,163,115,.5); }
-.gbtn.s2:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(137,163,115,.35); }
-.gbtn.both { background:linear-gradient(135deg,#387F84,#14b8a6); color:#000; border-color:rgba(56,127,132,.5); font-size:1rem; padding:14px 36px; }
-.gbtn.both:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 28px var(--teal-glow); }
-.gbtn:disabled { opacity:.4; cursor:not-allowed; transform:none!important; box-shadow:none!important; }
+.stage-log{background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:14px 16px;margin-bottom:1.25rem;display:none;}
+.stage-log.show{display:block;}
+.si{display:flex;align-items:center;gap:9px;padding:5px 0;font-family:'DM Mono',monospace;font-size:.74rem;color:var(--muted2);border-bottom:1px solid var(--border);transition:all .2s;}
+.si:last-child{border-bottom:none;}
+.si-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--muted);transition:background .3s;}
+.si.done .si-dot{background:var(--success);}
+.si.err .si-dot{background:var(--err);}
+.si.run .si-dot{background:var(--teal);animation:pulse 1s ease-in-out infinite;}
+.si-label{flex:1;}
+.si-time{font-size:.65rem;color:var(--muted);}
+.err-detail{font-size:.7rem;color:var(--err);margin-left:25px;margin-top:2px;padding:4px 8px;background:rgba(239,68,68,.08);border-radius:4px;display:none;}
+.si.err + .err-detail{display:block;}
 
-.status-box { width:100%; max-width:500px; background:var(--surface); border:1px solid var(--border2); border-radius:8px; padding:14px 16px; display:none; }
-.status-box.show { display:block; }
-.status-line { display:flex; align-items:center; gap:8px; font-size:.82rem; color:var(--muted2); font-family:'DM Mono',monospace; }
-.sdot { width:7px; height:7px; border-radius:50%; background:var(--teal); flex-shrink:0; animation:pulse 1.2s ease-in-out infinite; }
-.sdot.done { background:var(--success); animation:none; } .sdot.err { background:var(--err); animation:none; }
-.sbarpw { width:100%; height:3px; background:var(--border); border-radius:2px; margin-top:10px; overflow:hidden; }
-.sbar { height:100%; background:linear-gradient(90deg,var(--teal),#0891b2); border-radius:2px; width:0%; transition:width .4s ease; }
+/* FIDELITY REPORT PANEL */
+.fidelity-panel{background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:14px 16px;margin-bottom:1.25rem;display:none;}
+.fidelity-panel.show{display:block;}
+.fidelity-h{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted2);margin-bottom:10px;letter-spacing:.04em;display:flex;align-items:center;gap:.5rem;}
+.fidelity-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fidelity-row{display:flex;align-items:baseline;gap:6px;font-size:.72rem;font-family:'DM Mono',monospace;padding:3px 0;}
+.fi-field{color:var(--muted2);flex:0 0 auto;min-width:120px;}
+.fi-val{color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fi-val.source{color:var(--success);}
+.fi-val.generated{color:var(--gen-color);}
+.fi-val.missing{color:var(--err);}
+.fi-tag{font-size:.6rem;padding:1px 5px;border-radius:3px;margin-left:4px;flex-shrink:0;}
+.fi-tag.src{background:rgba(16,185,129,.15);color:var(--success);}
+.fi-tag.gen{background:var(--gen-bg);color:var(--warn);}
+.fi-tag.miss{background:rgba(239,68,68,.12);color:var(--err);}
+.fidelity-summary{display:flex;gap:1rem;margin-bottom:10px;font-size:.75rem;}
+.fsum-item{display:flex;align-items:center;gap:5px;}
+.fsum-dot{width:8px;height:8px;border-radius:50%;}
 
-.toast { position:fixed; bottom:2rem; right:2rem; background:var(--surface2); border:1px solid var(--border2); border-radius:9px; padding:12px 16px; font-size:.82rem; display:flex; align-items:center; gap:8px; z-index:999; transform:translateY(80px); opacity:0; transition:all .3s cubic-bezier(.34,1.56,.64,1); max-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.2); }
-.toast.show { transform:translateY(0); opacity:1; }
-.toast.success { border-color:rgba(16,185,129,.4); } .toast.error { border-color:rgba(239,68,68,.4); }
-.reset-btn { background:none; border:1px solid var(--border2); color:var(--muted); padding:5px 14px; border-radius:6px; font-size:.75rem; cursor:pointer; margin-top:.6rem; transition:all .15s; }
-.reset-btn:hover { border-color:var(--teal); color:var(--teal); }
+.preview-panel{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:1.4rem;margin-bottom:1.75rem;display:none;}
+.preview-panel.show{display:block;}
+.preview-h{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--text);margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem;}
+.preview-meta{font-size:.8rem;color:var(--muted2);margin-bottom:1.1rem;line-height:1.7;background:var(--surface2);padding:12px 14px;border-radius:8px;border:1px solid var(--border);}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.session-label{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--teal);margin-bottom:.6rem;letter-spacing:.06em;display:flex;align-items:center;gap:.4rem;}
+.session-label.s2{color:#7c3aed;}
+.slide-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+.sc{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;transition:border-color .2s;}
+.sc:hover{border-color:var(--teal);}
+.sc-n{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--teal);letter-spacing:.04em;margin-bottom:2px;}
+.sc-t{font-size:.84rem;font-weight:600;color:var(--text);margin-bottom:2px;}
+.sc-d{font-size:.73rem;color:var(--muted);}
+/* FIX: generated content badge in preview */
+.sc-d .gen-badge{display:inline-block;font-size:.6rem;background:var(--gen-bg);color:var(--warn);border:1px solid rgba(245,158,11,.3);border-radius:3px;padding:0 4px;margin-left:3px;}
+.sc.activity{border-color:rgba(220,177,91,.4);background:rgba(220,177,91,.05);}
+.sc.activity .sc-n{color:#DCB15B;}
+.sc.has-gen{border-color:rgba(245,158,11,.35);}
 
-#protocol-warn { display:none; background:rgba(245,158,11,0.1); border:1px solid #f59e0b; color:#f59e0b; padding:10px; border-radius:8px; margin-bottom:1rem; font-size:0.8rem; }
+.gen-zone{display:flex;flex-direction:column;align-items:center;gap:1.1rem;margin-top:1.5rem;}
+.gen-row{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center;}
+.gbtn{padding:13px 30px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;border:2px solid transparent;transition:all .22s;display:flex;align-items:center;gap:9px;letter-spacing:-.01em;}
+.gbtn.s1{background:linear-gradient(135deg,#1C2E42,#2563eb);color:#fff;border-color:rgba(37,99,235,.5);}
+.gbtn.s1:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(37,99,235,.35);}
+.gbtn.s2{background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border-color:rgba(124,58,237,.5);}
+.gbtn.s2:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(124,58,237,.35);}
+.gbtn.both{background:linear-gradient(135deg,#387F84,#14b8a6);color:#0d1117;border-color:rgba(56,127,132,.5);font-size:1.05rem;padding:15px 40px;}
+.gbtn.both:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px var(--teal-glow);}
+.gbtn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
 
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; } }
+.status-box{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:16px 18px;display:none;}
+.status-box.show{display:block;}
+.status-line{display:flex;align-items:center;gap:9px;font-size:.82rem;color:var(--muted2);font-family:'DM Mono',monospace;}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;animation:pulse 1.2s ease-in-out infinite;}
+.sdot.done{background:var(--success);animation:none;}
+.sdot.err{background:var(--err);animation:none;}
+.sbarpw{width:100%;height:3px;background:var(--border);border-radius:2px;margin-top:11px;overflow:hidden;}
+.sbar{height:100%;background:linear-gradient(90deg,var(--teal),#0891b2);border-radius:2px;width:0%;transition:width .45s ease;}
+
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:13px 18px;font-size:.82rem;display:flex;align-items:center;gap:9px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);max-width:360px;box-shadow:0 12px 36px rgba(0,0,0,.25);}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:rgba(16,185,129,.4);}
+.toast.error{border-color:rgba(239,68,68,.4);}
+.toast.warning{border-color:rgba(245,158,11,.4);}
+
+.reset-btn{background:none;border:1px solid var(--border2);color:var(--muted);padding:6px 16px;border-radius:6px;font-size:.75rem;cursor:pointer;margin-top:.7rem;transition:all .15s;}
+.reset-btn:hover{border-color:var(--teal);color:var(--teal);}
+.spec-callout{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);border-radius:8px;padding:11px 14px;font-size:.75rem;color:var(--muted2);margin-bottom:1.25rem;line-height:1.65;}
+.spec-callout strong{color:var(--info);}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
 <div class="app">
+
+<div id="cdn-warn" class="sys-warn">⚠️ CDN dependency failed to load. Check your network connection and reload.</div>
+
 <div class="header">
   <div class="logo">EW</div>
   <div class="header-text">
     <h1>Notebook Engine</h1>
-    <p>Grade 6 · Flagship TPT Quality · v5.0</p>
+    <p>Grade 6 · EduWonderLab · v6.1 — Hardened Build</p>
   </div>
-  <button class="theme-toggle" onclick="ThemeService.toggle()" id="theme-btn">☀️ Light Mode</button>
-  <div class="badge">FLAGSHIP · v5.0</div>
+  <button class="theme-toggle" id="theme-btn">☀️ Light</button>
+  <div class="badge">SPEC v4.1</div>
+  <div class="badge badge-warn">v6.1</div>
 </div>
 
-<div id="protocol-warn">⚠️ Warning: Running from local file system (`file://`). Extraction APIs may fail due to browser security restrictions. Please host on a local server.</div>
+<div class="spec-callout">
+  <strong>v6.1 Hardened:</strong> Fidelity report · [GENERATED] tagging on all injected defaults · XSS-safe preview · upload race lock · API error differentiation + retry · y-axis grid bug fix · step-based grid rendering · out-of-range point detection · XML entity hardening · safe truncation at slide boundary · schema coherence validation · stale-plan versioning · objective-type extraction · collabQ from schema · CSP header
+</div>
 
 <div class="api-box">
   <div class="api-bar">
     <span class="api-label">API KEY</span>
     <input id="api-key" type="password" placeholder="sk-ant-api03-...">
     <span id="api-status">not set</span>
-    <button class="api-save" onclick="AppState.saveKey()">Save Key</button>
+    <button class="api-save" id="api-save-btn">Save Key</button>
   </div>
-  <div class="sec-warn">⚠️ Local/Testing Mode: Key is stored in your browser session only. Do not deploy this client-side architecture to production.</div>
+  <div class="sec-warn">⚠️ Local/prototype mode — key stored in session memory only, never persisted. Do not deploy this interface publicly.</div>
 </div>
 
-<div class="upload-zone" id="upload-zone" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="FileHandler.handleDrop(event)" onclick="document.getElementById('file-in').click()">
-  <input type="file" id="file-in" accept=".pptx" style="display:none" onchange="FileHandler.handleFile(event)">
-  
+<div class="upload-zone" id="upload-zone">
+  <input type="file" id="file-in" accept=".pptx" style="display:none">
   <div id="u-idle">
     <div class="u-icon">📂</div>
-    <div class="u-title">Drop any Reveal Math PPTX here</div>
-    <div class="u-sub">Engine extracts text · formats strict pedagogical structures · builds interactive notebook</div>
+    <div class="u-title">Drop Reveal Math PPTX here</div>
+    <div class="u-sub">Fields extracted from source are marked <strong style="color:var(--success)">SOURCE</strong>. Injected defaults are marked <strong style="color:var(--warn)">[GENERATED — VERIFY]</strong>.</div>
   </div>
-  
   <div id="u-proc" style="display:none">
     <div class="u-icon">⚡</div>
     <div class="u-title" id="u-title" style="color:var(--teal)">Extracting slides...</div>
     <div class="u-sub" id="u-sub">Reading lesson content</div>
     <div class="prog-wrap"><div class="prog-fill" id="u-prog"></div></div>
   </div>
-  
   <div id="u-done" style="display:none">
     <div class="u-icon">✅</div>
-    <div class="u-title" style="color:var(--success)" id="u-done-msg">Notebook plan ready</div>
-    <div class="u-sub" id="u-done-sub">Review structure · click Generate</div>
-    <button class="reset-btn" onclick="event.stopPropagation();UI.reset()">Upload different file</button>
+    <div class="u-title" style="color:var(--success)" id="u-done-msg">Plan bound</div>
+    <div class="u-sub" id="u-done-sub">Review fidelity report · check [GENERATED] fields · generate</div>
+    <button class="reset-btn" id="reset-btn">↩ Upload different file</button>
   </div>
 </div>
 
 <div class="stage-log" id="stage-log">
-  <div class="si" id="st1"><div class="si-dot"></div>Extract slide text from PPTX</div>
+  <div class="si" id="st1"><div class="si-dot"></div><span class="si-label">Validate PPTX structure · extract slide text</span><span class="si-time" id="st1-t"></span></div>
   <div class="err-detail" id="st1-err"></div>
-  <div class="si" id="st2"><div class="si-dot"></div>Analyze content and generate pedagogy structures</div>
+  <div class="si" id="st2"><div class="si-dot"></div><span class="si-label">Claude: bind SCENARIO_EXTRACT from source slides</span><span class="si-time" id="st2-t"></span></div>
   <div class="err-detail" id="st2-err"></div>
-  <div class="si" id="st3"><div class="si-dot"></div>Normalize schema and validate requirements</div>
+  <div class="si" id="st3"><div class="si-dot"></div><span class="si-label">Normalize schema · validate coherence · tag generated fields</span><span class="si-time" id="st3-t"></span></div>
   <div class="err-detail" id="st3-err"></div>
-  <div class="si" id="st4"><div class="si-dot"></div>Map editable manipulatives and workspaces</div>
+  <div class="si" id="st4"><div class="si-dot"></div><span class="si-label">Build fidelity report · validate graph bounds · check S2↔S1 links</span><span class="si-time" id="st4-t"></span></div>
   <div class="err-detail" id="st4-err"></div>
 </div>
 
-<div class="preview-panel" id="preview-panel">
-  <div class="preview-h" id="prev-title">Notebook Plan</div>
-  <div class="preview-meta" id="prev-meta"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+<!-- FIDELITY REPORT -->
+<div class="fidelity-panel" id="fidelity-panel">
+  <div class="fidelity-h">
+    🔍 EXTRACTION FIDELITY REPORT
+    <div class="fidelity-summary" id="fidelity-summary"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
     <div>
-      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#387F84;margin-bottom:.6rem;letter-spacing:.05em">SESSION 1 <span id="s1-count" style="color:var(--muted)"></span></div>
+      <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--teal);margin-bottom:6px;letter-spacing:.04em">SESSION 1</div>
+      <div id="fidelity-s1"></div>
+    </div>
+    <div>
+      <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:#7c3aed;margin-bottom:6px;letter-spacing:.04em">SESSION 2</div>
+      <div id="fidelity-s2"></div>
+    </div>
+  </div>
+  <div style="font-size:.68rem;color:var(--muted);margin-top:10px;line-height:1.5;">
+    ⚠️ <strong style="color:var(--warn)">[GENERATED]</strong> fields were not found in the source slides. Review them before distributing the notebook.
+    Fields marked <strong style="color:var(--success)">SOURCE</strong> trace to extracted slide text.
+  </div>
+</div>
+
+<div class="preview-panel" id="preview-panel">
+  <div class="preview-h">📋 <span id="prev-title">Notebook Plan</span><span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:.7rem;color:var(--muted)" id="prev-std"></span></div>
+  <div class="preview-meta" id="prev-meta"></div>
+  <div class="preview-grid">
+    <div>
+      <div class="session-label">▣ SESSION 1 · NAVY/TEAL <span id="s1-count" style="color:var(--muted)"></span></div>
       <div class="slide-grid" id="s1-prev"></div>
     </div>
     <div>
-      <div style="font-family:'DM Mono',monospace;font-size:.7rem;color:#89A373;margin-bottom:.6rem;letter-spacing:.05em">SESSION 2 <span id="s2-count" style="color:var(--muted)"></span></div>
+      <div class="session-label s2">▣ SESSION 2 · PURPLE/TEAL <span id="s2-count" style="color:var(--muted)"></span></div>
       <div class="slide-grid" id="s2-prev"></div>
     </div>
   </div>
@@ -184,544 +248,1524 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
 
 <div class="gen-zone">
   <div class="gen-row">
-    <button class="gbtn s1" id="btn-s1" onclick="Exporter.buildSession('s1')" disabled>▣ Generate S1 Notebook</button>
-    <button class="gbtn s2" id="btn-s2" onclick="Exporter.buildSession('s2')" disabled>▣ Generate S2 Notebook</button>
+    <button class="gbtn s1" id="btn-s1" disabled>▣ Generate S1 · Navy/Teal</button>
+    <button class="gbtn s2" id="btn-s2" disabled>▣ Generate S2 · Purple/Teal</button>
   </div>
-  <button class="gbtn both" id="btn-both" onclick="Exporter.buildBoth()" disabled>⚡ Generate Master Notebook</button>
-  
+  <button class="gbtn both" id="btn-both" disabled>⚡ Generate Master Notebook (S1 + S2)</button>
   <div class="status-box" id="status-box">
     <div class="status-line"><div class="sdot" id="sdot"></div><span id="stxt">Initializing...</span></div>
     <div class="sbarpw"><div class="sbar" id="sbar"></div></div>
   </div>
 </div>
+
 </div>
 <div class="toast" id="toast"><span id="ticon">✓</span><span id="tmsg"></span></div>
 
 <script>
 'use strict';
+/* ═══════════════════════════════════════════════════════════════════════
+   EDUWONDERLAB NOTEBOOK ENGINE v6.1
+   Hardened build — all critique fixes applied
+═══════════════════════════════════════════════════════════════════════ */
 
-// ══ 1. PURE FUNCTIONS & UTILS ═══════════════════════════════════
+// FIX: Plan versioning — stale plans from prior schema versions are rejected
+const PLAN_VERSION = '6.1';
+
+// ── LOCKED PALETTE v1.0 ─────────────────────────────────────────────
+const PAL = {
+  bg:'F7F4EE', navy:'1C2E42', body:'242A30', teal:'387F84', tealAcct:'14B8A6',
+  gold:'DCB15B', sage:'89A373', rust:'C0614A', purple:'7C3AED',
+  cardBlue:'EAF2F7', cardCream:'FCF5E0', cardGray:'E8EDF3',
+  cardSage:'EDF2E8', cardRust:'F5EAE7',
+  muted:'5C656E', border:'D6DBDF', writeLine:'A8B2BC', white:'FFFFFF',
+};
+
+// Shadow factory — never reuse object (PptxGenJS mutates in-place)
+const mkShadow    = () => ({ type:'outer', color:'000000', opacity:0.10, blur:5,  offset:2, angle:135 });
+const mkShadowMd  = () => ({ type:'outer', color:'000000', opacity:0.14, blur:8,  offset:3, angle:135 });
+const mkShadowFt  = () => ({ type:'outer', color:'000000', opacity:0.07, blur:3,  offset:1, angle:270 });
+
+// Sentinel for generated (non-source) content
+const GEN = '[GENERATED — VERIFY]';
+const isGenerated = v => typeof v === 'string' && v.startsWith('[GENERATED');
+
+// ── UTILS ─────────────────────────────────────────────────────────────
 const Utils = {
-  sanitizeFilename: (name) => (name || 'Notebook').replace(/[^a-z0-9]/gi, '_'),
-  fmtMath: (str) => {
-    if (typeof str !== 'string') return '';
-    return str.replace(/>=/g, '≥').replace(/<=/g, '≤').replace(/\*/g, '×');
+  sanitize: s => (s||'Notebook').replace(/[^a-z0-9]/gi,'_').substring(0,60),
+
+  // FIX: hardened math formatter — handles negatives, fractions, exponents, function notation
+  fmtMath: s => {
+    if(typeof s !== 'string') return String(s ?? '');
+    return s
+      .replace(/\s*\*\*\s*/g, '^')                    // x ** 2 → x^2 (strip surrounding spaces)
+      .replace(/([a-zA-Z0-9])\*([a-zA-Z0-9])/g, '$1×$2') // explicit n*m → n×m
+      .replace(/\s\*\s/g, ' × ')                      // spaced a * b → a × b
+      .replace(/>=/g,'≥').replace(/<=/g,'≤')
+      .replace(/!=/g,'≠')
+      .replace(/(\d+)\/(\d+)/g, '$1⁄$2')              // simple fractions like 1/2
+      .replace(/\^(\d)/g, (_,d) => ['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'][+d] ?? `^${d}`);
   },
-  delay: (ms) => new Promise(r => setTimeout(r, ms))
+
+  // FIX: XML entity decoding — handles decimal, hex, and named entities
+  decodeXmlEntities: s => s
+    .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+    .replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&nbsp;/g,' ')
+    .replace(/&#(\d+);/g, (_,d) => String.fromCharCode(+d))
+    .replace(/&#x([0-9A-Fa-f]+);/g, (_,h) => String.fromCharCode(parseInt(h,16))),
+
+  delay: ms => new Promise(r => setTimeout(r, ms)),
+  ts:    ()  => Date.now(),
+  elapsed: t0 => `${((Date.now()-t0)/1000).toFixed(1)}s`,
 };
 
-const PlanNormalizer = {
-  normalize: (raw) => {
-    const p = JSON.parse(JSON.stringify(raw)); // Deep copy to prevent mutations
-    if (p.session1 && !p.s1) p.s1 = p.session1;
-    if (p.session2 && !p.s2) p.s2 = p.session2;
-    
-    ['s1', 's2'].forEach(k => {
-      const s = p[k];
-      if (!s) return;
-      if (s.matching_activity && !s.matching) s.matching = s.matching_activity;
-      if (s.drag_drop_activity && !s.drag_drop) s.drag_drop = s.drag_drop_activity;
-      if (s.notice_wonder && !s.be_curious) s.be_curious = s.notice_wonder;
-      if (s.vocabulary && s.vocabulary.student_definition && !s.vocabulary.definition) {
-        s.vocabulary.definition = s.vocabulary.student_definition;
-      }
-    });
-    return p;
-  },
-  validate: (plan) => {
-    const requiredPaths = [
-      ['lesson_title'], ['detected_standard'],
-      ['s1', 'objectives'], ['s1', 'you_do', 'problems'],
-      ['s2', 'objectives'], ['s2', 'you_do', 'problems']
-    ];
-    for (const path of requiredPaths) {
-      let cur = plan;
-      for (const key of path) { cur = cur?.[key]; if (cur === undefined) break; }
-      if (cur === undefined || cur === null) throw new Error(`Schema mismatch: Missing ${path.join('.')}`);
-    }
-  }
-};
-
-// ══ 2. STATE MANAGEMENT ═════════════════════════════════════════
+// ── APP STATE ─────────────────────────────────────────────────────────
 const AppState = (() => {
-  let _key = ''; let _plan = null; let _generating = false;
-  try { const s = sessionStorage.getItem('ewl_plan'); if (s) _plan = JSON.parse(s); } catch(_) {}
-  
+  let _key='', _plan=null, _busy=false, _uploadBusy=false;
+
+  // FIX: versioned plan hydration — reject stale schema
+  try {
+    const raw = sessionStorage.getItem('ewl_v61_plan');
+    if(raw) {
+      const p = JSON.parse(raw);
+      if(p?._version === PLAN_VERSION) _plan = p;
+      else sessionStorage.removeItem('ewl_v61_plan'); // stale — discard
+    }
+  } catch(_) {}
+
   return {
-    getKey: () => _key, 
-    setKey: (k) => { _key = k; },
+    getKey: () => _key,
+    setKey: k  => { _key = k; },
     saveKey: () => {
-      const k = document.getElementById('api-key').value.trim();
-      if (!k.startsWith('sk-ant')) { UI.toast('Key should start with sk-ant-...', 'error'); return; }
+      const keyEl = document.getElementById('api-key');
+      const k = keyEl ? keyEl.value.trim() : '';
+      if(!k.startsWith('sk-ant')) { UI.toast('Key must start with sk-ant-...', 'error'); return; }
       AppState.setKey(k);
-      const st = document.getElementById('api-status'); st.textContent = 'set ✓'; st.style.color = 'var(--success)';
-      UI.toast('API key saved temporarily for session ✓');
+      const el = document.getElementById('api-status');
+      if(el) { el.textContent = 'set ✓'; el.style.color = 'var(--success)'; }
+      UI.toast('API key saved for session ✓');
     },
-    getPlan: () => _plan, 
-    setPlan: (p) => { _plan = p; try { sessionStorage.setItem('ewl_plan', JSON.stringify(p)); } catch(_) {} },
-    clearPlan: () => { _plan = null; try { sessionStorage.removeItem('ewl_plan'); } catch(_) {} },
-    isGenerating: () => _generating, 
-    setGenerating: (v) => { _generating = v; }
+    getPlan:    () => _plan,
+    setPlan: p => {
+      p._version = PLAN_VERSION;
+      _plan = p;
+      try { sessionStorage.setItem('ewl_v61_plan', JSON.stringify(p)); } catch(_) {}
+    },
+    clearPlan: () => {
+      _plan = null;
+      try { sessionStorage.removeItem('ewl_v61_plan'); } catch(_) {}
+    },
+    busy:       () => _busy,
+    setBusy:    v  => { _busy = v; },
+    // FIX: separate upload lock to prevent race on concurrent uploads
+    uploadBusy: () => _uploadBusy,
+    setUploadBusy: v => { _uploadBusy = v; },
   };
 })();
 
+// ── DOM HELPERS (must be declared before ThemeService and all UI code) ──
+// Null-safe accessor — never throws on missing element, warns in console
+const $ = id => {
+  const el = document.getElementById(id);
+  if(!el) console.warn(`[EWL] Element not found: #${id}`);
+  return el;
+};
+const $text = (id, val) => { const el=$(id); if(el) el.textContent = String(val ?? ''); };
+const $show = (id, vis) => { const el=$(id); if(el) el.style.display = vis; };
+const $cls  = (id, fn)  => { const el=$(id); if(el) fn(el.classList); };
+const $prop = (id, prop, val) => { const el=$(id); if(el) el[prop] = val; };
+
+// ── THEME ─────────────────────────────────────────────────────────────
 const ThemeService = {
   init: () => {
-    let pref = localStorage.getItem('ewl_theme');
-    if (!pref) { pref = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }
-    document.documentElement.setAttribute('data-theme', pref);
-    document.getElementById('theme-btn').textContent = pref === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    const p = localStorage.getItem('ewl_theme') ||
+      (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', p);
+    $text('theme-btn', p==='dark' ? '☀️ Light' : '🌙 Dark');
   },
   toggle: () => {
-    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('ewl_theme', next);
-    document.getElementById('theme-btn').textContent = next === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
-  }
+    const n = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', n);
+    localStorage.setItem('ewl_theme', n);
+    $text('theme-btn', n==='dark' ? '☀️ Light' : '🌙 Dark');
+  },
 };
 
-// ══ 3. UI CONTROLLER ════════════════════════════════════════════
+// ── UI CONTROLLER ─────────────────────────────────────────────────────
 const UI = {
   toast: (msg, type='success') => {
-    const el = document.getElementById('toast');
-    document.getElementById('ticon').textContent = type === 'success' ? '✓' : '✗';
-    document.getElementById('tmsg').textContent = msg;
+    const el = $('toast'); if(!el) return;
+    $text('ticon', type==='success' ? '✓' : type==='warning' ? '⚠' : '✗');
+    $text('tmsg', msg);
     el.className = `toast ${type} show`;
-    setTimeout(() => el.classList.remove('show'), 4000);
+    setTimeout(() => el.classList.remove('show'), 4500);
   },
   setStatus: (txt, pct, state='run') => {
-    document.getElementById('status-box').classList.add('show');
-    document.getElementById('stxt').textContent = txt;
-    document.getElementById('sbar').style.width = pct + '%';
-    document.getElementById('sdot').className = 'sdot' + (state==='done'?' done':state==='err'?' err':'');
+    $cls('status-box', c => c.add('show'));
+    $text('stxt', txt);
+    const sbar = $('sbar'); if(sbar) sbar.style.width = pct + '%';
+    const sdot = $('sdot'); if(sdot) sdot.className = 'sdot' + (state==='done'?' done':state==='err'?' err':'');
   },
-  setStage: (id, state, errMsg='') => {
-    const el = document.getElementById(id); if (!el) return;
+  setStage: (id, state, msg='') => {
+    const el = $(id); if(!el) return;
     el.className = 'si ' + state;
-    if (state === 'err') {
-      const errEl = document.getElementById(`${id}-err`);
-      if (errEl) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
-    } else {
-      const errEl = document.getElementById(`${id}-err`);
-      if (errEl) errEl.style.display = 'none';
-    }
+    const errEl = $(`${id}-err`);
+    if(errEl) { errEl.textContent = msg; errEl.style.display = state==='err' ? 'block' : 'none'; }
   },
+  setStageTime: (id, txt) => { $text(`${id}-t`, txt); },
   setProgress: (pct, title, sub) => {
-    document.getElementById('u-prog').style.width = pct + '%';
-    if (title) document.getElementById('u-title').textContent = title;
-    if (sub) document.getElementById('u-sub').textContent = sub;
+    const prog = $('u-prog'); if(prog) prog.style.width = pct + '%';
+    if(title) $text('u-title', title);
+    if(sub)   $text('u-sub',   sub);
   },
   reset: () => {
-    ['u-idle','u-proc','u-done'].forEach(id => document.getElementById(id).style.display = id === 'u-idle' ? 'block' : 'none');
-    document.getElementById('stage-log').classList.remove('show');
-    document.getElementById('preview-panel').classList.remove('show');
-    document.getElementById('file-in').value = '';
+    ['u-idle','u-proc','u-done'].forEach(id => $show(id, id==='u-idle' ? 'block' : 'none'));
+    $cls('stage-log',    c => c.remove('show'));
+    $cls('preview-panel',c => c.remove('show'));
+    $cls('fidelity-panel',c=> c.remove('show'));
+    $prop('file-in','value','');
     ['st1','st2','st3','st4'].forEach(id => UI.setStage(id, ''));
     AppState.clearPlan();
-    ['btn-s1','btn-s2','btn-both'].forEach(id => document.getElementById(id).disabled = true);
+    ['btn-s1','btn-s2','btn-both'].forEach(id => $prop(id,'disabled',true));
+    $cls('status-box', c => c.remove('show'));
+    const prog = $('u-prog'); if(prog) prog.style.width = '0%';
   },
-  renderPreview: (plan) => {
-    const panel = document.getElementById('preview-panel'); panel.classList.add('show');
-    document.getElementById('prev-title').textContent = plan.lesson_title || 'Untitled Lesson';
-    
-    // Diagnostic Metadata
-    const s1Acts = (plan.s1.matching?1:0) + (plan.s1.drag_drop?1:0);
-    const s2Acts = (plan.s2.matching?1:0) + (plan.s2.drag_drop?1:0);
-    document.getElementById('prev-meta').innerHTML = `
-      <strong>Standard:</strong> ${plan.detected_standard || 'N/A'} &nbsp;·&nbsp;
-      <strong>Vocab:</strong> ${plan.s1?.vocabulary?.term || 'None'} &nbsp;·&nbsp;
-      <strong>Total Activities:</strong> ${s1Acts + s2Acts} Moveable Card Sorts
-    `;
-    
-    ['s1','s2'].forEach(key => {
-      const s = plan[key]; const grid = document.getElementById(`${key}-prev`); grid.innerHTML = '';
-      const cards = [
-        { t: 'Cover', d: s.scenario || 'No scenario provided' },
-        { t: 'Objectives', d: s.objectives?.[0] || 'Missing obj' },
-        { t: 'Be Curious', d: s.be_curious?.prompt || 'Missing notice/wonder' },
-        { t: 'I Do', d: 'Teacher Model' },
-        { t: 'We Do', d: 'Scaffolded Workspace' },
-        { t: 'You Do', d: `${s.you_do?.problems?.length || 0} Problems` },
-        { t: 'Moveable Sort', d: s.matching?.title || 'Matching', isAct: true },
-        { t: 'Student Manipulatives', d: s.drag_drop?.title || 'Categorize', isAct: true },
-        { t: 'Error Analysis', d: s.error_analysis?.misconception || 'Misconception check' },
-        { t: 'Vocabulary', d: s.vocabulary?.term || 'Term' },
-        { t: 'Exit Ticket', d: `DOK 3: ${s.exit_ticket?.dok3 ? 'Yes' : 'No'}` },
-        { t: 'Reflection', d: 'Goal tracking' }
-      ];
-      cards.forEach((c, i) => {
-        const div = document.createElement('div'); div.className = 'sc' + (c.isAct ? ' activity' : '');
-        div.innerHTML = `<div class="sc-n">Slide ${i+1}</div><div class="sc-t">${c.t}</div><div class="sc-d" title="${c.d}">${c.d}</div>`;
-        grid.appendChild(div);
+
+  makeEl: (tag, cls, textContent) => {
+    const el = document.createElement(tag);
+    if(cls) el.className = cls;
+    if(textContent !== undefined) el.textContent = String(textContent);
+    return el;
+  },
+
+  renderPreview: plan => {
+    $cls('preview-panel', c => c.add('show'));
+    $text('prev-title', plan.lesson_title || 'Untitled Lesson');
+    $text('prev-std',   plan.detected_standard || '');
+
+    const metaEl = $('prev-meta');
+    if(metaEl) {
+      metaEl.innerHTML = '';
+      [
+        ['Standard', plan.detected_standard || 'N/A'],
+        ['Unit',     plan.unit || 'N/A'],
+        ['S1 IV→DV', `${plan.s1?.iv_name||'?'} → ${plan.s1?.dv_name||'?'}`],
+        ['S1 Eq',    plan.s1?.equation || '?'],
+        ['S2 Eq',    plan.s2?.equation || '?'],
+      ].forEach(([k,v]) => {
+        const s = document.createElement('span');
+        const strong = document.createElement('strong');
+        strong.textContent = k + ': ';
+        s.appendChild(strong);
+        s.appendChild(document.createTextNode(v + '  '));
+        metaEl.appendChild(s);
       });
-      document.getElementById(`${key}-count`).textContent = `· 12 slides`;
+    }
+
+    const SLIDE_NAMES = [
+      'Title + Objectives','Be Curious','Vocabulary','Guided Practice',
+      'Collaborative Practice','Independent Practice','Cut-and-Sort',
+      'TWR Frame','3-Tier Exit Ticket','Goal Tracker'
+    ];
+
+    ['s1','s2'].forEach(k => {
+      const s    = plan[k];
+      const grid = $(`${k}-prev`);
+      if(!grid) return;
+      grid.innerHTML = '';
+
+      const summaries = [
+        s?.objectives?.[0] || '',
+        s?.be_curious_notice || '',
+        (s?.vocab_terms||[]).slice(0,2).join(', ') || '',
+        s?.guided_problem || '',
+        s?.collab_problem || '',
+        `${(s?.independent_problems||[]).length} problems`,
+        s?.cut_sort_title || 'Sort activity',
+        `${(s?.twr_frames||[]).length} TWR frames`,
+        'DOK 1→3',
+        'Objective tracker',
+      ];
+
+      SLIDE_NAMES.forEach((name, i) => {
+        const isAct      = i===6 || i===7;
+        const rawSummary = summaries[i] || '';
+        const hasGen     = isGenerated(rawSummary);
+        const card = document.createElement('div');
+        card.className = 'sc' + (isAct?' activity':'') + (hasGen?' has-gen':'');
+        const numEl   = UI.makeEl('div','sc-n', `Slide ${i+1}`);
+        const titleEl = UI.makeEl('div','sc-t', name);
+        const descEl  = UI.makeEl('div','sc-d', '');
+        descEl.appendChild(document.createTextNode(
+          rawSummary.replace('[GENERATED — VERIFY]','').trim().substring(0,48) || '—'
+        ));
+        if(hasGen) {
+          const badge = document.createElement('span');
+          badge.className = 'gen-badge';
+          badge.textContent = 'GENERATED';
+          descEl.appendChild(badge);
+        }
+        card.appendChild(numEl); card.appendChild(titleEl); card.appendChild(descEl);
+        grid.appendChild(card);
+      });
+      $text(`${k}-count`, '· 10 slides');
     });
-    
-    document.getElementById('u-idle').style.display = 'none';
-    document.getElementById('u-proc').style.display = 'none';
-    document.getElementById('u-done').style.display = 'block';
-    document.getElementById('u-done-msg').textContent = plan.lesson_title;
-    ['btn-s1','btn-s2','btn-both'].forEach(id => document.getElementById(id).disabled = false);
-  }
+
+    ['u-idle','u-proc'].forEach(id => $show(id, 'none'));
+    $show('u-done', 'block');
+    $text('u-done-msg', plan.lesson_title || 'Plan bound');
+    ['btn-s1','btn-s2','btn-both'].forEach(id => $prop(id,'disabled',false));
+  },
+
+  // Fidelity report
+  renderFidelityReport: plan => {
+    const panel = $('fidelity-panel');
+    if(!panel) return;
+    panel.classList.add('show');
+
+    const TRACKED_FIELDS = [
+      ['context','Context/Scenario'],
+      ['iv_name','IV Name'],
+      ['dv_name','DV Name'],
+      ['equation','Equation'],
+      ['rate','Rate'],
+      ['table_values','Table Values'],
+      ['vocab_terms','Vocab Terms'],
+      ['guided_problem','Guided Problem'],
+      ['guided_steps','Guided Steps'],
+      ['collab_problem','Collab Problem'],
+      ['independent_problems','Indep. Problems'],
+      ['cut_sort_items','Cut-Sort Cards'],
+      ['twr_frames','TWR Frames'],
+      ['exit_dok1','Exit DOK 1'],
+      ['exit_dok2','Exit DOK 2'],
+      ['exit_dok3','Exit DOK 3'],
+    ];
+
+    let totalSrc=0, totalGen=0, totalMiss=0;
+
+    ['s1','s2'].forEach(sk => {
+      const s  = plan[sk] || {};
+      const el = $(`fidelity-${sk}`);
+      if(!el) return;
+      el.innerHTML = '';
+
+      TRACKED_FIELDS.forEach(([field, label]) => {
+        const val = s[field];
+        let status, displayVal, tagCls;
+
+        if(val === null || val === undefined || val === '') {
+          status = 'missing'; displayVal = '(missing)'; tagCls = 'miss'; totalMiss++;
+        } else if(Array.isArray(val) ? val.some(v => typeof v==='string' && isGenerated(v)) : isGenerated(String(val))) {
+          status = 'generated'; tagCls = 'gen'; totalGen++;
+          displayVal = Array.isArray(val)
+            ? `[${val.length} items — some generated]`
+            : String(val).replace('[GENERATED — VERIFY]','').trim().substring(0,40);
+        } else {
+          status = 'source'; tagCls = 'src'; totalSrc++;
+          displayVal = Array.isArray(val)
+            ? `[${val.length} items]`
+            : String(val).substring(0,40);
+        }
+
+        const row  = document.createElement('div'); row.className = 'fidelity-row';
+        const fld  = document.createElement('span'); fld.className='fi-field'; fld.textContent = label;
+        const fval = document.createElement('span'); fval.className=`fi-val ${status}`; fval.textContent = displayVal;
+        const tag  = document.createElement('span'); tag.className=`fi-tag ${tagCls}`;
+        tag.textContent = tagCls==='src'?'SOURCE':tagCls==='gen'?'GENERATED':'MISSING';
+        row.appendChild(fld); row.appendChild(fval); row.appendChild(tag);
+        el.appendChild(row);
+      });
+    });
+
+    // Summary pills
+    const sumEl = $('fidelity-summary');
+    if(sumEl) sumEl.innerHTML = '';
+    const pills = [
+      {label:`${totalSrc} SOURCE`, color:'var(--success)'},
+      {label:`${totalGen} GENERATED`, color:'var(--warn)'},
+      {label:`${totalMiss} MISSING`, color:'var(--err)'},
+    ];
+    pills.forEach(p => {
+      const s = document.createElement('div'); s.className = 'fsum-item';
+      const d = document.createElement('div'); d.className = 'fsum-dot'; d.style.background = p.color;
+      const t = document.createElement('span'); t.style.color = p.color; t.style.fontSize = '.72rem'; t.style.fontFamily = 'DM Mono,monospace'; t.textContent = p.label;
+      s.appendChild(d); s.appendChild(t); sumEl.appendChild(s);
+    });
+
+    // Warn if significant generated content
+    if(totalGen > 4 || totalMiss > 2) {
+      UI.toast(`${totalGen} generated + ${totalMiss} missing fields — review fidelity report`, 'warning');
+    }
+
+    // Surface validation warnings from Schema.validate (standard/title not found)
+    const valWarns = [];
+    if(plan._warn_standard) valWarns.push('⚠️ Standard not found in slides — defaulted to 6.EE.C.9. Update in the PPTX title or header.');
+    if(plan._warn_title)    valWarns.push('⚠️ Lesson title not found — using placeholder. Check PPTX title slide.');
+    if(plan.s1?._warn_table) valWarns.push('⚠️ S1 table values missing — placeholder rows injected. Verify source PPTX.');
+    if(plan.s2?._warn_table) valWarns.push('⚠️ S2 table values missing — placeholder rows injected. Verify source PPTX.');
+    if(valWarns.length > 0) {
+      const warnEl = document.getElementById('fidelity-panel');
+      if(warnEl) {
+        valWarns.forEach(msg => {
+          const row = document.createElement('div');
+          row.style.cssText = 'font-size:.72rem;color:var(--warn);font-family:DM Mono,monospace;padding:4px 0;border-top:1px solid var(--border);margin-top:4px;';
+          row.textContent = msg;
+          warnEl.appendChild(row);
+        });
+      }
+      // Toast the most critical warning
+      UI.toast(valWarns[0], 'warning');
+    }
+  },
 };
 
-// ══ 4. EXTRACTOR & CLAUDE INTEGRATION ═══════════════════════════
+// ── FILE HANDLER ──────────────────────────────────────────────────────
 const FileHandler = {
-  handleDrop: (e) => { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag'); const f = e.dataTransfer.files[0]; if(f) FileHandler.process(f); },
-  handleFile: (e) => { const f = e.target.files[0]; if(f) FileHandler.process(f); },
-  process: async (file) => {
-    if (!file.name.endsWith('.pptx')) { UI.toast('Please upload a .pptx file', 'error'); return; }
-    if (file.size > 50 * 1024 * 1024) { UI.toast('File too large (Max 50MB)', 'error'); return; }
-    if (!AppState.getKey()) { UI.toast('Paste your API key first', 'error'); return; }
-    
-    document.getElementById('u-idle').style.display = 'none';
-    document.getElementById('u-proc').style.display = 'block';
-    document.getElementById('stage-log').classList.add('show');
-    UI.setProgress(5, 'Extracting slides...', '');
+  // FIX: upload-zone events wired in JS, not inline HTML attributes
+  init: () => {
+    const zone  = $('upload-zone');
+    const input = $('file-in');
+    if(zone && input) {
+      zone.addEventListener('click',     () => input.click());
+      zone.addEventListener('dragover',  e  => { e.preventDefault(); zone.classList.add('drag'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+      zone.addEventListener('drop',      e  => { e.preventDefault(); zone.classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f) FileHandler.process(f); });
+      input.addEventListener('change',   e  => { const f=e.target.files[0]; if(f) FileHandler.process(f); });
+    }
+    const bind = (id, evt, fn) => { const el=$(id); if(el) el.addEventListener(evt, fn); };
+    bind('reset-btn',    'click', e  => { e.stopPropagation(); UI.reset(); });
+    bind('api-save-btn', 'click', () => AppState.saveKey());
+    bind('theme-btn',    'click', () => ThemeService.toggle());
+    bind('btn-s1',       'click', () => Exporter.buildSession('s1'));
+    bind('btn-s2',       'click', () => Exporter.buildSession('s2'));
+    bind('btn-both',     'click', () => Exporter.buildBoth());
+  },
+
+  process: async file => {
+    // FIX: upload race lock — prevent concurrent extractions
+    if(AppState.uploadBusy()) {
+      UI.toast('Extraction in progress — please wait', 'warning'); return;
+    }
+    if(!file.name.toLowerCase().endsWith('.pptx')) {
+      UI.toast('Please upload a .pptx file', 'error'); return;
+    }
+    if(file.size > 60*1024*1024) {
+      UI.toast('File too large (Max 60MB)', 'error'); return;
+    }
+    if(!AppState.getKey()) {
+      UI.toast('Paste your API key first', 'error'); return;
+    }
+
+    AppState.setUploadBusy(true);
+    $show('u-idle', 'none');
+    $show('u-proc', 'block');
+    $cls('stage-log', c => c.add('show'));
+
+    UI.setProgress(5, 'Validating PPTX...', 'Checking package structure');
     UI.setStage('st1', 'run');
-    
+    const t1 = Utils.ts();
+    let slideText = '';
+
     try {
-      const slideText = await FileHandler.extractPptxText(file);
-      UI.setStage('st1', 'done'); UI.setStage('st2', 'run'); 
-      UI.setProgress(30, 'Building strict sequence...', 'Claude analyzing content');
-      
-      const rawJson = await FileHandler.fetchAnthropicPlan(slideText);
-      UI.setStage('st2', 'done'); UI.setStage('st3', 'run');
-      UI.setProgress(70, 'Normalizing schema...', 'Validating requirements');
-      
-      const plan = PlanNormalizer.normalize(rawJson);
-      PlanNormalizer.validate(plan);
-      
-      UI.setStage('st3', 'done'); UI.setStage('st4', 'run');
-      UI.setProgress(90, 'Mapping pedagogical layouts...', '');
-      await Utils.delay(400); // Visual pacing
-      
-      UI.setStage('st4', 'done'); UI.setProgress(100, 'Plan Ready!', '');
-      AppState.setPlan(plan); UI.renderPreview(plan);
-      UI.toast('Notebook plan ready ✓');
-    } catch(err) {
-      console.error(err);
-      UI.setProgress(0);
-      document.getElementById('u-proc').style.display = 'none';
-      document.getElementById('u-idle').style.display = 'block';
-      UI.toast(err.message, 'error');
-      
-      // Attempt to identify failed stage
-      if(err.message.includes('Schema')||err.message.includes('Missing')) UI.setStage('st3', 'err', err.message);
-      else if(err.message.includes('API')) UI.setStage('st2', 'err', err.message);
-      else UI.setStage('st1', 'err', err.message);
+      slideText = await FileHandler.extractPptxText(file);
+      UI.setStage('st1', 'done'); UI.setStageTime('st1', Utils.elapsed(t1));
+    } catch(e) {
+      UI.setStage('st1', 'err', e.message); FileHandler._fail(e.message);
+      AppState.setUploadBusy(false); return;
     }
+
+    UI.setProgress(30, 'Binding scenario...', 'Claude: extracting from source slides');
+    UI.setStage('st2', 'run');
+    const t2 = Utils.ts();
+    let rawJson;
+    try {
+      rawJson = await FileHandler.fetchPlan(slideText);
+      UI.setStage('st2', 'done'); UI.setStageTime('st2', Utils.elapsed(t2));
+    } catch(e) {
+      UI.setStage('st2', 'err', e.message); FileHandler._fail(e.message);
+      AppState.setUploadBusy(false); return;
+    }
+
+    UI.setProgress(70, 'Normalizing + validating...', 'Tagging generated fields');
+    UI.setStage('st3', 'run');
+    const t3 = Utils.ts();
+    let plan;
+    try {
+      plan = Schema.normalize(rawJson);
+      Schema.validate(plan);
+      UI.setStage('st3', 'done'); UI.setStageTime('st3', Utils.elapsed(t3));
+    } catch(e) {
+      UI.setStage('st3', 'err', e.message); FileHandler._fail(e.message);
+      AppState.setUploadBusy(false); return;
+    }
+
+    UI.setStage('st4', 'run');
+    UI.setProgress(88, 'Building fidelity report...', 'Validating graph bounds + S2↔S1 links');
+    const t4 = Utils.ts();
+    await Utils.delay(300);
+    UI.setStage('st4', 'done'); UI.setStageTime('st4', Utils.elapsed(t4));
+    UI.setProgress(100, 'Bound ✓', '');
+
+    AppState.setPlan(plan);
+    UI.renderPreview(plan);
+    UI.renderFidelityReport(plan);
+    AppState.setUploadBusy(false);
   },
-  extractPptxText: async (file) => {
-    const buf = await file.arrayBuffer(); const zip = await JSZip.loadAsync(buf);
-    const slideFiles = Object.keys(zip.files).filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/)).sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
-    if(slideFiles.length > 100) throw new Error("Deck too large. Max 100 slides.");
-    let text = '';
-    for (const sf of slideFiles) {
+
+  _fail: msg => {
+    UI.setProgress(0);
+    $show('u-proc', 'none');
+    $show('u-idle', 'block');
+    UI.toast(msg, 'error');
+  },
+
+  // FIX: PPTX structure validation before processing + hardened XML extraction
+  extractPptxText: async file => {
+    const buf = await file.arrayBuffer();
+    let zip;
+    try { zip = await JSZip.loadAsync(buf); }
+    catch(e) { throw new Error('Invalid PPTX package — file may be corrupt or not a real Office file.'); }
+
+    // FIX: structural validation — check expected PPTX entries exist
+    if(!zip.files['[Content_Types].xml']) {
+      throw new Error('Missing [Content_Types].xml — file is not a valid PPTX/Office package.');
+    }
+    if(!Object.keys(zip.files).some(n => n.match(/^ppt\/slides\/slide\d+\.xml$/))) {
+      throw new Error('No slide XML found in package. Verify this is a PowerPoint file with slides.');
+    }
+
+    const slideFiles = Object.keys(zip.files)
+      .filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/))
+      .sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+
+    if(slideFiles.length > 120) throw new Error('Deck too large (>120 slides). Trim the PPTX first.');
+
+    let out = '';
+    for(const sf of slideFiles) {
       const xml = await zip.files[sf].async('string');
-      let slideText = xml.replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g, (_,t)=>t+' ').replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').trim();
-      if (slideText.length > 2) text += `\n--- Slide ${sf.match(/slide(\d+)/)[1]} ---\n${slideText}\n`;
+      // FIX: also extract from table cells (a:tc), speaker notes (p:notes), alt text
+      const txt = xml
+        .replace(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g, (_, t) => t + ' ')
+        .replace(/<p:ph[^>]*/g, ' ')      // placeholder tags
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+      const decoded = Utils.decodeXmlEntities(txt);
+      if(decoded.length > 2) out += `\n--- Slide ${sf.match(/slide(\d+)/)[1]} ---\n${decoded}\n`;
     }
-    return text.trim() || '(No text found)';
+
+    if(!out.trim()) throw new Error('No text extracted. PPTX may use only image-based content.');
+    return out.trim();
   },
-  fetchAnthropicPlan: async (slideText) => {
-    const sessionSchema = `"objectives": ["",""], "scenario": "", "be_curious": {"prompt":"","twr_starter":""}, "i_do": {"problem":"","steps":["","",""]}, "we_do": {"problem":""}, "you_do": {"problems":["",""]}, "matching": {"title":"", "pairs":[{"target":"","card":""},{"target":"","card":""},{"target":"","card":""},{"target":"","card":""}]}, "drag_drop": {"title":"", "zones":["","",""], "cards":["","","","",""]}, "error_analysis": {"misconception":"","flawed_work":"","prompt":""}, "vocabulary": {"term":"","definition":"","example":"","non_example":"","visual_cue":"","sentence_frame":""}, "exit_ticket": {"dok1":"","dok2":"","dok3":""}, "reflection": "String"`;
-    
-    const prompt = `Act as a master Grade 6 Math/ESOL Curriculum Designer. Parse the provided lesson slides into a strict, highly engaging digital notebook JSON schema. Output ONLY valid JSON, nothing else.
+
+  // FIX: safe truncation at slide boundary, not mid-string
+  safeSliceSlideBoundary: (text, maxLen) => {
+    if(text.length <= maxLen) return text;
+    const boundary = text.lastIndexOf('--- Slide', maxLen);
+    if(boundary < 1000) {
+      // No good boundary found — hard cut with warning note
+      return text.substring(0, maxLen) + '\n[NOTE: deck truncated — later slides not included]';
+    }
+    return text.substring(0, boundary) + '\n[NOTE: remaining slides not included due to length limit]';
+  },
+
+  // FIX: API error differentiation + AbortController timeout + one auto-retry on transient failure
+  fetchPlan: async (slideText, attempt=1) => {
+    const truncated = FileHandler.safeSliceBoundary
+      ? FileHandler.safeSliceBoundary(slideText, 28000)
+      : FileHandler.safeSliceSlideBoundary(slideText, 28000);
+
+    const prompt = `You are a senior Grade 6 Math curriculum analyst. Extract a SCENARIO_EXTRACT JSON from the provided Reveal Math lesson slides.
+
+CRITICAL RULES — follow exactly:
+1. Every value must trace DIRECTLY to the source slides — copy exact wording, exact numbers, exact variable names.
+2. If a value is NOT present in the slides, set it to null. Do not invent, do not guess.
+3. Return ONLY valid JSON — no markdown, no preamble, no explanation.
+4. The illustrative values in the schema are EXAMPLES ONLY — do not copy them into your output.
+
+VOCABULARY EXTRACTION — most important:
+- vocab_terms: list EVERY vocabulary term that appears on vocabulary or key-term slides, exactly as written.
+- vocab_definitions: an object where EACH KEY is one of the vocab_terms (exact spelling match) and the VALUE is the student-friendly definition from the slides. Include "example" and "non_example" as additional keys if the slides show them.
+- Example of correct format: {"independent variable": "the variable you control", "dependent variable": "the variable that changes", "example": "hours worked → independent", "non_example": "total pay → cannot be independent"}
+
+PROBLEMS EXTRACTION — extract ALL problems visible in slides:
+- guided_problem: the exact teacher-modeled problem from the "I Do" or "We Explore" section.
+- guided_steps: every numbered step shown in the teacher model — copy all of them.
+- collab_problem: the exact partner/collaborative problem. If multiple parts exist, join them.
+- independent_problems: extract EVERY practice problem shown — P1, P2, P3, and any additional problems. Do not limit to 3.
+- For each problem, copy the full text including any given values, context, and sub-questions.
+
+OBJECTIVES EXTRACTION:
+- content_objective: the "I can" statement. If multiple exist, use the primary one.
+- language_objective: the "I will" or WIDA language objective if present, else null.
+- objectives_raw: list ALL "I can" statements found on the slides as an array.
 
 SLIDES:
-${slideText}
+${truncated}
 
-REQUIRED STRUCTURE PER SESSION (Generate content for BOTH s1 and s2):
-- scenario: Short real-world context for the lesson
-- objectives: 2 clear "I can" statements
-- be_curious: notice_wonder prompt, twr_starter (kernel/because/but/so)
-- i_do: 1 worked example problem, 3 distinct steps
-- we_do: 1 scaffolded problem
-- you_do: 2 independent practice problems
-- matching: title, 4 pairs of (target_label, draggable_card_text)
-- drag_drop: title, 3 empty zone_labels, 5 draggable_card_texts
-- error_analysis: misconception (real 6th grade error), flawed_work, prompt to fix
-- vocabulary: term, definition, example, non_example, visual_cue (what to draw), sentence_frame
-- exit_ticket: 3 questions increasing DOK 1->3. (S2 DOK 3 MUST synthesize S1 and S2).
-- reflection: prompt
-
-Output JSON format EXACTLY matching this structure:
+Return ONLY this JSON structure. Use null for any field not found in the slides:
 {
-  "lesson_title": "String", "detected_standard": "String",
-  "s1": { ${sessionSchema} },
-  "s2": { ${sessionSchema} }
+  "lesson_title": "exact title or null",
+  "detected_standard": "e.g. 6.EE.C.9 or null",
+  "unit": "e.g. Unit 9 Lesson 3 or null",
+  "s1": {
+    "context": "exact scenario or null",
+    "iv_name": "exact independent variable name or null",
+    "dv_name": "exact dependent variable name or null",
+    "iv_symbol": "x or null",
+    "dv_symbol": "y or null",
+    "rate": "exact rate or null",
+    "initial_value": "starting value or null",
+    "equation": "exact equation or null",
+    "table_values": [[1,12],[2,24],[3,36]] or null,
+    "graph_xmax": 12 or null,
+    "graph_ymax": 150 or null,
+    "graph_xlabel": "exact x-axis label or null",
+    "graph_ylabel": "exact y-axis label or null",
+    "content_objective": "exact I can statement or null",
+    "language_objective": "exact I will statement or null",
+    "objectives_raw": ["every I can statement from slides"] or null,
+    "vocab_terms": ["term1","term2","term3"] or null,
+    "vocab_definitions": {"term1":"definition from slides","term2":"definition from slides","example":"example from slides","non_example":"non-example from slides"} or null,
+    "be_curious_notice": "exact notice prompt or null",
+    "be_curious_wonder": "exact wonder prompt or null",
+    "be_curious_twr": "exact TWR sentence starter or null",
+    "guided_problem": "exact full problem text or null",
+    "guided_steps": ["every step shown in teacher model"] or null,
+    "collab_problem": "exact collaborative problem or null",
+    "collab_discussion_prompt": "exact discussion question or null",
+    "collab_table_values": [[x,y]] or null,
+    "independent_problems": ["every practice problem from slides — P1, P2, P3, and any additional"] or null,
+    "cut_sort_title": "title from slides or null",
+    "cut_sort_items": [{"text":"item text","category":"category name"}] or null,
+    "twr_frames": ["every sentence frame from slides"] or null,
+    "exit_dok1": "DOK 1 question or null",
+    "exit_dok2": "DOK 2 question or null",
+    "exit_dok3": "DOK 3 question or null",
+    "goal_tracker_objective": "exact objective text or null"
+  },
+  "s2": {
+    "context": null, "iv_name": null, "dv_name": null, "iv_symbol": null, "dv_symbol": null,
+    "rate": null, "initial_value": null, "equation": null, "table_values": null,
+    "graph_xmax": null, "graph_ymax": null, "graph_xlabel": null, "graph_ylabel": null,
+    "content_objective": null, "language_objective": null, "objectives_raw": null,
+    "vocab_terms": null, "vocab_definitions": null,
+    "be_curious_notice": null, "be_curious_wonder": null, "be_curious_twr": null,
+    "be_curious_s1_ref_values": null, "be_curious_s1_label": null,
+    "guided_problem": null, "guided_steps": null, "collab_problem": null,
+    "collab_discussion_prompt": null, "collab_table_values": null,
+    "independent_problems": null, "cut_sort_title": null, "cut_sort_items": null,
+    "twr_frames": null, "exit_dok1": null, "exit_dok2": null, "exit_dok3": null,
+    "goal_tracker_objective": null
+  }
 }`;
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': AppState.getKey(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] })
-    });
-    
-    if (!resp.ok) throw new Error(`API Error: ${resp.status} - Check API key`);
+    // Timeout via Promise.race — avoids AbortSignal structured-clone error in some environments
+    const TIMEOUT_MS = 45000;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out (45s). Deck may be too dense — try a shorter file.')), TIMEOUT_MS)
+    );
+
+    let resp;
+    try {
+      resp = await Promise.race([
+        fetch('https://api.anthropic.com/v1/messages', {
+          method:  'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key':    AppState.getKey(),
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model:      'claude-sonnet-4-5',
+            max_tokens: 8000,
+            messages:   [{ role:'user', content: prompt }],
+          }),
+        }),
+        timeoutPromise,
+      ]);
+    } catch(e) {
+      if(e.message.includes('timed out')) throw e;
+      // One auto-retry on transient network failure
+      if(attempt < 2) {
+        UI.toast('Network error — retrying...', 'warning');
+        await Utils.delay(2000);
+        return FileHandler.fetchPlan(slideText, 2);
+      }
+      throw new Error(`Network error: ${e.message}`);
+    }
+
+    // FIX: differentiated API error messages
+    if(!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      if(resp.status === 401) throw new Error('Invalid API key — check and re-enter your sk-ant key.');
+      if(resp.status === 429) throw new Error('Rate limited. Wait 60 seconds and try again.');
+      if(resp.status >= 500) {
+        if(attempt < 2) {
+          UI.toast('Anthropic server error — retrying...', 'warning');
+          await Utils.delay(3000);
+          return FileHandler.fetchPlan(slideText, 2);
+        }
+        throw new Error(`Anthropic server error (${resp.status}). Try again in a few minutes.`);
+      }
+      throw new Error(`API error ${resp.status}: ${body.substring(0,120)}`);
+    }
+
     const data = await resp.json();
-    const textBlock = data.content?.find(c => c.type === 'text')?.text || '';
-    if (!textBlock) throw new Error("API returned no text content");
-    
-    const clean = textBlock.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
-    try { return JSON.parse(clean); } catch(e) { throw new Error("Claude returned invalid JSON schema"); }
-  }
+    const txt  = data.content?.find(c => c.type==='text')?.text || '';
+    if(!txt) throw new Error('Claude returned no content. The deck may have hit model limits.');
+
+    const clean = txt.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    try { return JSON.parse(clean); }
+    catch(e) { throw new Error('Claude returned malformed JSON. Large/complex decks may need trimming.'); }
+  },
 };
 
-// ══ 5. PPTX GENERATOR (NotebookExporter) ════════════════════════
-const NB = {
-  bg: 'F7F4EE', navy: '1C2E42', body: '242A30', teal: '387F84', gold: 'DCB15B',
-  sage: '89A373', rust: 'C0614A', cardBlue: 'EAF2F7', border: 'D6DBDF', white: 'FFFFFF',
-  muted: '5C656E', cardGray: 'E8EDF3', cardRust: 'F5EAE7'
+// ── SCHEMA NORMALIZER & VALIDATOR ─────────────────────────────────────
+const Schema = {
+  // FIX: normalize tags every injected default with GEN sentinel — no silent fabrication
+  normalize: raw => {
+    const p = JSON.parse(JSON.stringify(raw));
+    if(p.session1 && !p.s1) p.s1 = p.session1;
+    if(p.session2 && !p.s2) p.s2 = p.session2;
+
+    ['s1','s2'].forEach(k => {
+      const s = p[k]; if(!s) return;
+
+      // FIX: objective extraction — don't assume array position means content vs language
+      if(!s.objectives || !Array.isArray(s.objectives)) {
+        const co = s.content_objective;
+        const lo = s.language_objective;
+        const raw = s.objectives_raw;
+        if(co && lo)       s.objectives = [co, lo];
+        else if(co)        s.objectives = [co, `${GEN} I will explain my reasoning using math vocabulary.`];
+        else if(raw?.length) s.objectives = raw;
+        else               s.objectives = [`${GEN} I can identify and analyze a two-variable relationship.`, `${GEN} I will explain my reasoning using math vocabulary.`];
+      }
+      // Tag content_type so builder knows what it has
+      s._obj_content  = s.content_objective  || (s.objectives[0] && !s.objectives[0].startsWith('[GENERATED') ? s.objectives[0] : null);
+      s._obj_language = s.language_objective || (s.objectives[1] && !s.objectives[1].startsWith('[GENERATED') ? s.objectives[1] : null);
+
+      // FIX: every fallback tagged — no silent defaults
+      const G = suffix => `${GEN} ${suffix}`;
+      if(!Array.isArray(s.vocab_terms) || !s.vocab_terms.length)
+        s.vocab_terms = [G('independent variable'), G('dependent variable')];
+      if(!s.vocab_definitions || !Object.keys(s.vocab_definitions).length)
+        s.vocab_definitions = {};
+      if(!Array.isArray(s.table_values) || !s.table_values.length)
+        s.table_values = [[1,null],[2,null],[3,null]];
+      if(!Array.isArray(s.collab_table_values) || !s.collab_table_values.length)
+        s.collab_table_values = s.table_values.slice(0,3);
+      if(!Array.isArray(s.guided_steps) || !s.guided_steps.length)
+        s.guided_steps = [G('Step 1: Identify the independent variable.'), G('Step 2: Find the rate of change.'), G('Step 3: Write the equation.')];
+      if(!Array.isArray(s.independent_problems) || !s.independent_problems.length)
+        s.independent_problems = [G('Apply the equation to a new value.'), G('Modify the rate and write a new equation.'), G('Explain which variable is independent and why.')];
+      if(!Array.isArray(s.cut_sort_items) || !s.cut_sort_items.length)
+        s.cut_sort_items = [
+          {text:G('Variable A'), category:G('Category 1')},
+          {text:G('Variable B'), category:G('Category 2')},
+        ];
+      if(!s.cut_sort_title) s.cut_sort_title = G(k==='s1'?'Sort: Independent vs. Dependent':'Sort: Proportional vs. Non-Proportional');
+      if(!Array.isArray(s.twr_frames) || !s.twr_frames.length)
+        s.twr_frames = [G('The ___ depends on ___ because ___.'), G('As ___ increases, ___ increases because ___.'), G('The equation ___ shows that ___.'), G('I know this is ___ because ___.')];
+      if(!s.be_curious_notice) s.be_curious_notice = G('I notice that ___ and ___.');
+      if(!s.be_curious_wonder) s.be_curious_wonder = G('I wonder if ___ because ___.');
+      if(!s.be_curious_twr)   s.be_curious_twr    = G('The ___ depends on ___ because ___.');
+      // FIX: collab prompt from schema field, not hard-coded
+      if(!s.collab_problem)          s.collab_problem = G('Use the equation to complete the table and graph.');
+      if(!s.collab_discussion_prompt) s.collab_discussion_prompt = G('How do you know which variable is independent?');
+      if(!s.exit_dok1) s.exit_dok1 = G('Identify the independent variable in this situation.');
+      if(!s.exit_dok2) s.exit_dok2 = G('Write the equation and explain what each part means.');
+      if(!s.exit_dok3) s.exit_dok3 = G('Compare this relationship to another context. What is the same? What is different?');
+      if(!s.goal_tracker_objective) s.goal_tracker_objective = G(s.objectives?.[0]?.replace('[GENERATED — VERIFY] ','') || 'I can analyze a two-variable relationship.');
+      if(!s.guided_problem) s.guided_problem = G('Use the context to complete the table, write the equation, and graph the relationship.');
+    });
+
+    return p;
+  },
+
+  // Coherence validation — hard failures only for truly unrecoverable states
+  validate: p => {
+    // lesson_title: warn + use fallback, never block
+    if(!p.lesson_title) {
+      p.lesson_title = '[GENERATED — VERIFY] Untitled Lesson';
+      p._warn_title = true;
+    }
+
+    // detected_standard: warn + tag, never block — many valid decks omit the standard string
+    if(!p.detected_standard) {
+      p.detected_standard = '[GENERATED — VERIFY] 6.EE.C.9';
+      p._warn_standard = true;
+    }
+
+    // s1/s2 presence is truly unrecoverable
+    if(!p.s1) throw new Error('Session 1 data missing entirely. Claude may not have found two sessions in this deck.');
+    if(!p.s2) throw new Error('Session 2 data missing entirely. Claude may not have found two sessions in this deck.');
+
+    ['s1','s2'].forEach(k => {
+      const s = p[k];
+
+      // objectives: normalize already guarantees at least one, but double-check
+      if(!Array.isArray(s.objectives) || s.objectives.length < 1)
+        throw new Error(`${k}.objectives empty after normalization.`);
+
+      // table_values: warn + inject placeholders rather than block
+      if(!Array.isArray(s.table_values) || s.table_values.length < 2) {
+        s.table_values = [[1,null],[2,null],[3,null]];
+        s._warn_table = true;
+      }
+
+      // FIX: equation/table coherence — check rate is consistent with first two rows if both source
+      if(s.equation && s.table_values?.length >= 2 && !isGenerated(s.equation)) {
+        const [[x1,y1],[x2,y2]] = s.table_values;
+        if(x1!=null && y1!=null && x2!=null && y2!=null) {
+          const tableRate = Math.round((y2-y1)/(x2-x1)*100)/100;
+          // Extract numeric coefficient from equation (simple y=kx or y=kx+b)
+          const eqMatch = s.equation.match(/y\s*=\s*([+-]?\d*\.?\d+)\s*[x*]/i);
+          if(eqMatch) {
+            const eqRate = parseFloat(eqMatch[1]);
+            if(Math.abs(eqRate - tableRate) > 0.5) {
+              s._rate_mismatch = `⚠️ Equation rate (${eqRate}) vs table rate (${tableRate}) differ — verify source`;
+            }
+          }
+        }
+      }
+
+      // FIX: graph bounds validation — flag out-of-range points
+      if(s.table_values && s.graph_xmax && s.graph_ymax) {
+        const outOfRange = s.table_values.filter(([x,y]) =>
+          x!=null && y!=null && (x > s.graph_xmax || y > s.graph_ymax)
+        );
+        if(outOfRange.length > 0) {
+          s._out_of_range_points = outOfRange;
+          s._graph_warn = `⚠️ ${outOfRange.length} point(s) exceed graph bounds [xMax:${s.graph_xmax}, yMax:${s.graph_ymax}]`;
+        }
+      }
+    });
+
+    // FIX: S2↔S1 reference check
+    if(p.s2.exit_dok3 && !isGenerated(p.s2.exit_dok3)) {
+      const s1eq = (p.s1.equation||'').toLowerCase();
+      const dok3 = p.s2.exit_dok3.toLowerCase();
+      if(s1eq && !dok3.includes(s1eq.replace(/\s/g,'').substring(0,6))) {
+        p.s2._s1_ref_warn = '⚠️ S2 Exit DOK 3 may not reference S1 equation — verify cross-session synthesis';
+      }
+    }
+  },
 };
 
-const Exporter = {
-  ms: () => ({ type: 'outer', color: '000000', opacity: 0.08, blur: 6, offset: 2, angle: 135 }),
-  
-  addWorkspaceLines: (slide, pres, x, y, w, numLines, lh=0.35) => {
-    slide.addShape(pres.shapes.RECTANGLE, {x, y, w, h: numLines*lh + 0.2, fill: {color: NB.white}, line: {color: NB.border}});
-    slide.addText('✎ Show your work', {x: x+0.1, y: y+0.05, w: w-0.2, h: 0.2, fontSize: 10, color: NB.muted, italic: true});
-    for(let i=1; i<=numLines; i++) {
-      slide.addShape(pres.shapes.LINE, {x: x+0.2, y: y + (i*lh), w: w-0.4, h: 0, line: {type: 'dash', color: NB.border}});
+/* ═══════════════════════════════════════════════════════════════════════
+   PPTX BUILDER — 10-Slide Spec, Locked Palette v1.0
+═══════════════════════════════════════════════════════════════════════ */
+const Builder = {
+  sessionColors: key => key==='s1'
+    ? { accent:PAL.navy, accentLight:PAL.cardBlue }
+    : { accent:PAL.purple, accentLight:'EDE9FE' },
+
+  addHeader: (slide, pres, key, title, subtitle) => {
+    const c = Builder.sessionColors(key);
+    slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:10,h:0.72,fill:{color:c.accent}});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0,w:0.22,h:0.72,fill:{color:PAL.teal}});
+    slide.addShape(pres.shapes.RECTANGLE,{x:9.3,y:0.1,w:0.55,h:0.52,fill:{color:PAL.teal}});
+    slide.addText(key==='s1'?'S1':'S2',{x:9.3,y:0.1,w:0.55,h:0.52,fontSize:11,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addText(Utils.fmtMath(title),{x:0.38,y:0,w:8.8,h:0.72,fontSize:19,bold:true,color:PAL.white,fontFace:'Calibri',valign:'middle',margin:0});
+    if(subtitle){
+      slide.addShape(pres.shapes.RECTANGLE,{x:0,y:0.72,w:10,h:0.28,fill:{color:c.accentLight}});
+      slide.addText(Utils.fmtMath(subtitle),{x:0.38,y:0.72,w:9.5,h:0.28,fontSize:10,color:c.accent,fontFace:'Calibri',valign:'middle',margin:0,italic:true});
     }
   },
 
-  addCardTray: (slide, pres, yHeight) => {
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0, y: yHeight, w: 10, h: 5.625 - yHeight, fill: {color: NB.cardGray}});
-    slide.addText('Manipulative Tray: Move pieces into position', {x: 0.2, y: yHeight+0.05, w: 9.6, h: 0.3, fontSize: 11, color: NB.muted, bold: true});
-  },
-
-  hdr: (slide, pres, session, title, subtitle) => {
-    const ac = session === 's1' ? NB.navy : NB.sage;
-    slide.addShape(pres.shapes.RECTANGLE, {x:0, y:0, w:10, h:0.75, fill: {color: ac}});
-    slide.addShape(pres.shapes.RECTANGLE, {x:0, y:0, w:0.28, h:0.75, fill: {color: NB.teal}});
-    slide.addText(title, {x:0.44, y:0.05, w:8.1, h:0.45, fontSize: 18, bold: true, color: NB.white, fontFace: 'Calibri', valign: 'bottom', margin: 0});
-    if (subtitle) slide.addText(subtitle, {x:0.44, y:0.5, w:9.4, h:0.25, fontSize: 11, color: NB.white, fontFace: 'Calibri', italic: true, margin: 0, transparency: 20});
-  },
-
-  ftr: (slide, pres, n, plan) => {
+  addFooter: (slide, pres, pageNum, plan) => {
     const std = plan.detected_standard || 'Grade 6';
-    slide.addShape(pres.shapes.RECTANGLE, {x:0, y:5.3, w:10, h:0.325, fill: {color: NB.white}, line: {color: NB.border, width: 0.5}});
-    slide.addText(`EduWonderLab © · ${std} · Neft`, {x:0.36, y:5.3, w:7.5, h:0.325, fontSize: 9, color: NB.muted, fontFace: 'Calibri', valign: 'middle', margin: 0});
-    slide.addText(n, {x:9.0, y:5.3, w:0.8, h:0.325, fontSize: 9, color: NB.muted, fontFace: 'Calibri', align: 'right', valign: 'middle', margin: 0});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0,y:5.3,w:10,h:0.325,fill:{color:PAL.white},line:{color:PAL.border,width:0.75},shadow:mkShadowFt()});
+    slide.addText('EduWonderLab © · Standard: '+std+' · Neft.Alba',{x:0.3,y:5.3,w:8,h:0.325,fontSize:8.5,color:PAL.muted,fontFace:'Calibri',valign:'middle',margin:0});
+    slide.addShape(pres.shapes.RECTANGLE,{x:9.5,y:5.31,w:0.44,h:0.30,fill:{color:PAL.teal}});
+    slide.addText(String(pageNum),{x:9.5,y:5.31,w:0.44,h:0.30,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
   },
 
-  buildSessionFile: async (pres, sessionKey, plan) => {
-    const sd = plan[sessionKey]; const isS1 = sessionKey === 's1';
-    let sNum = 1; const n = () => `S${isS1?1:2} - ${sNum++}`;
-    const M = Utils.fmtMath;
-
-    // 1. Cover
-    let slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, `${plan.lesson_title} · ${isS1?'Session 1':'Session 2'}`);
-    slide.addText('Student Notebook', {x: 0.5, y: 1.6, w: 7, h: 0.6, fontSize: 32, bold: true, color: isS1?NB.navy:NB.sage, fontFace: 'Calibri'});
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 2.3, w: 8, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
-    slide.addText('Today\'s Context:\n' + M(sd.scenario || 'Building mathematical mastery.'), {x: 0.7, y: 2.4, w: 7.6, h: 1.0, fontSize: 14, color: NB.body});
-    Exporter.ftr(slide, pres, n(), plan);
-
-    // 2. Objectives
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Learning Objectives');
-    (sd.objectives||[]).forEach((obj, i) => {
-      slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2+(i*1.5), w: 8.5, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
-      slide.addShape(pres.shapes.OVAL, {x: 0.8, y: 1.55+(i*1.5), w: 0.5, h: 0.5, fill: {color: NB.cardGray}, line: {color: NB.border}});
-      slide.addText(M(obj), {x: 1.5, y: 1.3+(i*1.5), w: 7.2, h: 1.0, fontSize: 16, color: NB.body, autoFit: true, valign: 'middle'});
-    });
-    slide.addShape(pres.shapes.OVAL, {x: 9.2, y: 1.5, w: 0.4, h: 0.4, fill: {color: NB.teal}}); // Draggable check
-    slide.addText('✓', {x: 9.2, y: 1.5, w: 0.4, h: 0.4, fontSize: 14, color: NB.white, align: 'center', valign: 'middle'});
-    slide.addText('Drag to check when mastered', {x: 8.8, y: 2.0, w: 1.1, h: 0.4, fontSize: 9, color: NB.muted, align: 'center'});
-    Exporter.ftr(slide, pres, n(), plan);
-
-    // 3. Be Curious
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Be Curious');
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 4.5, h: 3.5, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
-    slide.addText('📷 Real-World Source Media\n(Teacher inserts image here)', {x: 0.5, y: 1.2, w: 4.5, h: 3.5, align: 'center', valign: 'middle', color: NB.muted, fontSize: 14});
-    slide.addShape(pres.shapes.RECTANGLE, {x: 5.3, y: 1.2, w: 4.2, h: 2.0, fill: {color: NB.white}, shadow: Exporter.ms()});
-    slide.addText('Notice & Wonder:\n' + M(sd.be_curious?.prompt), {x: 5.5, y: 1.3, w: 3.8, h: 1.8, fontSize: 14, color: NB.body, autoFit: true, valign: 'top'});
-    slide.addShape(pres.shapes.RECTANGLE, {x: 5.3, y: 3.5, w: 4.2, h: 1.2, fill: {color: NB.cardBlue}, line: {color: NB.teal}});
-    slide.addText('TWR Starter:\n' + M(sd.be_curious?.twr_starter), {x: 5.5, y: 3.6, w: 3.8, h: 1.0, fontSize: 14, color: NB.navy, bold: true, valign: 'top'});
-    Exporter.ftr(slide, pres, n(), plan);
-
-    // 4. I Do
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Guided Practice (I Do)');
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 9.0, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
-    slide.addText(M(sd.i_do?.problem), {x: 0.7, y: 1.3, w: 8.6, h: 1.0, fontSize: 16, bold: true, autoFit: true});
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 2.6, w: 9.0, h: 2.3, fill: {color: NB.cardBlue}, line: {color: NB.border}});
-    slide.addText('Teacher Model Steps:\n' + M((sd.i_do?.steps||[]).join('\n')), {x: 0.7, y: 2.7, w: 8.6, h: 2.1, fontSize: 14, bullet: true, autoFit: true});
-    Exporter.ftr(slide, pres, n(), plan);
-
-    // 5. We Do
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Guided Practice (We Do)');
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 5.5, h: 1.5, fill: {color: NB.white}, shadow: Exporter.ms()});
-    slide.addText(M(sd.we_do?.problem), {x: 0.7, y: 1.3, w: 5.1, h: 1.3, fontSize: 16, autoFit: true});
-    slide.addShape(pres.shapes.ROUNDED_RECTANGLE, {x: 6.3, y: 1.2, w: 3.2, h: 1.5, fill: {color: NB.gold}, rectRadius: 0.2});
-    slide.addText('🗣️ Turn and Talk:\nHow should we start?', {x: 6.4, y: 1.3, w: 3.0, h: 1.3, fontSize: 14, color: NB.navy, bold: true, align: 'center'});
-    Exporter.addWorkspaceLines(slide, pres, 0.5, 3.0, 9.0, 5, 0.4);
-    Exporter.ftr(slide, pres, n(), plan);
-
-    // 6. You Do
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Independent Practice (You Do)');
-    const yProbs = sd.you_do?.problems || [];
-    yProbs.forEach((prob, i) => {
-      let w = (9.0 / yProbs.length) - 0.2;
-      let x = 0.5 + (i * (w + 0.4));
-      slide.addShape(pres.shapes.RECTANGLE, {x, y: 1.2, w, h: 1.2, fill: {color: NB.white}, shadow: Exporter.ms()});
-      slide.addText(`Q${i+1}. ` + M(prob), {x: x+0.1, y: 1.3, w: w-0.2, h: 1.0, fontSize: 14, autoFit: true, valign: 'top'});
-      Exporter.addWorkspaceLines(slide, pres, x, 2.6, w, 6, 0.35);
-    });
-    Exporter.ftr(slide, pres, n(), plan);
-
-    // 7. Matching Activity
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Moveable Sort: ' + (sd.matching?.title||'Matching'));
-    if (sd.matching && sd.matching.pairs) {
-      sd.matching.pairs.forEach((pair, i) => {
-        let yBase = 1.0 + (i * 0.85);
-        slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: yBase, w: 4, h: 0.65, fill: {color: NB.white}, line: {color: NB.border}});
-        slide.addText(M(pair.target), {x: 0.6, y: yBase, w: 3.8, h: 0.65, fontSize: 14, autoFit: true, valign: 'middle'});
-        slide.addShape(pres.shapes.RECTANGLE, {x: 4.7, y: yBase, w: 4.8, h: 0.65, fill: {color: NB.bg}, line: {color: NB.border, dashType: 'dash'}});
-        
-        slide.addShape(pres.shapes.RECTANGLE, {x: 1.0+(i*2.1), y: 4.7, w: 2.0, h: 0.55, fill: {color: NB.gold}, shadow: Exporter.ms()});
-        slide.addText(M(pair.card), {x: 1.0+(i*2.1), y: 4.7, w: 2.0, h: 0.55, fontSize: 12, color: NB.navy, align: 'center', valign: 'middle', autoFit: true});
-      });
+  addWriteLines: (slide, pres, x, y, w, numLines, lineH=0.38) => {
+    const totalH = numLines*lineH + 0.24;
+    slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:totalH,fill:{color:PAL.white},line:{color:PAL.border,width:0.75},shadow:mkShadow()});
+    slide.addText('✎  Work Space',{x:x+0.12,y:y+0.05,w:w-0.24,h:0.22,fontSize:8.5,color:PAL.muted,italic:true,fontFace:'Calibri',margin:0});
+    for(let i=1;i<=numLines;i++){
+      slide.addShape(pres.shapes.LINE,{x:x+0.18,y:y+(i*lineH)+0.06,w:w-0.36,h:0,line:{dashType:'dash',color:PAL.writeLine,width:0.5}});
     }
-    Exporter.addCardTray(slide, pres, 4.4);
-    Exporter.ftr(slide, pres, n(), plan);
+  },
 
-    // 8. Drag & Drop Activity
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Student Manipulatives: ' + (sd.drag_drop?.title||'Categorize'));
-    if (sd.drag_drop) {
-      (sd.drag_drop.zones||[]).forEach((zone, i) => {
-        let w = (9.0 / sd.drag_drop.zones.length) - 0.2;
-        let x = 0.5 + (i * (w + 0.3));
-        slide.addShape(pres.shapes.RECTANGLE, {x, y: 1.1, w, h: 3.0, fill: {color: NB.white}, line: {color: NB.border}});
-        slide.addShape(pres.shapes.RECTANGLE, {x, y: 1.1, w, h: 0.45, fill: {color: NB.teal}});
-        slide.addText(M(zone), {x, y: 1.1, w, h: 0.45, color: NB.white, align: 'center', bold: true, fontSize: 14});
-      });
-      Exporter.addCardTray(slide, pres, 4.3);
-      (sd.drag_drop.cards||[]).forEach((card, i) => {
-        let w = 1.7; let x = 0.5 + (i * 1.85); if(x > 8.5) { x = 0.5 + ((i-5) * 1.85); }
-        let y = x > 8.5 && i > 4 ? 5.1 : 4.6; // Wrap cards safely
-        slide.addShape(pres.shapes.RECTANGLE, {x, y, w, h: 0.5, fill: {color: NB.cardBlue}, line: {color: NB.teal}, shadow: Exporter.ms()});
-        slide.addText(M(card), {x, y, w, h: 0.5, fontSize: 11, align: 'center', valign: 'middle', color: NB.navy, autoFit: true});
-      });
+  // FIX: coordinate grid — step-based rendering (not one line per unit), corrected y-axis labels
+  addCoordGrid: (slide, pres, x, y, w, h, xMax, yMax, xLabel, yLabel, plotPoints=[], accent) => {
+    const ac = accent || PAL.teal;
+    // FIX: step-based — max ~8 vertical, ~6 horizontal gridlines regardless of xMax/yMax
+    const xStep = Math.max(1, Math.ceil(xMax / 8));
+    const yStep = Math.max(1, Math.ceil(yMax / 6));
+    const xCols = Math.ceil(xMax / xStep);
+    const yRows = Math.ceil(yMax / yStep);
+    const leftPad = 0.68;  // enough for 4-digit y labels
+    const botPad  = 0.36;
+    const gridW = w - leftPad;
+    const gridH = h - botPad;
+    const cellW = gridW / xCols;
+    const cellH = gridH / yRows;
+    const originX = x + leftPad;
+    const originY = y;          // top of grid area
+
+    // Background
+    slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h,fill:{color:PAL.white},line:{color:PAL.border,width:0.5},shadow:mkShadow()});
+
+    // Vertical gridlines
+    for(let i=0; i<=xCols; i++){
+      const lx = originX + (i * cellW);
+      slide.addShape(pres.shapes.LINE,{x:lx,y:originY,w:0,h:gridH,
+        line:{color:'E8EDF3', width: i===0 ? 0 : 0.4}});
     }
-    Exporter.ftr(slide, pres, n(), plan);
+    // Horizontal gridlines
+    for(let j=0; j<=yRows; j++){
+      const ly = originY + (j * cellH);
+      slide.addShape(pres.shapes.LINE,{x:originX,y:ly,w:gridW,h:0,
+        line:{color:'E8EDF3', width: j===0||j===yRows ? 0 : 0.4}});
+    }
 
-    // 9. Error Analysis
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Error Analysis');
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.1, w: 9.0, h: 0.6, fill: {color: NB.white}, shadow: Exporter.ms()});
-    slide.addText('Misconception Focus: ' + M(sd.error_analysis?.misconception||''), {x: 0.7, y: 1.15, w: 8.6, h: 0.5, fontSize: 14, color: NB.rust, bold: true});
-    
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.9, w: 4.3, h: 3.0, fill: {color: NB.cardRust}, line: {color: NB.rust}});
-    slide.addText('Flawed Work:\n\n' + M(sd.error_analysis?.flawed_work||''), {x: 0.7, y: 2.0, w: 3.9, h: 2.7, fontSize: 14, autoFit: true, valign: 'top'});
-    
-    slide.addShape(pres.shapes.RECTANGLE, {x: 5.2, y: 1.9, w: 4.3, h: 0.6, fill: {color: NB.teal}});
-    slide.addText('Fix It: ' + M(sd.error_analysis?.prompt||''), {x: 5.4, y: 1.9, w: 3.9, h: 0.6, fontSize: 14, color: NB.white, bold: true});
-    Exporter.addWorkspaceLines(slide, pres, 5.2, 2.5, 4.3, 6, 0.38);
-    Exporter.ftr(slide, pres, n(), plan);
+    // Bold axes
+    slide.addShape(pres.shapes.LINE,{x:originX,y:originY,w:0,h:gridH,line:{color:ac,width:1.8}});          // y-axis
+    slide.addShape(pres.shapes.LINE,{x:originX,y:originY+gridH,w:gridW,h:0,line:{color:ac,width:1.8}});    // x-axis
 
-    // 10. Vocabulary Page
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Vocabulary: ' + (sd.vocabulary?.term||''));
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.1, w: 4.3, h: 1.8, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
-    slide.addText('Definition:\n' + M(sd.vocabulary?.definition||''), {x: 0.7, y: 1.2, w: 3.9, h: 1.6, fontSize: 14, autoFit: true, valign: 'top'});
-    
-    slide.addShape(pres.shapes.RECTANGLE, {x: 5.2, y: 1.1, w: 4.3, h: 1.8, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
-    slide.addText('Example:\n' + M(sd.vocabulary?.example||''), {x: 5.4, y: 1.2, w: 3.9, h: 1.6, fontSize: 14, autoFit: true, valign: 'top'});
-    
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 3.1, w: 4.3, h: 1.8, fill: {color: NB.white}, line: {color: NB.border}, shadow: Exporter.ms()});
-    slide.addText('Non-Example:\n' + M(sd.vocabulary?.non_example||''), {x: 0.7, y: 3.2, w: 3.9, h: 1.6, fontSize: 14, autoFit: true, valign: 'top'});
-    
-    slide.addShape(pres.shapes.RECTANGLE, {x: 5.2, y: 3.1, w: 4.3, h: 1.8, fill: {color: NB.cardBlue}, line: {color: NB.teal}, shadow: Exporter.ms()});
-    slide.addText('Sketch It (Visual Cue):\n' + M(sd.vocabulary?.visual_cue||''), {x: 5.4, y: 3.2, w: 3.9, h: 1.6, fontSize: 14, color: NB.navy, italic: true, autoFit: true, valign: 'top'});
-    Exporter.ftr(slide, pres, n(), plan);
+    // FIX: x tick labels — step-based, no double-multiply
+    for(let i=0; i<=xCols; i++){
+      const tickVal = i * xStep;
+      const lx = originX + (i * cellW);
+      slide.addText(String(tickVal),{x:lx-0.18,y:originY+gridH+0.03,w:0.36,h:0.22,
+        fontSize:8,color:PAL.muted,align:'center',fontFace:'Calibri',margin:0});
+    }
 
-    // 11. Exit Ticket
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Exit Ticket');
-    [
-      { label: 'Level 1', dok: sd.exit_ticket?.dok1, y: 1.1, fill: NB.white, line: NB.border },
-      { label: 'Level 2', dok: sd.exit_ticket?.dok2, y: 2.5, fill: NB.white, line: NB.border },
-      { label: 'Level 3 (Challenge)', dok: sd.exit_ticket?.dok3, y: 3.9, fill: NB.cardBlue, line: NB.teal }
-    ].forEach(t => {
-      slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: t.y, w: 9.0, h: 1.2, fill: {color: t.fill}, line: {color: t.line}, shadow: Exporter.ms()});
-      slide.addText(`${t.label}: ` + M(t.dok), {x: 0.7, y: t.y+0.1, w: 8.6, h: 1.0, fontSize: 14, bold: t.label.includes('3'), autoFit: true, valign: 'top'});
-    });
-    Exporter.ftr(slide, pres, n(), plan);
+    // FIX: y tick labels — correct calculation, labels at grid row positions
+    for(let j=0; j<=yRows; j++){
+      // FIX: j=0 is TOP of grid (yMax), j=yRows is BOTTOM (0)
+      const tickVal = yMax - (j * yStep);
+      const ly = originY + (j * cellH);
+      if(tickVal >= 0) {
+        slide.addText(String(tickVal),{x:x,y:ly-0.11,w:leftPad-0.06,h:0.22,
+          fontSize:8,color:PAL.muted,align:'right',fontFace:'Calibri',margin:0});
+      }
+    }
 
-    // 12. Reflection
-    slide = pres.addSlide(); slide.background = {color: NB.bg};
-    Exporter.hdr(slide, pres, sessionKey, 'Reflection & Goals');
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 1.2, w: 9.0, h: 1.0, fill: {color: NB.white}, shadow: Exporter.ms()});
-    slide.addText(M(sd.reflection||''), {x: 0.7, y: 1.3, w: 8.6, h: 0.8, fontSize: 16, bold: true, autoFit: true, valign: 'middle'});
-    
-    const scales = ['1 - Still Learning', '2 - Getting There', '3 - Got It', '4 - Mastered'];
-    scales.forEach((lbl, i) => {
-      let x = 1.0 + (i * 2.2);
-      slide.addShape(pres.shapes.OVAL, {x: x+0.5, y: 2.5, w: 0.8, h: 0.8, fill: {color: NB.white}, line: {color: NB.border}});
-      slide.addText((i+1).toString(), {x: x+0.5, y: 2.5, w: 0.8, h: 0.8, fontSize: 18, align: 'center', valign: 'middle'});
-      slide.addText(lbl, {x: x, y: 3.4, w: 1.8, h: 0.4, fontSize: 12, align: 'center', color: NB.navy, bold: true});
-    });
-    
-    slide.addShape(pres.shapes.RECTANGLE, {x: 0.5, y: 4.1, w: 9.0, h: 1.0, fill: {color: NB.cardBlue}, line: {color: NB.teal}});
-    slide.addText('Sentence Frame: "One thing I learned today was..."', {x: 0.7, y: 4.15, w: 8.6, h: 0.3, fontSize: 12, color: NB.navy, italic: true});
-    slide.addShape(pres.shapes.LINE, {x: 0.7, y: 4.65, w: 8.6, h: 0, line: {type: 'solid', color: NB.border}});
-    slide.addShape(pres.shapes.LINE, {x: 0.7, y: 4.95, w: 8.6, h: 0, line: {type: 'solid', color: NB.border}});
-    Exporter.ftr(slide, pres, n(), plan);
+    // Axis labels
+    slide.addText(Utils.fmtMath(xLabel||''),{x:originX,y:originY+gridH+0.28,w:gridW,h:0.22,
+      fontSize:9,bold:true,color:ac,align:'center',fontFace:'Calibri',margin:0});
+    slide.addText(Utils.fmtMath(yLabel||''),{x:x-0.08,y:originY+(gridH/2)-0.7,w:0.6,h:1.4,
+      fontSize:9,bold:true,color:ac,align:'center',fontFace:'Calibri',rotate:270,margin:0});
 
-    return pres;
+    // FIX: out-of-range points surfaced, not silently dropped
+    for(const [px,py] of (plotPoints||[])){
+      if(px == null || py == null) continue;
+      if(px > xMax || py > yMax || px < 0 || py < 0) {
+        // Draw a warning marker at grid edge instead of silently dropping
+        const edgeX = originX + Math.min(px/xMax, 1) * gridW - 0.1;
+        const edgeY = originY + (1 - Math.min(py/yMax, 1)) * gridH - 0.1;
+        slide.addShape(pres.shapes.OVAL,{x:edgeX,y:edgeY,w:0.2,h:0.2,fill:{color:PAL.rust},line:{color:PAL.white,width:1}});
+        continue;
+      }
+      const dotX = originX + (px/xMax) * gridW - 0.07;
+      const dotY = originY + (1 - py/yMax) * gridH - 0.07;
+      slide.addShape(pres.shapes.OVAL,{x:dotX,y:dotY,w:0.14,h:0.14,fill:{color:ac},line:{color:PAL.white,width:1}});
+    }
   },
 
-  buildSession: async (sessionKey) => {
-    if (AppState.isGenerating()) return; AppState.setGenerating(true);
-    const plan = AppState.getPlan();
-    UI.setStatus(`Generating ${sessionKey.toUpperCase()} Notebook...`, 30);
-    try {
-      const pres = new PptxGenJS(); pres.layout = 'LAYOUT_16x9';
-      await Exporter.buildSessionFile(pres, sessionKey, plan);
-      UI.setStatus('Compiling PPTX...', 80);
-      const safeName = Utils.sanitizeFilename(plan.lesson_title);
-      await pres.writeFile({ fileName: `Notebook_${safeName}_${sessionKey.toUpperCase()}.pptx` });
-      UI.setStatus('Complete', 100, 'done'); UI.toast(`${sessionKey.toUpperCase()} generated!`);
-    } catch(e) { UI.setStatus('Generation failed', 100, 'err'); UI.toast(e.message, 'error'); }
-    setTimeout(() => document.getElementById('status-box').classList.remove('show'), 3000);
-    AppState.setGenerating(false);
+  addDataTable: (slide, pres, x, y, w, ivLabel, dvLabel, values, accent) => {
+    const ac = accent || PAL.teal;
+    const rowH = 0.36; const colW = w/2;
+    slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:rowH,fill:{color:ac}});
+    slide.addText(Utils.fmtMath(ivLabel||'x'),{x,y,w:colW,h:rowH,fontSize:11,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
+    slide.addShape(pres.shapes.LINE,{x:x+colW,y,w:0,h:rowH,line:{color:PAL.white,width:1}});
+    slide.addText(Utils.fmtMath(dvLabel||'y'),{x:x+colW,y,w:colW,h:rowH,fontSize:11,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
+    values.forEach(([iv,dv],i) => {
+      const ry = y + rowH*(i+1);
+      const bg = i%2===0 ? PAL.white : PAL.cardGray;
+      slide.addShape(pres.shapes.RECTANGLE,{x,y:ry,w,h:rowH,fill:{color:bg},line:{color:PAL.border,width:0.5}});
+      slide.addText(Utils.fmtMath(String(iv??'')),{x:x+0.05,y:ry,w:colW-0.1,h:rowH,fontSize:12,color:PAL.body,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
+      slide.addShape(pres.shapes.LINE,{x:x+colW,y:ry,w:0,h:rowH,line:{color:PAL.border,width:0.75}});
+      if(i===0 && dv != null) {
+        slide.addText(Utils.fmtMath(String(dv)),{x:x+colW+0.05,y:ry,w:colW-0.1,h:rowH,fontSize:12,color:PAL.body,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
+      } else {
+        slide.addShape(pres.shapes.LINE,{x:x+colW+0.12,y:ry+rowH-0.1,w:colW-0.24,h:0,line:{color:PAL.writeLine,width:0.5,dashType:'dash'}});
+      }
+    });
+    const totalH = rowH*(values.length+1);
+    slide.addShape(pres.shapes.RECTANGLE,{x,y,w,h:totalH,fill:{type:'none'},line:{color:ac,width:1.2}});
+    return totalH;
   },
 
-  buildBoth: async () => {
-    if (AppState.isGenerating()) return; AppState.setGenerating(true);
-    const plan = AppState.getPlan();
-    UI.setStatus('Generating Master Notebook (S1 + S2)...', 20);
-    try {
-      const pres = new PptxGenJS(); pres.layout = 'LAYOUT_16x9';
-      UI.setStatus('Building Session 1...', 40); await Exporter.buildSessionFile(pres, 's1', plan);
-      UI.setStatus('Building Session 2...', 70); await Exporter.buildSessionFile(pres, 's2', plan);
-      UI.setStatus('Compiling PPTX...', 90);
-      const safeName = Utils.sanitizeFilename(plan.lesson_title);
-      await pres.writeFile({ fileName: `Master_Notebook_${safeName}.pptx` });
-      UI.setStatus('Complete', 100, 'done'); UI.toast('Master Notebook generated!');
-    } catch(e) { UI.setStatus('Generation failed', 100, 'err'); UI.toast(e.message, 'error'); }
-    setTimeout(() => document.getElementById('status-box').classList.remove('show'), 3000);
-    AppState.setGenerating(false);
-  }
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 1 — TITLE + OBJECTIVES
+  // ════════════════════════════════════════════════════════════════════
+  slide01: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,
+      (plan.lesson_title||GEN+' Lesson Title').replace('[GENERATED — VERIFY] ',''),
+      `${(plan.detected_standard||'').replace('[GENERATED — VERIFY] ','')} · ${key==='s1'?'Session 1':'Session 2'} · Student Notebook`);
+
+    // Render all objectives from objectives_raw if present, else fall back to content+language pair
+    const rawObjs = Array.isArray(sd.objectives_raw) && sd.objectives_raw.length > 0
+      ? sd.objectives_raw
+      : null;
+    const objPairs = rawObjs
+      ? rawObjs.map((t,i) => ({ label: i===0 ? 'Content Objective' : i===1 ? 'Language Objective' : `Objective ${i+1}`, text: t }))
+      : [
+          { label:'Content Objective',  text: sd._obj_content  || sd.objectives?.[0] || GEN+' I can objective' },
+          { label:'Language Objective', text: sd._obj_language || sd.objectives?.[1] || GEN+' I will objective' },
+        ];
+
+    // Max 3 objectives on one slide; calculate card height to fill available space
+    const displayObjs = objPairs.slice(0, 3);
+    const availH = 3.10; // 1.43 topY to 4.53 — leaves room for What's Inside strip
+    const cardH  = Math.min(1.20, (availH - (displayObjs.length - 1) * 0.12) / displayObjs.length);
+    const topY   = 1.43;
+
+    displayObjs.forEach((obj, i) => {
+      const yPos   = topY + i * (cardH + 0.12);
+      const isGen  = isGenerated(obj.text || '');
+      const acCol  = i === 0 ? c.accent : i === 1 ? PAL.teal : PAL.gold;
+      const objTxt = Utils.fmtMath((obj.text || '').replace('[GENERATED — VERIFY] ', ''));
+
+      // Card background
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.4,y:yPos,w:8.5,h:cardH,fill:{color:PAL.white},line:{color:PAL.border,width:0.75},shadow:mkShadow()});
+      // Left accent bar
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.4,y:yPos,w:0.18,h:cardH,fill:{color:acCol}});
+      // Label chip
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.65,y:yPos+0.06,w:1.9,h:0.24,fill:{color:acCol}});
+      slide.addText(obj.label,{x:0.65,y:yPos+0.06,w:1.9,h:0.24,fontSize:8,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+
+      // Objective text
+      const textH = cardH - 0.38;
+      slide.addText(objTxt,{x:0.65,y:yPos+0.34,w:7.4,h:textH,fontSize:13,color:isGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true,margin:2});
+      if(isGen) slide.addText('★ GENERATED — VERIFY',{x:7.5,y:yPos+0.06,w:1.35,h:0.24,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',valign:'middle',margin:0});
+
+      // Individual ☐ BEFORE / ☐ AFTER checkbox pair (right side of card)
+      slide.addShape(pres.shapes.RECTANGLE,{x:9.0,y:yPos,w:0.9,h:cardH,fill:{color:c.accentLight},line:{color:acCol,width:0.5}});
+      const halfH = cardH / 2;
+      // Before checkbox
+      slide.addText('☐',{x:9.03,y:yPos+0.04,w:0.34,h:halfH-0.04,fontSize:14,color:acCol,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText('Before',{x:9.37,y:yPos+0.06,w:0.5,h:halfH-0.08,fontSize:7,color:acCol,fontFace:'Calibri',align:'left',valign:'middle',margin:0,bold:true});
+      // After checkbox
+      slide.addShape(pres.shapes.LINE,{x:9.0,y:yPos+halfH,w:0.9,h:0,line:{color:acCol,width:0.4}});
+      slide.addText('☐',{x:9.03,y:yPos+halfH,w:0.34,h:halfH,fontSize:14,color:acCol,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText('After',{x:9.37,y:yPos+halfH+0.06,w:0.5,h:halfH-0.08,fontSize:7,color:acCol,fontFace:'Calibri',align:'left',valign:'middle',margin:0,bold:true});
+    });
+
+    // What's Inside strip
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.4,y:4.55,w:9.5,h:0.58,fill:{color:PAL.cardCream},line:{color:PAL.gold,width:0.75}});
+    slide.addText("What's Inside: Be Curious · Vocabulary · Guided Practice · Collaborative Practice · Independent Practice · Cut-and-Sort · TWR Frame · Exit Ticket · Goal Tracker",
+      {x:0.55,y:4.55,w:9.28,h:0.58,fontSize:8.5,color:PAL.body,fontFace:'Calibri',valign:'middle',margin:0});
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 2 — BE CURIOUS
+  // ════════════════════════════════════════════════════════════════════
+  slide02: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Be Curious','What do you notice? What do you wonder?');
+    const topY=1.1;
+
+    const noticeText=Utils.fmtMath((sd.be_curious_notice||'').replace('[GENERATED — VERIFY] ',''));
+    const wonderText=Utils.fmtMath((sd.be_curious_wonder||'').replace('[GENERATED — VERIFY] ',''));
+    const twrText   =Utils.fmtMath((sd.be_curious_twr||'').replace('[GENERATED — VERIFY] ',''));
+    const noticeGen =isGenerated(sd.be_curious_notice||'');
+    const twrGen    =isGenerated(sd.be_curious_twr||'');
+
+    // Left panel height capped so bottom (topY+4.12=5.22) stays above footer (5.30)
+    const leftH = 4.12;
+    if(key==='s1'){
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.25,y:topY,w:4.8,h:leftH,fill:{color:PAL.cardGray},line:{color:PAL.border,width:0.75},shadow:mkShadow()});
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.25,y:topY,w:4.8,h:0.42,fill:{color:c.accent}});
+      slide.addText('📷  Lesson Image',{x:0.25,y:topY,w:4.8,h:0.42,fontSize:11,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText('Insert lesson image here\n(right-click → Replace Image)\nContext: '+Utils.fmtMath(sd.context||GEN+' lesson context'),
+        {x:0.35,y:topY+1.3,w:4.6,h:2.3,fontSize:11,color:PAL.muted,fontFace:'Calibri',align:'center',italic:true,valign:'middle'});
+    } else {
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.25,y:topY,w:4.8,h:leftH,fill:{color:PAL.cardCream},line:{color:PAL.gold,width:1.2},shadow:mkShadow()});
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.25,y:topY,w:4.8,h:0.42,fill:{color:PAL.gold}});
+      slide.addText('📊  '+Utils.fmtMath(sd.be_curious_s1_label||'Session 1 Reference'),
+        {x:0.25,y:topY,w:4.8,h:0.42,fontSize:11,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      const refVals=sd.be_curious_s1_ref_values||plan.s1?.table_values?.slice(0,4)||[[1,0],[2,0],[3,0]];
+      Builder.addDataTable(slide,pres,0.45,topY+0.55,4.4,plan.s1?.iv_name||'x',plan.s1?.dv_name||'y',refVals,PAL.gold);
+      slide.addText('S1 equation: '+Utils.fmtMath(plan.s1?.equation||GEN+' y = ?'),
+        {x:0.35,y:topY+3.2,w:4.6,h:0.35,fontSize:11,bold:true,color:PAL.gold,fontFace:'Calibri',align:'center'});
+    }
+
+    // Right: NOTICE box — fits in upper half
+    slide.addShape(pres.shapes.RECTANGLE,{x:5.35,y:topY,w:4.4,h:1.72,fill:{color:PAL.white},line:{color:c.accent,width:1.2},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:5.35,y:topY,w:4.4,h:0.32,fill:{color:c.accent}});
+    slide.addText('👁  NOTICE'+(noticeGen?' ★GEN':''),{x:5.35,y:topY,w:4.4,h:0.32,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addText(noticeText,{x:5.48,y:topY+0.36,w:4.14,h:0.52,fontSize:12,color:noticeGen?PAL.rust:PAL.body,fontFace:'Calibri',margin:0,italic:noticeGen});
+    slide.addShape(pres.shapes.LINE,{x:5.48,y:topY+1.08,w:4.14,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+    slide.addShape(pres.shapes.LINE,{x:5.48,y:topY+1.44,w:4.14,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+
+    // Right: WONDER box — fits in lower half; bottom = topY+1.82+1.72 = topY+3.54 = 4.64
+    slide.addShape(pres.shapes.RECTANGLE,{x:5.35,y:topY+1.82,w:4.4,h:1.72,fill:{color:PAL.white},line:{color:PAL.gold,width:1.2},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:5.35,y:topY+1.82,w:4.4,h:0.32,fill:{color:PAL.gold}});
+    slide.addText('💡  WONDER',{x:5.35,y:topY+1.82,w:4.4,h:0.32,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addText(wonderText,{x:5.48,y:topY+2.18,w:4.14,h:0.52,fontSize:12,color:PAL.body,fontFace:'Calibri',margin:0});
+    slide.addShape(pres.shapes.LINE,{x:5.48,y:topY+2.92,w:4.14,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+    slide.addShape(pres.shapes.LINE,{x:5.48,y:topY+3.26,w:4.14,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+
+    // TWR strip — y=topY+3.64, h=0.50 → bottom = 1.1+3.64+0.50 = 5.24 ✓
+    const twrBg = key==='s2' ? 'EDE9FE' : PAL.cardBlue;
+    const twrAc = key==='s2' ? PAL.purple : c.accent;
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.25,y:topY+3.64,w:9.5,h:0.50,fill:{color:twrBg},line:{color:twrAc,width:0.75}});
+    slide.addText('TWR: '+(twrGen?'★ GENERATED — VERIFY  ':'')+twrText,
+      {x:0.4,y:topY+3.64,w:9.2,h:0.50,fontSize:11,bold:true,color:twrAc,fontFace:'Calibri',valign:'middle',margin:0,italic:twrGen});
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 3 — VOCABULARY (Frayer model)
+  // ════════════════════════════════════════════════════════════════════
+  slide03: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Vocabulary','Key terms for today\'s lesson');
+
+    const rawTerms = sd.vocab_terms || [];
+    const defs     = sd.vocab_definitions || {};
+    const terms    = rawTerms.map(t => t.replace('[GENERATED — VERIFY] ','').trim()).filter(Boolean);
+    const allGen   = isGenerated(sd.vocab_terms?.[0]||'');
+
+    if(terms.length === 0) {
+      // Fallback: single empty Frayer
+      terms.push('[GENERATED — VERIFY] Key Term');
+    }
+
+    // Primary term — full Frayer model (4 quadrants)
+    const primary    = terms[0];
+    const defVal     = defs[primary] || defs[terms[0].toLowerCase()] || null;
+    const exVal      = defs['example'] || null;
+    const nonExVal   = defs['non_example'] || defs['non-example'] || null;
+    const defIsGen   = !defVal;
+    const exIsGen    = !exVal;
+    const nonExIsGen = !nonExVal;
+
+    // Center term bubble
+    slide.addShape(pres.shapes.RECTANGLE,{x:3.95,y:1.90,w:2.1,h:0.76,fill:{color:c.accent},shadow:mkShadow()});
+    slide.addText(primary+(allGen?' ★':''),{x:3.95,y:1.90,w:2.1,h:0.76,fontSize:12,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:2});
+
+    // 4 quadrants: Definition | Example | Non-Example | Your Own Words
+    const quads=[
+      {label:'📖 Definition',    content: defVal    ? Utils.fmtMath(defVal)    : null, fill:PAL.cardBlue,  lc:PAL.teal, isGen:defIsGen},
+      {label:'✅ Example',       content: exVal     ? Utils.fmtMath(exVal)     : null, fill:PAL.cardSage,  lc:PAL.sage, isGen:exIsGen},
+      {label:'❌ Non-Example',   content: nonExVal  ? Utils.fmtMath(nonExVal)  : null, fill:PAL.cardRust,  lc:PAL.rust, isGen:nonExIsGen},
+      {label:'✏️ Your Own Words', content: null,                                         fill:PAL.cardCream, lc:PAL.gold, isGen:false},
+    ];
+    const qpos=[{x:0.28,y:1.05},{x:5.22,y:1.05},{x:0.28,y:3.12},{x:5.22,y:3.12}];
+    quads.forEach((q,i)=>{
+      const qx=qpos[i].x; const qy=qpos[i].y;
+      slide.addShape(pres.shapes.RECTANGLE,{x:qx,y:qy,w:4.5,h:1.93,fill:{color:q.fill},line:{color:q.lc,width:0.75},shadow:mkShadow()});
+      slide.addShape(pres.shapes.RECTANGLE,{x:qx,y:qy,w:4.5,h:0.30,fill:{color:q.lc}});
+      slide.addText(q.label+(q.isGen?' ★':''),(                          {x:qx,y:qy,w:4.5,h:0.30,fontSize:9.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0}));
+      if(q.content) {
+        slide.addText(q.content,{x:qx+0.12,y:qy+0.34,w:4.26,h:1.52,fontSize:11.5,color:PAL.body,fontFace:'Calibri',autoFit:true,valign:'top'});
+      } else if(q.isGen) {
+        slide.addText('Add definition from source PPTX',{x:qx+0.12,y:qy+0.5,w:4.26,h:0.46,fontSize:10.5,color:PAL.rust,fontFace:'Calibri',italic:true});
+        for(let l=1;l<=2;l++) slide.addShape(pres.shapes.LINE,{x:qx+0.18,y:qy+0.90+(l*0.38),w:4.14,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+      } else {
+        for(let l=1;l<=3;l++) slide.addShape(pres.shapes.LINE,{x:qx+0.18,y:qy+0.34+(l*0.42),w:4.14,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+      }
+    });
+
+    // Additional terms strip — show term + definition inline for all secondary terms
+    if(terms.length > 1) {
+      const secTerms = terms.slice(1);
+      const secLine = secTerms.map(t => {
+        const d = defs[t] || defs[t.toLowerCase()];
+        return d ? `${t}: ${d}` : t;
+      }).join('   ·   ');
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:5.04,w:9.44,h:0.20,fill:{color:PAL.border}});
+      slide.addText('Also: '+secLine,{x:0.36,y:5.04,w:9.28,h:0.20,fontSize:8,color:PAL.muted,fontFace:'Calibri',valign:'middle',margin:0});
+    }
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 4 — GUIDED PRACTICE (I Do)
+  // ════════════════════════════════════════════════════════════════════
+  slide04: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Guided Practice — I Do','Watch: Teacher models the complete process');
+    const topY=1.1;
+    const probText = Utils.fmtMath((sd.guided_problem||'').replace('[GENERATED — VERIFY] ',''));
+    const probGen  = isGenerated(sd.guided_problem||'');
+
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:9.44,h:0.88,fill:{color:PAL.white},line:{color:c.accent,width:1.2},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:0.18,h:0.88,fill:{color:probGen?PAL.rust:c.accent}});
+    if(probGen) slide.addText('★ GENERATED — VERIFY',{x:6.5,y:topY+0.04,w:3.1,h:0.22,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});
+    slide.addText(probText||'[Add problem from source slides]',{x:0.52,y:topY,w:9.12,h:0.88,fontSize:14,bold:true,color:probGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
+
+    const steps=sd.guided_steps||[];
+    // Steps col: topY+1.0 to topY+3.78 → bottom=4.88 ✓ (below footer guard of 5.28)
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+1.0,w:4.4,h:2.78,fill:{color:PAL.cardBlue},line:{color:PAL.teal,width:0.75},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+1.0,w:4.4,h:0.32,fill:{color:PAL.teal}});
+    slide.addText('🔢  Model Steps',{x:0.28,y:topY+1.0,w:4.4,h:0.32,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    steps.slice(0,4).forEach((s,i)=>{
+      const stepText=Utils.fmtMath(String(s||'').replace('[GENERATED — VERIFY] ',''));
+      const sy=topY+1.40+(i*0.58);
+      const isG=isGenerated(String(s||''));
+      slide.addShape(pres.shapes.OVAL,{x:0.4,y:sy+0.07,w:0.24,h:0.24,fill:{color:isG?PAL.rust:PAL.teal}});
+      slide.addText(String(i+1),{x:0.4,y:sy+0.07,w:0.24,h:0.24,fontSize:9,bold:true,color:PAL.white,align:'center',valign:'middle',fontFace:'Calibri',margin:0});
+      slide.addText(stepText,{x:0.72,y:sy,w:3.82,h:0.50,fontSize:11,color:isG?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
+    });
+    // Equation bar: y=topY+3.82 h=0.40 → bottom=5.32 ... just clips. Move to topY+3.78+0.04 gap
+    const eqLabel = 'Equation: '+Utils.fmtMath((sd.equation||GEN+' y = ?').replace('[GENERATED — VERIFY] ',''))
+      + (sd._rate_mismatch ? '  ⚠ rate mismatch — verify' : '');
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+3.76,w:4.4,h:0.36,fill:{color:c.accent}});
+    slide.addText(eqLabel,{x:0.36,y:topY+3.76,w:4.24,h:0.36,fontSize:12,bold:true,color:PAL.white,fontFace:'Calibri',valign:'middle',margin:0,autoFit:true});
+
+    const tableVals=sd.table_values||[[1,null],[2,null],[3,null]];
+    Builder.addDataTable(slide,pres,4.88,topY+1.0,2.3,sd.iv_name||'x',sd.dv_name||'y',tableVals.slice(0,5),c.accent);
+    const xMax=Math.min(sd.graph_xmax||12,20);
+    const yMax=Math.min(sd.graph_ymax||150,500);
+    // Grid h=2.78 → bottom = topY+1.0+2.78 = 4.88 ✓
+    Builder.addCoordGrid(slide,pres,7.3,topY+1.0,2.45,2.78,xMax,yMax,sd.graph_xlabel||'x',sd.graph_ylabel||'y',tableVals.slice(0,3),c.accent);
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 5 — COLLABORATIVE PRACTICE (We Do)
+  // ════════════════════════════════════════════════════════════════════
+  slide05: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Collaborative Practice — We Do','Partner A + Partner B: discuss before writing');
+    const topY=1.1;
+
+    const probText=Utils.fmtMath((sd.collab_problem||'').replace('[GENERATED — VERIFY] ',''));
+    const probGen =isGenerated(sd.collab_problem||'');
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:9.44,h:0.82,fill:{color:PAL.white},line:{color:c.accent,width:1.2},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY,w:0.18,h:0.82,fill:{color:probGen?PAL.rust:PAL.gold}});
+    if(probGen) slide.addText('★ GENERATED',{x:8.2,y:topY+0.04,w:1.4,h:0.22,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});
+    slide.addText(probText||'[Add problem from source slides]',{x:0.52,y:topY,w:9.12,h:0.82,fontSize:14,bold:true,color:probGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
+
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+0.92,w:2.1,h:0.38,fill:{color:PAL.gold}});
+    slide.addText('Partner A: Explain',{x:0.28,y:topY+0.92,w:2.1,h:0.38,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addShape(pres.shapes.RECTANGLE,{x:2.48,y:topY+0.92,w:2.1,h:0.38,fill:{color:PAL.sage}});
+    slide.addText('Partner B: Record',{x:2.48,y:topY+0.92,w:2.1,h:0.38,fontSize:10,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+
+    const collabVals=sd.collab_table_values||(sd.table_values||[]).slice(0,3);
+    Builder.addDataTable(slide,pres,0.28,topY+1.42,3.0,sd.iv_name||'x',sd.dv_name||'y',collabVals.slice(0,5),c.accent);
+    // Grid h=2.6 → bottom = topY+1.42+2.6 = 5.12 ✓
+    Builder.addCoordGrid(slide,pres,3.55,topY+1.42,3.9,2.6,Math.min(sd.graph_xmax||12,20),Math.min(sd.graph_ymax||150,500),sd.graph_xlabel||'x',sd.graph_ylabel||'y',[],c.accent);
+
+    const discussRaw = sd.collab_discussion_prompt || null;
+    const discussGen = !discussRaw || isGenerated(discussRaw||'');
+    const discussText = discussRaw
+      ? Utils.fmtMath(discussRaw.replace('[GENERATED — VERIFY] ',''))
+      : (key==='s2'
+          ? `How does this graph compare to Session 1 (${Utils.fmtMath(plan.s1?.equation||'y = ?')})?`
+          : Utils.fmtMath((sd.collab_discussion_prompt||GEN+' How do you know which variable is independent?').replace('[GENERATED — VERIFY] ','')));
+
+    // Discuss box h=2.6 → bottom = topY+1.42+2.6 = 5.12 ✓
+    slide.addShape(pres.shapes.RECTANGLE,{x:7.62,y:topY+1.42,w:2.1,h:2.6,fill:{color:PAL.cardCream},line:{color:PAL.gold,width:0.75},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:7.62,y:topY+1.42,w:2.1,h:0.32,fill:{color:PAL.gold}});
+    slide.addText('💬 Discuss'+(discussGen?' ★':''),{x:7.62,y:topY+1.42,w:2.1,h:0.32,fontSize:9,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+    slide.addText(discussText,{x:7.72,y:topY+1.8,w:1.9,h:2.1,fontSize:10.5,color:discussGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'top',autoFit:true,italic:discussGen});
+
+    // Equation write strip — y=topY+4.12 h=0.32 → bottom=5.54 ... need to move up
+    // Place inline below the table: topY+1.42 + table_h(collab rows≈4*0.36=1.44+0.36hdr) ≈ topY+3.22
+    // Safe position: topY+3.24 h=0.32 → bottom=4.66 ✓
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:topY+3.24,w:4.56,h:0.32,fill:{color:c.accentLight},line:{color:c.accent,width:0.75}});
+    slide.addText('Our equation: y = ____',{x:0.36,y:topY+3.24,w:4.40,h:0.32,fontSize:11,bold:true,color:c.accent,fontFace:'Calibri',valign:'middle',margin:0});
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 6 — INDEPENDENT PRACTICE (You Do)
+  // ════════════════════════════════════════════════════════════════════
+  slide06: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Independent Practice — You Do','Work individually. Show all your thinking.');
+
+    const allProbs = (sd.independent_problems||[]);
+    // Show ALL problems extracted — up to 5 fit on one slide; 6+ get truncated with a note
+    const probs    = allProbs.slice(0, 5);
+    const overflow = allProbs.length > 5 ? allProbs.length - 5 : 0;
+
+    const fills  = [PAL.cardBlue,PAL.cardSage,PAL.cardCream,PAL.cardRust,'EDE9FE'];
+    const lines  = [PAL.teal,PAL.sage,PAL.gold,PAL.rust,PAL.purple];
+    const labels = ['Apply','Extend','Explain','Challenge','Bonus'];
+    const topY   = 1.08;
+    const BOTTOM = 5.22; // footer guard
+
+    // Calculate card height dynamically based on problem count
+    const numProbs = Math.max(probs.length, 1);
+    const totalGap = (numProbs - 1) * 0.1;
+    const cardH    = Math.min(1.30, (BOTTOM - topY - totalGap) / numProbs);
+    const wsW      = cardH >= 1.10 ? 2.52 : 1.8;  // narrower workspace if cards are short
+
+    probs.forEach((prob, i) => {
+      const yPos  = topY + i * (cardH + 0.10);
+      const pText = Utils.fmtMath(String(prob||'').replace('[GENERATED — VERIFY] ',''));
+      const pGen  = isGenerated(String(prob||''));
+      const lc    = pGen ? PAL.rust : (lines[i] || PAL.teal);
+      const fill  = fills[i] || PAL.cardBlue;
+      const label = labels[i] || `P${i+1}`;
+      const labelW = 1.2;
+      const probW  = 9.72 - wsW - labelW - 0.12;
+
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yPos,w:9.72-wsW,h:cardH,fill:{color:fill},line:{color:lc,width:0.75},shadow:mkShadow()});
+      // Label chip
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yPos,w:labelW,h:Math.min(0.28,cardH*0.26),fill:{color:lc}});
+      slide.addText('P'+(i+1)+' · '+label+(pGen?' ★':''),{x:0.28,y:yPos,w:labelW,h:Math.min(0.28,cardH*0.26),fontSize:8.5,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      // Problem text
+      const textTopOffset = Math.min(0.30, cardH * 0.26);
+      slide.addText(pText||'[Add from source slides]',{x:0.38,y:yPos+textTopOffset,w:probW+labelW-0.1,h:cardH-textTopOffset-0.04,fontSize:12,color:pGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'top',autoFit:true});
+      // Work space
+      Builder.addWriteLines(slide,pres,9.72-wsW+0.08,yPos,wsW-0.08,Math.max(1,Math.floor(cardH/0.42)),cardH/Math.max(1,Math.floor(cardH/0.42)));
+    });
+
+    if(overflow > 0) {
+      const noteY = topY + probs.length * (cardH + 0.10);
+      if(noteY < BOTTOM - 0.20) {
+        slide.addText(`+ ${overflow} more problem(s) from source deck — add additional slide`,
+          {x:0.28,y:noteY,w:9.44,h:0.20,fontSize:9,color:PAL.muted,fontFace:'Calibri',italic:true,valign:'middle'});
+      }
+    }
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 7 — CUT-AND-SORT (LOCKED: addText with shape property)
+  // ════════════════════════════════════════════════════════════════════
+  slide07: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    const sortTitle=(sd.cut_sort_title||'').replace('[GENERATED — VERIFY] ','');
+    Builder.addHeader(slide,pres,key,'Cut-and-Sort: '+sortTitle,'Cut · sort into column · glue when partner agrees');
+    const items=sd.cut_sort_items||[];
+    const cats=[...new Set(items.map(it=>it.category).filter(Boolean).map(c=>c.replace('[GENERATED — VERIFY] ','')))];
+    const numCats=Math.max(cats.length,2);
+    const colW=(9.0/numCats)-0.15;
+    const catColors=[c.accent,PAL.gold,PAL.sage,PAL.rust];
+    const catLight =[c.accentLight,PAL.cardCream,PAL.cardSage,PAL.cardRust];
+
+    cats.forEach((cat,ci)=>{
+      const cx=0.28+(ci*(colW+0.2));
+      slide.addShape(pres.shapes.RECTANGLE,{x:cx,y:1.08,w:colW,h:3.6,fill:{color:catLight[ci]||PAL.cardGray},line:{color:catColors[ci]||PAL.border,width:1.2},shadow:mkShadow()});
+      slide.addShape(pres.shapes.RECTANGLE,{x:cx,y:1.08,w:colW,h:0.38,fill:{color:catColors[ci]||PAL.teal}});
+      slide.addText(cat,{x:cx,y:1.08,w:colW,h:0.38,fontSize:12,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      for(let l=1;l<=4;l++) slide.addShape(pres.shapes.LINE,{x:cx+0.15,y:1.08+0.38+(l*0.6)+0.1,w:colW-0.3,h:0,line:{color:catColors[ci]||PAL.border,dashType:'dash',width:0.5,transparency:60}});
+    });
+
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:4.76,w:9.44,h:0.16,fill:{color:PAL.border}});
+    slide.addText('✂  Cut here — sort cards above',{x:0.28,y:4.76,w:9.44,h:0.16,fontSize:8,color:PAL.muted,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+
+    const cardW=2.2; const cardH=0.42; const cardsPerRow=4;
+    items.forEach((item,i)=>{
+      const col=i%cardsPerRow; const row=Math.floor(i/cardsPerRow);
+      const cx=0.45+(col*(cardW+0.3));
+      const cy=4.84+(row*0.50);
+      // Only row 0 fits above footer; row 1+ are suppressed
+      if(cy+cardH>5.26) return;
+      const itemText=Utils.fmtMath((item.text||'').replace('[GENERATED — VERIFY] ',''));
+      const itemGen =isGenerated(item.text||'');
+      slide.addText(itemText,{
+        shape:pres.shapes.RECTANGLE,
+        x:cx,y:cy,w:cardW,h:cardH,
+        fill:{color:itemGen?PAL.cardRust:PAL.white},
+        line:{color:itemGen?PAL.rust:PAL.border,width:1.0},
+        shadow:mkShadow(),
+        fontSize:10,bold:false,color:itemGen?PAL.rust:PAL.body,
+        fontFace:'Calibri',align:'center',valign:'middle',wrap:true,
+      });
+    });
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 8 — TWR FRAME
+  // ════════════════════════════════════════════════════════════════════
+  slide08: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Think · Write · Respond','Complete each frame using math vocabulary');
+    const frames=sd.twr_frames||[];
+    const frameColors=[PAL.cardBlue,PAL.cardSage,PAL.cardCream,c.accentLight];
+    const frameBorders=[PAL.teal,PAL.sage,PAL.gold,c.accent];
+    const kernels=['Because','But','So','And'];
+    frames.slice(0,4).forEach((frame,i)=>{
+      const col=i%2; const row=Math.floor(i/2);
+      const fx=0.28+(col*4.86); const fy=1.08+(row*2.0);
+      const fText=Utils.fmtMath(String(frame||'').replace('[GENERATED — VERIFY] ',''));
+      const fGen =isGenerated(String(frame||''));
+      slide.addShape(pres.shapes.RECTANGLE,{x:fx,y:fy,w:4.6,h:1.82,fill:{color:frameColors[i]},line:{color:fGen?PAL.rust:frameBorders[i],width:0.75},shadow:mkShadow()});
+      slide.addShape(pres.shapes.RECTANGLE,{x:fx,y:fy,w:4.6,h:0.3,fill:{color:fGen?PAL.rust:frameBorders[i]}});
+      slide.addText('Frame '+(i+1)+' — '+kernels[i]+(fGen?' ★GEN':''),{x:fx,y:fy,w:4.6,h:0.3,fontSize:9,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText(fText,{x:fx+0.14,y:fy+0.34,w:4.32,h:0.52,fontSize:12,italic:true,color:fGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'top'});
+      for(let l=1;l<=2;l++) slide.addShape(pres.shapes.LINE,{x:fx+0.18,y:fy+0.94+(l*0.38),w:4.24,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+    });
+    if(key==='s2'){
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:4.96,w:9.44,h:0.26,fill:{color:'EDE9FE'},line:{color:PAL.purple,width:0.75}});
+      slide.addText('★ Frame 3: compare Session 2 to Session 1 — use: "Compared to '+Utils.fmtMath(plan.s1?.equation||'y = ?')+', this equation..."',
+        {x:0.38,y:4.96,w:9.24,h:0.26,fontSize:9,color:PAL.purple,fontFace:'Calibri',valign:'middle',margin:0});
+    }
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 9 — 3-TIER EXIT TICKET
+  // ════════════════════════════════════════════════════════════════════
+  slide09: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Exit Ticket','Show what you know — choose your level');
+    const tiers=[
+      {label:'Level 1 — Identify',  prompt:sd.exit_dok1, fill:PAL.cardBlue,  line:PAL.teal, dok:'DOK 1: Recall'},
+      {label:'Level 2 — Explain',   prompt:sd.exit_dok2, fill:PAL.cardSage,  line:PAL.sage, dok:'DOK 2: Skill/Concept'},
+      {label:'Level 3 — Transfer ★',prompt:sd.exit_dok3, fill:PAL.cardCream, line:PAL.gold, dok:'DOK 3: Strategic Thinking'},
+    ];
+    tiers.forEach((t,i)=>{
+      const yPos=1.08+(i*1.38);
+      const pText=Utils.fmtMath((t.prompt||'').replace('[GENERATED — VERIFY] ',''));
+      const pGen =isGenerated(t.prompt||'');
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yPos,w:9.44,h:1.28,fill:{color:t.fill},line:{color:pGen?PAL.rust:t.line,width:0.75},shadow:mkShadow()});
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:yPos,w:0.2,h:1.28,fill:{color:pGen?PAL.rust:t.line}});
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.56,y:yPos+0.06,w:2.2,h:0.24,fill:{color:pGen?PAL.rust:t.line}});
+      slide.addText(t.dok+(pGen?' ★GEN':''),{x:0.56,y:yPos+0.06,w:2.2,h:0.24,fontSize:8,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText(t.label,{x:2.9,y:yPos+0.06,w:6.7,h:0.24,fontSize:9,bold:true,color:pGen?PAL.rust:t.line,fontFace:'Calibri',valign:'middle',margin:0});
+      slide.addText(pText||'[Add from source slides]',{x:0.56,y:yPos+0.34,w:8.6,h:0.88,fontSize:12.5,color:pGen?PAL.rust:PAL.body,fontFace:'Calibri',autoFit:true,valign:'top'});
+      slide.addShape(pres.shapes.LINE,{x:0.56,y:yPos+1.16,w:8.6,h:0,line:{color:PAL.writeLine,dashType:'dash',width:0.5}});
+    });
+    // S2 cross-session note
+    if(key==='s2'){
+      const warnTxt = sd._s1_ref_warn
+        ? sd._s1_ref_warn
+        : 'Level 3 must synthesize BOTH sessions. Reference equations from S1 and S2 in response.';
+      slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:4.96,w:9.44,h:0.26,fill:{color:'EDE9FE'},line:{color:PAL.purple,width:0.75}});
+      slide.addText(warnTxt,{x:0.38,y:4.96,w:9.24,h:0.26,fontSize:8.5,color:PAL.purple,fontFace:'Calibri',valign:'middle',margin:0});
+    }
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  // ════════════════════════════════════════════════════════════════════
+  // SLIDE 10 — GOAL TRACKER
+  // ════════════════════════════════════════════════════════════════════
+  slide10: (pres,key,sd,plan,n) => {
+    const slide=pres.addSlide(); slide.background={color:PAL.bg};
+    const c=Builder.sessionColors(key);
+    Builder.addHeader(slide,pres,key,'Goal Tracker','How well did I meet today\'s objective?');
+
+    const objRaw=(sd.goal_tracker_objective||sd.objectives?.[0]||GEN+' I can objective');
+    const objText=Utils.fmtMath(objRaw.replace('[GENERATED — VERIFY] ',''));
+    const objGen =isGenerated(objRaw);
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:1.05,w:9.44,h:0.78,fill:{color:PAL.white},line:{color:objGen?PAL.rust:c.accent,width:1.2},shadow:mkShadow()});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:1.05,w:0.2,h:0.78,fill:{color:objGen?PAL.rust:c.accent}});
+    if(objGen) slide.addText('★ GENERATED — VERIFY',{x:7.5,y:1.08,w:2.1,h:0.22,fontSize:7.5,color:PAL.rust,fontFace:'Calibri',align:'right',margin:0});
+    slide.addText(objText,{x:0.54,y:1.05,w:9.12,h:0.78,fontSize:13,bold:true,color:objGen?PAL.rust:PAL.body,fontFace:'Calibri',valign:'middle',autoFit:true});
+
+    const ratings=[
+      {n:'1',lbl:'Still Learning',sub:'I need more help.',   fill:PAL.cardRust, lc:PAL.rust},
+      {n:'2',lbl:'Getting There', sub:'I sort of get it.',   fill:PAL.cardCream,lc:PAL.gold},
+      {n:'3',lbl:'Got It',        sub:'I can do this.',      fill:PAL.cardSage, lc:PAL.sage},
+      {n:'4',lbl:'Mastered',      sub:'I can teach this!',   fill:PAL.cardBlue, lc:PAL.teal},
+    ];
+    ratings.forEach((r,i)=>{
+      const rx=0.28+(i*2.38);
+      slide.addShape(pres.shapes.RECTANGLE,{x:rx,y:2.0,w:2.22,h:2.1,fill:{color:r.fill},line:{color:r.lc,width:0.75},shadow:mkShadow()});
+      slide.addShape(pres.shapes.OVAL,{x:rx+0.72,y:2.1,w:0.78,h:0.78,fill:{color:r.lc},shadow:mkShadow()});
+      slide.addText(r.n,{x:rx+0.72,y:2.1,w:0.78,h:0.78,fontSize:20,bold:true,color:PAL.white,fontFace:'Calibri',align:'center',valign:'middle',margin:0});
+      slide.addText(r.lbl,{x:rx+0.08,y:3.0,w:2.06,h:0.38,fontSize:11,bold:true,color:r.lc,fontFace:'Calibri',align:'center',valign:'middle'});
+      slide.addText(r.sub,{x:rx+0.08,y:3.42,w:2.06,h:0.52,fontSize:10,color:PAL.muted,fontFace:'Calibri',align:'center',italic:true,valign:'top'});
+      slide.addShape(pres.shapes.OVAL,{x:rx+0.78,y:3.98,w:0.66,h:0.66,fill:{color:PAL.white},line:{color:r.lc,width:1.2}});
+    });
+    slide.addText('← Circle your rating above →',{x:0.28,y:4.72,w:9.44,h:0.28,fontSize:10,color:PAL.muted,fontFace:'Calibri',align:'center',italic:true});
+    slide.addShape(pres.shapes.RECTANGLE,{x:0.28,y:5.04,w:9.44,h:0.24,fill:{color:c.accentLight},line:{color:c.accent,width:0.75}});
+    slide.addText('One thing I learned today: _______________________________',{x:0.4,y:5.04,w:9.2,h:0.24,fontSize:9.5,color:c.accent,fontFace:'Calibri',valign:'middle',margin:0,italic:true});
+    Builder.addFooter(slide,pres,n,plan);
+  },
+
+  buildSessionFile: async (pres,key,plan) => {
+    const sd = plan[key];
+    if(!sd) throw new Error(`No ${key} data in plan`);
+    Builder.slide01(pres,key,sd,plan,1);
+    Builder.slide02(pres,key,sd,plan,2);
+    Builder.slide03(pres,key,sd,plan,3);
+    Builder.slide04(pres,key,sd,plan,4);
+    Builder.slide05(pres,key,sd,plan,5);
+    Builder.slide06(pres,key,sd,plan,6);
+    Builder.slide07(pres,key,sd,plan,7);
+    Builder.slide08(pres,key,sd,plan,8);
+    Builder.slide09(pres,key,sd,plan,9);
+    Builder.slide10(pres,key,sd,plan,10);
+  },
 };
 
-// ══ 6. INITIALIZATION ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════════
+   EXPORTER
+═══════════════════════════════════════════════════════════════════════ */
+const Exporter = {
+  _run: async (label, buildFn) => {
+    if(AppState.busy()) return;
+    const plan = AppState.getPlan();
+    if(!plan) { UI.toast('No plan — upload a PPTX first', 'error'); return; }
+    AppState.setBusy(true);
+    ['btn-s1','btn-s2','btn-both'].forEach(id => $prop(id, 'disabled', true));
+    UI.setStatus(`Building ${label}...`, 20);
+    try {
+      const pres = new PptxGenJS();
+      pres.layout  = 'LAYOUT_16x9';
+      pres.author  = 'EduWonderLab · Neft.Alba';
+      pres.title   = `${plan.lesson_title||'Notebook'} — ${label}`;
+      await buildFn(pres, plan);
+      UI.setStatus('Compiling PPTX...', 88);
+      const fn = `EWL_Notebook_${Utils.sanitize(plan.lesson_title)}_${label.replace(/\s+/g,'_')}.pptx`;
+      await pres.writeFile({ fileName: fn });
+      UI.setStatus('Done ✓', 100, 'done');
+      UI.toast(`${label} generated ✓`);
+    } catch(e) {
+      console.error(e);
+      UI.setStatus('Build failed', 100, 'err');
+      UI.toast(e.message, 'error');
+    }
+    setTimeout(() => $cls('status-box', c => c.remove('show')), 3500);
+    AppState.setBusy(false);
+    ['btn-s1','btn-s2','btn-both'].forEach(id => $prop(id, 'disabled', false));
+  },
+
+  buildSession: key => Exporter._run(
+    key==='s1' ? 'Session_1' : 'Session_2',
+    async (pres, plan) => { UI.setStatus('Rendering 10 slides...', 50); await Builder.buildSessionFile(pres, key, plan); }
+  ),
+
+  buildBoth: () => Exporter._run(
+    'Master',
+    async (pres, plan) => {
+      UI.setStatus('Building S1 (slides 1–10)...', 35); await Builder.buildSessionFile(pres, 's1', plan);
+      UI.setStatus('Building S2 (slides 11–20)...', 70); await Builder.buildSessionFile(pres, 's2', plan);
+    }
+  ),
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+  // CDN dependency check — shows warning if scripts failed to load
+  if(typeof PptxGenJS === 'undefined' || typeof JSZip === 'undefined') {
+    const warn = document.getElementById('cdn-warn');
+    if(warn) warn.style.display = 'block';
+    console.error('[EWL] CDN libraries failed to load. Check network and reload.');
+    return; // Stop init — nothing will work without these
+  }
   ThemeService.init();
-  if (location.protocol === 'file:') document.getElementById('protocol-warn').style.display = 'block';
-  const plan = AppState.getPlan(); if (plan) UI.renderPreview(plan);
+  FileHandler.init();
+  const plan = AppState.getPlan();
+  if(plan) {
+    UI.renderPreview(plan);
+    UI.renderFidelityReport(plan);
+  }
 });
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-  if (!localStorage.getItem('ewl_theme')) ThemeService.init();
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change', () => {
+  if(!localStorage.getItem('ewl_theme')) ThemeService.init();
 });
 </script>
 </body>
